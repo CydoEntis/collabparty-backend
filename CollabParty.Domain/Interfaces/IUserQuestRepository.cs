@@ -1,6 +1,8 @@
-﻿namespace CollabParty.Domain.Interfaces;
+﻿using CollabParty.Domain.Entities;
 
-public interface IUserQuestRepository
+namespace CollabParty.Domain.Interfaces;
+
+public interface IUserQuestRepository : IBaseRepository<UserQuest>
 {
-    
+    Task<UserQuest> UpdateAsync(UserQuest entity);
 }

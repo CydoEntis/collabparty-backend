@@ -1,6 +1,8 @@
-﻿namespace CollabParty.Domain.Interfaces;
+﻿using CollabParty.Domain.Entities;
 
-public interface IUserRepository
+namespace CollabParty.Domain.Interfaces;
+
+public interface IUserRepository : IBaseRepository<ApplicationUser>
 {
-    
+    Task<ApplicationUser> UpdateAsync(ApplicationUser entity);
 }

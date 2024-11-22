@@ -1,6 +1,8 @@
-﻿namespace CollabParty.Domain.Interfaces;
+﻿using CollabParty.Domain.Entities;
 
-public interface IUserAvatarRepository
+namespace CollabParty.Domain.Interfaces;
+
+public interface IUserAvatarRepository : IBaseRepository<UserAvatar>
 {
-    
+    Task<UserAvatar> UpdateAsync(UserAvatar entity);
 }

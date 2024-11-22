@@ -1,6 +1,8 @@
-﻿namespace CollabParty.Domain.Interfaces;
+﻿using CollabParty.Domain.Entities;
 
-public interface IUserPartyRepository
+namespace CollabParty.Domain.Interfaces;
+
+public interface IUserPartyRepository : IBaseRepository<UserParty>
 {
-    
+    Task<UserParty> UpdateAsync(UserParty entity);
 }

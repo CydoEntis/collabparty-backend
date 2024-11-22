@@ -9,4 +9,6 @@ public class UserAvatar
     public Avatar Avatar { get; set; }  
     public DateTime UnlockedAt { get; set; }
     public bool IsActive { get; set; } 
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }

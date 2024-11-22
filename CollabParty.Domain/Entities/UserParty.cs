@@ -9,4 +9,5 @@ public class UserParty
     public Party Party { get; set; }
     public string Role { get; set; }
     public DateTime JoinedAt { get; set; }
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }

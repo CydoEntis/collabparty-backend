@@ -12,4 +12,6 @@ public class Quest
     public List<QuestStep> QuestSteps { get; set; }
     public List<UserQuest> UserQuests { get; set; }
     public bool IsCompleted { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }

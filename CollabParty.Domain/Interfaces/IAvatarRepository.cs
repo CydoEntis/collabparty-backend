@@ -1,6 +1,8 @@
-﻿namespace CollabParty.Domain.Interfaces;
+﻿using CollabParty.Domain.Entities;
 
-public interface IAvatarRepository
+namespace CollabParty.Domain.Interfaces;
+
+public interface IAvatarRepository : IBaseRepository<Avatar>
 {
     
 }

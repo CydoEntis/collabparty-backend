@@ -1,6 +1,8 @@
-﻿namespace CollabParty.Domain.Interfaces;
+﻿using CollabParty.Domain.Entities;
 
-public interface ISessionRepository
+namespace CollabParty.Domain.Interfaces;
+
+public interface ISessionRepository : IBaseRepository<Session>
 {
-    
+    Task<Session> UpdateAsync(Session entity);
 }

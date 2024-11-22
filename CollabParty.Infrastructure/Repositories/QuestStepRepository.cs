@@ -5,19 +5,19 @@ using Questlog.Infrastructure.Repositories;
 
 namespace CollabParty.Infrastructure.Repositories;
 
-public class SessionRepository : BaseRepository<Session>, ISessionRepository
+public class QuestStepRepository : BaseRepository<QuestStep>, IQuestStepRepository
 {
     private readonly AppDbContext _db;
 
-    public SessionRepository(AppDbContext db) : base(db)
+    public QuestStepRepository(AppDbContext db) : base(db)
     {
         _db = db;
     }
-    
-    public async Task<Session> UpdateAsync(Session entity)
+
+    public async Task<QuestStep> UpdateAsync(QuestStep entity)
     {
         entity.UpdatedAt = DateTime.Now;
-        _db.Sessions.Update(entity);
+        _db.QuestSteps.Update(entity);
         await _db.SaveChangesAsync();
         return entity;
     }

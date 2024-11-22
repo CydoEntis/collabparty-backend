@@ -13,15 +13,13 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<Quest> Quests { get; set; }
     public DbSet<QuestStep> QuestSteps { get; set; }
     public DbSet<UserAvatar> UserAvatars { get; set; }
+    public DbSet<UserParty> UserParties { get; set; }
     public DbSet<UserQuest> UserQuests { get; set; }
     public DbSet<UserQuestStep> UserQuestSteps { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
-
-        builder.Entity<UserAvatar>()
-            .HasKey(ua => new { ua.UserId, ua.AvatarId });
 
         builder.Entity<ApplicationUser>()
             .HasIndex(u => u.Email)
@@ -31,6 +29,12 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
             .HasIndex(u => u.UserName)
             .IsUnique();
 
+        builder.Entity<UserAvatar>()
+            .HasKey(ua => new { ua.UserId, ua.AvatarId });
+        
+        builder.Entity<UserParty>()
+            .HasKey(ua => new { ua.UserId, ua.PartyId });
+        
         builder.Entity<UserQuest>()
             .HasKey(uq => new { uq.UserId, uq.QuestId });
     }
