@@ -20,6 +20,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\CollabParty.Application\CollabParty.Application.csproj" />
         <ProjectReference Include="..\CollabParty.Domain\CollabParty.Domain.csproj" />
     </ItemGroup>
     
