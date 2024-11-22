@@ -1,0 +1,6 @@
+@CollabParty.Api_HostAddress = http://localhost:5252
+
+GET {{CollabParty.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
