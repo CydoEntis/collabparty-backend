@@ -1,0 +1,6 @@
+﻿services:
+  collabparty.api:
+    image: collabparty.api
+    build:
+      context: .
+      dockerfile: CollabParty.Api/Dockerfile
