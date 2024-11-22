@@ -1,7 +1,9 @@
 using System.Text;
 using System.Text.Json;
 using CollabParty.Domain.Entities;
+using CollabParty.Domain.Interfaces;
 using CollabParty.Infrastructure.Data;
+using CollabParty.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -26,6 +28,8 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>().AddEntityFramework
 
 // builder.Services.AddScoped<TokenValidationFilter>();
 
+
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 // Add services to the container.
 
