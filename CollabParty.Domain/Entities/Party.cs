@@ -1,11 +1,19 @@
-﻿namespace CollabParty.Domain.Entities;
+﻿using System.ComponentModel.DataAnnotations;
 
-public class Party
+namespace CollabParty.Domain.Entities
 {
-    public int Id { get; set; }
-    public string PartyName { get; set; }
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
-    public List<UserParty> UserParties { get; set; }
-    public List<Quest> Quests { get; set; }
+    public class Party
+    {
+        public int Id { get; set; }
+
+        [Required]
+        [MaxLength(100)]
+        public string PartyName { get; set; }
+
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+        public List<UserParty> UserParties { get; set; }
+        public List<Quest> Quests { get; set; }
+    }
 }

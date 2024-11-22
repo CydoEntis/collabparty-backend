@@ -1,21 +1,11 @@
-﻿using System;
-using System.ComponentModel.DataAnnotations;
-using Microsoft.AspNetCore.Identity;
+﻿using System.ComponentModel.DataAnnotations;
 using System.Collections.Generic;
+using Microsoft.AspNetCore.Identity;
 
 namespace CollabParty.Domain.Entities
 {
     public class ApplicationUser : IdentityUser
     {
-        [Required]
-        [MaxLength(25)]
-        [MinLength(3)]
-        public string DisplayName { get; set; }
-
-        [Required]
-        public int AvatarId { get; set; }
-        
-        public Avatar Avatar { get; set; }  
 
         [Required]
         public int CurrentLevel { get; set; } = 1;
