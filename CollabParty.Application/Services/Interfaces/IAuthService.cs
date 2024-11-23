@@ -7,6 +7,6 @@ public interface IAuthService
 {
     Task<Result<LoginDto>> Login(LoginCredentialsDto dto);
     Task<Result<LoginDto>> Register(RegisterCredentialsDto dto);
-    Task Logout(TokenDto dto);
-    Task<TokenDto> RefreshTokens(TokenDto dto);
+    Task<Result> Logout(TokenDto dto);
+    Task<Result<TokenDto>> RefreshTokens(TokenDto dto);
 }

@@ -2,12 +2,13 @@ using System.Text;
 using System.Text.Json;
 using CollabParty.Api.Mappings;
 using CollabParty.Application.Common.Validators.Auth;
+using CollabParty.Application.Services.Implementations;
 using CollabParty.Application.Services.Interfaces;
 using CollabParty.Domain.Entities;
 using CollabParty.Domain.Interfaces;
-using CollabParty.Domain.Services.Implementations;
 using CollabParty.Infrastructure.Data;
 using CollabParty.Infrastructure.Repositories;
+using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -17,56 +18,74 @@ using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
+// CORS Policy
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy => { policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader(); });
+    options.AddPolicy("AllowAll", policy =>
+        policy.AllowAnyOrigin()
+            .AllowAnyMethod()
+            .AllowAnyHeader());
 });
 
+// Database Context Configuration
 var connectionString = builder.Configuration["DefaultConnectionString"];
 
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlServer(connectionString));
 
-builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(connectionString));
-
-builder.Services.AddIdentity<ApplicationUser, IdentityRole>().AddEntityFrameworkStores<AppDbContext>()
+// Identity Configuration
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
+    .AddEntityFrameworkStores<AppDbContext>()
     .AddDefaultTokenProviders();
 
-// builder.Services.AddScoped<TokenValidationFilter>();
-
+// AutoMapper Configuration
 builder.Services.AddAutoMapper(typeof(MappingConfig));
+
+// Dependency Injection for Repositories and Services
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-// Add services to the container.
 builder.Services.AddScoped<IAuthService, AuthService>();
 
+// Suppress Model State Validation for Custom Filters
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+    options.SuppressModelStateInvalidFilter = true);
 
-builder.Services.Configure<ApiBehaviorOptions>(options => { options.SuppressModelStateInvalidFilter = true; });
 
+
+
+// JSON and FluentValidation Configuration
 builder.Services.AddControllers(options =>
     {
+        // Uncomment to add custom filters if needed
         // options.Filters.Add<TokenValidationFilter>();
         // options.Filters.Add<CamelCaseValidationFilter>();
-    }).AddJsonOptions(options => { options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase; })
-    .AddFluentValidation(config =>
-    {
-        config.RegisterValidatorsFromAssemblyContaining<LoginCredentialsDtoValidator>();
-        config.RegisterValidatorsFromAssemblyContaining<RegisterCredentialsDtoValidator>(); 
-    });
+    })
+    .AddJsonOptions(options =>
+        options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase);
 
+// FluentValidation Setup
+builder.Services.AddFluentValidationAutoValidation()
+    .AddFluentValidationClientsideAdapters();
 
+// Register Validators
+builder.Services.AddValidatorsFromAssemblyContaining<LoginCredentialsDtoValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<RegisterCredentialsDtoValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<TokenDtoValidator>();
+
+// JWT Authentication Configuration
 var jwtKey = builder.Configuration["JwtSecret"];
 var jwtIssuer = builder.Configuration["JwtIssuer"];
 var jwtAudience = builder.Configuration["JwtAudience"];
 
-builder.Services.AddAuthentication(x =>
+builder.Services.AddAuthentication(options =>
     {
-        x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-        x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
     })
-    .AddJwtBearer(x =>
+    .AddJwtBearer(options =>
     {
-        x.RequireHttpsMetadata = false;
-        x.SaveToken = true;
-        x.TokenValidationParameters = new TokenValidationParameters
+        options.RequireHttpsMetadata = false;
+        options.SaveToken = true;
+        options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(jwtKey)),
@@ -78,14 +97,13 @@ builder.Services.AddAuthentication(x =>
         };
     });
 
-
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+// Swagger / OpenAPI Configuration
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Middleware Pipeline Configuration
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

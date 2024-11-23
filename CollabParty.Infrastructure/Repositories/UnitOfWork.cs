@@ -1,4 +1,5 @@
-﻿using CollabParty.Domain.Interfaces;
+﻿using CollabParty.Application.Interfaces;
+using CollabParty.Domain.Interfaces;
 using CollabParty.Infrastructure.Data;
 
 namespace CollabParty.Infrastructure.Repositories;

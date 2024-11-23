@@ -41,4 +41,70 @@ public class AuthController : ControllerBase
                     new Dictionary<string, List<string>> { { "Exception", new List<string> { ex.Message } } }));
         }
     }
+
+    [HttpPost("login")]
+    public async Task<ActionResult<ApiResponse>> Login([FromBody] LoginCredentialsDto dto)
+    {
+        try
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var result = await _authService.Login(dto);
+            if (result.IsSuccess)
+                return Ok(ApiResponse.Success(result.Data));
+
+            var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
+            return BadRequest(ApiResponse.ValidationError(formattedErrors));
+        }
+        catch (Exception ex)
+        {
+            return StatusCode((int)HttpStatusCode.InternalServerError,
+                ApiResponse.Error("An unexpected error occurred.",
+                    new Dictionary<string, List<string>> { { "Exception", new List<string> { ex.Message } } }));
+        }
+    }
+    
+    [HttpPost("logout")]
+    public async Task<ActionResult<ApiResponse>> Logout([FromBody] TokenDto dto)
+    {
+        try
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            await _authService.Logout(dto);
+            return Ok(ApiResponse.Success());
+        }
+        catch (Exception ex)
+        {
+            return StatusCode((int)HttpStatusCode.InternalServerError,
+                ApiResponse.Error("An unexpected error occurred.",
+                    new Dictionary<string, List<string>> { { "Exception", new List<string> { ex.Message } } }));
+        }
+    }
+    
+    [HttpPost("refresh")]
+    public async Task<ActionResult<ApiResponse>> RefreshTokens([FromBody] TokenDto dto)
+    {
+        try
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var result = await _authService.RefreshTokens(dto);
+            if (result.IsSuccess)
+                return Ok(ApiResponse.Success(result.Data));
+
+            var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
+            return BadRequest(ApiResponse.ValidationError(formattedErrors));
+            return Ok(ApiResponse.Success());
+        }
+        catch (Exception ex)
+        {
+            return StatusCode((int)HttpStatusCode.InternalServerError,
+                ApiResponse.Error("An unexpected error occurred.",
+                    new Dictionary<string, List<string>> { { "Exception", new List<string> { ex.Message } } }));
+        }
+    }
 }

@@ -1,6 +1,6 @@
 ﻿using CollabParty.Domain.Entities;
 
-namespace CollabParty.Domain.Interfaces;
+namespace CollabParty.Application.Interfaces;
 
 public interface IUserRepository : IBaseRepository<ApplicationUser>
 {

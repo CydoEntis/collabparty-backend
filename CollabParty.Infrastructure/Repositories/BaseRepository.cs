@@ -1,10 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
+using CollabParty.Application.Interfaces;
 using CollabParty.Domain.Interfaces;
 using CollabParty.Infrastructure.Data;
 using Questlog.Application.Common.Models;
 
-namespace Questlog.Infrastructure.Repositories;
+namespace CollabParty.Infrastructure.Repositories;
 
 public class BaseRepository<T> : IBaseRepository<T> where T : class
 {

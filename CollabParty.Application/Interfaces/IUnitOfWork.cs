@@ -1,4 +1,6 @@
-﻿namespace CollabParty.Domain.Interfaces;
+﻿using CollabParty.Application.Interfaces;
+
+namespace CollabParty.Domain.Interfaces;
 
 public interface IUnitOfWork
 {

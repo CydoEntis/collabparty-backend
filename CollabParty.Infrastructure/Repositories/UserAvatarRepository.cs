@@ -1,7 +1,6 @@
-﻿using CollabParty.Domain.Entities;
-using CollabParty.Domain.Interfaces;
+﻿using CollabParty.Application.Interfaces;
+using CollabParty.Domain.Entities;
 using CollabParty.Infrastructure.Data;
-using Questlog.Infrastructure.Repositories;
 
 namespace CollabParty.Infrastructure.Repositories;
 

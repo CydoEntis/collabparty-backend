@@ -1,6 +1,6 @@
 ﻿using System.Linq.Expressions;
 
-namespace CollabParty.Domain.Interfaces;
+namespace CollabParty.Application.Interfaces;
 
 public interface IBaseRepository<T> where T : class
 {

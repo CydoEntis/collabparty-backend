@@ -1,8 +1,8 @@
-﻿using CollabParty.Domain.Entities;
+﻿using CollabParty.Application.Interfaces;
+using CollabParty.Domain.Entities;
 using CollabParty.Domain.Interfaces;
 using CollabParty.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
-using Questlog.Infrastructure.Repositories;
 
 namespace CollabParty.Infrastructure.Repositories;
 
@@ -17,8 +17,18 @@ public class SessionRepository : BaseRepository<Session>, ISessionRepository
 
     public async Task InvalidateAllUsersTokens(string userId, string sessionId)
     {
-        await _db.Sessions.Where(session => session.UserId == userId && session.SessionId == sessionId)
-            .ExecuteUpdateAsync(session => session.SetProperty(s => s.IsValid, false));
+        var sessions = await _db.Sessions
+            .Where(session => session.UserId == userId && session.SessionId == sessionId)
+            .ToListAsync();
+
+        if (sessions.Any())
+        {
+            await _db.Sessions
+                .Where(session => session.UserId == userId && session.SessionId == sessionId)
+                .ExecuteUpdateAsync(session => session.SetProperty(s => s.IsValid, false));
+
+            await _db.SaveChangesAsync();
+        }
     }
 
     public async Task<Session> UpdateAsync(Session entity)
