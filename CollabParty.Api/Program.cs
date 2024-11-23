@@ -1,7 +1,10 @@
 using System.Text;
 using System.Text.Json;
+using CollabParty.Api.Mappings;
+using CollabParty.Application.Services.Interfaces;
 using CollabParty.Domain.Entities;
 using CollabParty.Domain.Interfaces;
+using CollabParty.Domain.Services.Implementations;
 using CollabParty.Infrastructure.Data;
 using CollabParty.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -28,10 +31,10 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>().AddEntityFramework
 
 // builder.Services.AddScoped<TokenValidationFilter>();
 
-
+builder.Services.AddAutoMapper(typeof(MappingConfig));
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-
 // Add services to the container.
+builder.Services.AddScoped<IAuthService, AuthService>();
 
 
 builder.Services.Configure<ApiBehaviorOptions>(options => { options.SuppressModelStateInvalidFilter = true; });

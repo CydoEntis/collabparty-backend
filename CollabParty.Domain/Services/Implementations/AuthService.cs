@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Text;
 using AutoMapper;
 using CollabParty.Application.Common.Dtos;
+using CollabParty.Application.Common.Dtos.Avatar;
 using CollabParty.Application.Common.Models;
 using CollabParty.Application.Services.Interfaces;
 using CollabParty.Domain.Entities;
@@ -32,7 +33,7 @@ public class AuthService : IAuthService
     public async Task<Result<LoginDto>> Login(LoginCredentialsDto dto)
     {
         var user = await _unitOfWork.User.GetAsync(u => u.Email == dto.Email,
-            includeProperties: "UserAvatar,UserAvatar.Avatar");
+            includeProperties: "UserAvatars,UserAvatars.Avatar");
         bool isPasswordValid = await _userManager.CheckPasswordAsync(user, dto.Password);
 
         if (!isPasswordValid) return Result<LoginDto>.Failure("Invalid email or password");
@@ -40,8 +41,12 @@ public class AuthService : IAuthService
         var sessionId = $"SESS{Guid.NewGuid()}";
         var accessToken = CreateAccessToken(user, sessionId);
         var refreshToken = await CreateRefreshToken(user.Id, sessionId);
+        var userAvatar = await _unitOfWork.UserAvatar.GetAsync(ua => ua.UserId == user.Id && ua.IsActive, includeProperties: "Avatar");
 
+        var avatarDto = _mapper.Map<ActiveAvatarDto>(userAvatar.Avatar);
+        
         var loginDto = _mapper.Map<LoginDto>(user);
+        loginDto.Avatar = avatarDto;
         loginDto.Tokens = new TokenDto()
         {
             AccessToken = accessToken,
@@ -53,39 +58,52 @@ public class AuthService : IAuthService
 
     public async Task<Result<LoginDto>> Register(RegisterCredentialsDto dto)
     {
-        var existingUser = await _userManager.FindByEmailAsync(dto.Email);
-        if (existingUser != null)
-            return Result<LoginDto>.Failure("A user with this email already exists");
-
-        ApplicationUser user = new()
+        try
         {
-            UserName = dto.Username,
-            Email = dto.Email,
-            NormalizedEmail = dto.Email.ToUpper(),
-            NormalizedUserName = dto.Username.ToUpper(),
-            CurrentExp = 0,
-            CurrentLevel = 1,
-            ExpToNextLevel = 100,
-            CreatedAt = DateTime.UtcNow
-        };
+            var existingUser = await _userManager.FindByEmailAsync(dto.Email);
+            if (existingUser != null)
+                return Result<LoginDto>.Failure("A user with this email already exists");
 
-        var result = await _userManager.CreateAsync(user, dto.Password);
-        if (!result.Succeeded)
-            return Result<LoginDto>.Failure("Registration failed");
+            ApplicationUser user = new()
+            {
+                UserName = dto.Username,
+                Email = dto.Email,
+                NormalizedEmail = dto.Email.ToUpper(),
+                NormalizedUserName = dto.Username.ToUpper(),
+                CurrentExp = 0,
+                CurrentLevel = 1,
+                ExpToNextLevel = 100,
+                CreatedAt = DateTime.UtcNow
+            };
 
-        await UnlockAndSetActiveAvatars(user);
-        await SetNewUsersAvatar(dto.AvatarId);
+            
+            // TODO: Need to come up with better Error Handling.
+            var result = await _userManager.CreateAsync(user, dto.Password);
+            if (!result.Succeeded)
+            {
+                var errorMessages = string.Join(", ", result.Errors.Select(e => e.Description));
+                return Result<LoginDto>.Failure(errorMessages);
+            }
 
 
-        var loginCredentialsDto = new LoginCredentialsDto
+            await UnlockAndSetActiveAvatars(user);
+            await SetNewUsersAvatar(dto.AvatarId);
+
+            var loginCredentialsDto = new LoginCredentialsDto
+            {
+                Email = dto.Email,
+                Password = dto.Password,
+            };
+
+            return await Login(loginCredentialsDto);
+        }
+        catch (Exception ex)
         {
-            Email = dto.Email,
-            Password = dto.Password,
-        };
-
-        return await Login(loginCredentialsDto);
+            return Result<LoginDto>.Failure($"An unexpected error occurred: {ex.Message}");
+        }
     }
-    
+
+
     public async Task Logout(TokenDto dto)
     {
         var foundSession = await _unitOfWork.Session.GetAsync(s => s.RefreshToken == dto.RefreshToken);
@@ -142,7 +160,7 @@ public class AuthService : IAuthService
             RefreshToken = newRefreshToken
         };
     }
-    
+
     private async Task UnlockAndSetActiveAvatars(ApplicationUser user)
     {
         var starterAvatars = await _unitOfWork.Avatar.GetAllAsync(a => a.Tier == 0);
