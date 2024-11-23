@@ -4,6 +4,7 @@ using System.Text;
 using AutoMapper;
 using CollabParty.Application.Common.Dtos;
 using CollabParty.Application.Common.Models;
+using CollabParty.Application.Services.Interfaces;
 using CollabParty.Domain.Entities;
 using CollabParty.Domain.Interfaces;
 using Microsoft.AspNetCore.Identity;
@@ -12,7 +13,7 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace CollabParty.Domain.Services.Implementations;
 
-public class AuthService
+public class AuthService : IAuthService
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly UserManager<ApplicationUser> _userManager;
@@ -28,34 +29,82 @@ public class AuthService
         _jwtSecret = configuration["JwtSecret"];
     }
 
-
-    private string CreateAccessToken(ApplicationUser user, string sessionId)
+    public async Task<Result<LoginDto>> Login(LoginCredentialsDto dto)
     {
-        var tokenHandler = new JwtSecurityTokenHandler();
-        var key = Encoding.ASCII.GetBytes(_jwtSecret);
+        var user = await _unitOfWork.User.GetAsync(u => u.Email == dto.Email,
+            includeProperties: "UserAvatar,UserAvatar.Avatar");
+        bool isPasswordValid = await _userManager.CheckPasswordAsync(user, dto.Password);
 
-        var tokenDescriptor = new SecurityTokenDescriptor
+        if (!isPasswordValid) return Result<LoginDto>.Failure("Invalid email or password");
+
+        var sessionId = $"SESS{Guid.NewGuid()}";
+        var accessToken = CreateAccessToken(user, sessionId);
+        var refreshToken = await CreateRefreshToken(user.Id, sessionId);
+
+        var loginDto = _mapper.Map<LoginDto>(user);
+        loginDto.Tokens = new TokenDto()
         {
-            Subject = new ClaimsIdentity(new Claim[]
-            {
-                new Claim(ClaimTypes.Name, user.UserName.ToString()),
-                new Claim(JwtRegisteredClaimNames.Jti, sessionId),
-                new Claim(JwtRegisteredClaimNames.Sub, user.Id)
-            }),
-            Expires = DateTime.UtcNow.AddMinutes(30),
-            SigningCredentials =
-                new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature),
-            Issuer = "https://localhost:7265",
-            Audience = "http://localhost:5173"
+            AccessToken = accessToken,
+            RefreshToken = refreshToken,
         };
 
-        var token = tokenHandler.CreateToken(tokenDescriptor);
-        var tokenStr = tokenHandler.WriteToken(token);
-
-        return tokenStr;
+        return Result<LoginDto>.Success(loginDto);
     }
 
-    private async Task<TokenDto> RefreshTokens(TokenDto dto)
+    public async Task<Result<LoginDto>> Register(RegisterCredentialsDto dto)
+    {
+        var existingUser = await _userManager.FindByEmailAsync(dto.Email);
+        if (existingUser != null)
+            return Result<LoginDto>.Failure("A user with this email already exists");
+
+        ApplicationUser user = new()
+        {
+            UserName = dto.Username,
+            Email = dto.Email,
+            NormalizedEmail = dto.Email.ToUpper(),
+            NormalizedUserName = dto.Username.ToUpper(),
+            CurrentExp = 0,
+            CurrentLevel = 1,
+            ExpToNextLevel = 100,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        var result = await _userManager.CreateAsync(user, dto.Password);
+        if (!result.Succeeded)
+            return Result<LoginDto>.Failure("Registration failed");
+
+        await UnlockAndSetActiveAvatars(user);
+        await SetNewUsersAvatar(dto.AvatarId);
+
+
+        var loginCredentialsDto = new LoginCredentialsDto
+        {
+            Email = dto.Email,
+            Password = dto.Password,
+        };
+
+        return await Login(loginCredentialsDto);
+    }
+    
+    public async Task Logout(TokenDto dto)
+    {
+        var foundSession = await _unitOfWork.Session.GetAsync(s => s.RefreshToken == dto.RefreshToken);
+
+        if (foundSession is null)
+            return;
+
+        var isRefreshTokenValid = CheckIfRefreshTokenIsValid(dto.RefreshToken, foundSession);
+        if (!isRefreshTokenValid) return;
+
+        var isAccessTokenValid =
+            CheckIfAccessTokenIsValid(dto.AccessToken, foundSession.UserId, foundSession.SessionId);
+        if (!isAccessTokenValid) return;
+
+
+        await _unitOfWork.Session.InvalidateAllUsersTokens(foundSession.UserId, foundSession.SessionId);
+    }
+
+    public async Task<TokenDto> RefreshTokens(TokenDto dto)
     {
         var foundSession = await _unitOfWork.Session.GetAsync(s => s.RefreshToken == dto.RefreshToken);
         if (foundSession == null) return new TokenDto();
@@ -93,6 +142,61 @@ public class AuthService
             RefreshToken = newRefreshToken
         };
     }
+    
+    private async Task UnlockAndSetActiveAvatars(ApplicationUser user)
+    {
+        var starterAvatars = await _unitOfWork.Avatar.GetAllAsync(a => a.Tier == 0);
+
+        var unlockedAvatars = starterAvatars.Select(avatar => new UserAvatar
+        {
+            UserId = user.Id,
+            AvatarId = avatar.Id,
+            UnlockedAt = DateTime.UtcNow,
+            IsActive = false,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        }).ToList();
+
+        await _unitOfWork.UserAvatar.AddRangeAsync(unlockedAvatars);
+        await _unitOfWork.SaveAsync();
+    }
+
+    private async Task SetNewUsersAvatar(int selectedAvatarId)
+    {
+        var activeAvatar = await _unitOfWork.UserAvatar.GetAsync(ua => ua.AvatarId == selectedAvatarId);
+        if (activeAvatar != null)
+        {
+            activeAvatar.IsActive = true;
+            await _unitOfWork.UserAvatar.UpdateAsync(activeAvatar);
+            await _unitOfWork.SaveAsync();
+        }
+    }
+
+    private string CreateAccessToken(ApplicationUser user, string sessionId)
+    {
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var key = Encoding.ASCII.GetBytes(_jwtSecret);
+
+        var tokenDescriptor = new SecurityTokenDescriptor
+        {
+            Subject = new ClaimsIdentity(new Claim[]
+            {
+                new Claim(ClaimTypes.Name, user.UserName.ToString()),
+                new Claim(JwtRegisteredClaimNames.Jti, sessionId),
+                new Claim(JwtRegisteredClaimNames.Sub, user.Id)
+            }),
+            Expires = DateTime.UtcNow.AddMinutes(30),
+            SigningCredentials =
+                new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature),
+            Issuer = "https://localhost:7265",
+            Audience = "http://localhost:5173"
+        };
+
+        var token = tokenHandler.CreateToken(tokenDescriptor);
+        var tokenStr = tokenHandler.WriteToken(token);
+
+        return tokenStr;
+    }
 
     private async Task<string> CreateRefreshToken(string userId, string sessionId)
     {
@@ -114,24 +218,6 @@ public class AuthService
     {
         session.IsValid = false;
         await _unitOfWork.SaveAsync();
-    }
-
-    private async Task RevokeRefreshToken(TokenDto dto)
-    {
-        var foundSession = await _unitOfWork.Session.GetAsync(s => s.RefreshToken == dto.RefreshToken);
-
-        if (foundSession is null)
-            return;
-
-        var isRefreshTokenValid = CheckIfRefreshTokenIsValid(dto.RefreshToken, foundSession);
-        if (!isRefreshTokenValid) return;
-
-        var isAccessTokenValid =
-            CheckIfAccessTokenIsValid(dto.AccessToken, foundSession.UserId, foundSession.SessionId);
-        if (!isAccessTokenValid) return;
-
-
-        await _unitOfWork.Session.InvalidateAllUsersTokens(foundSession.UserId, foundSession.SessionId);
     }
 
     private bool CheckIfAccessTokenIsValid(string accessToken, string expectedUserId, string expectedSessionId)

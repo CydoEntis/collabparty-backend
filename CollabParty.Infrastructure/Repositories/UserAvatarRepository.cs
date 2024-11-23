@@ -14,6 +14,12 @@ public class UserAvatarRepository : BaseRepository<UserAvatar>, IUserAvatarRepos
         _db = db;
     }
     
+    public async Task AddRangeAsync(IEnumerable<UserAvatar> userAvatars)
+    {
+        await _db.UserAvatars.AddRangeAsync(userAvatars);
+        await _db.SaveChangesAsync();
+    }
+    
     public async Task<UserAvatar> UpdateAsync(UserAvatar entity)
     {
         entity.UpdatedAt = DateTime.Now;
