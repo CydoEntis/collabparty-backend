@@ -1,12 +1,14 @@
 using System.Text;
 using System.Text.Json;
 using CollabParty.Api.Mappings;
+using CollabParty.Application.Common.Validators.Auth;
 using CollabParty.Application.Services.Interfaces;
 using CollabParty.Domain.Entities;
 using CollabParty.Domain.Interfaces;
 using CollabParty.Domain.Services.Implementations;
 using CollabParty.Infrastructure.Data;
 using CollabParty.Infrastructure.Repositories;
+using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -40,10 +42,16 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.Configure<ApiBehaviorOptions>(options => { options.SuppressModelStateInvalidFilter = true; });
 
 builder.Services.AddControllers(options =>
-{
-    // options.Filters.Add<TokenValidationFilter>();
-    // options.Filters.Add<CamelCaseValidationFilter>();
-}).AddJsonOptions(options => { options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase; });
+    {
+        // options.Filters.Add<TokenValidationFilter>();
+        // options.Filters.Add<CamelCaseValidationFilter>();
+    }).AddJsonOptions(options => { options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase; })
+    .AddFluentValidation(config =>
+    {
+        config.RegisterValidatorsFromAssemblyContaining<LoginCredentialsDtoValidator>();
+        config.RegisterValidatorsFromAssemblyContaining<RegisterCredentialsDtoValidator>(); 
+    });
+
 
 var jwtKey = builder.Configuration["JwtSecret"];
 var jwtIssuer = builder.Configuration["JwtIssuer"];

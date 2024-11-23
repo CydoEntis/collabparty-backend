@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using CollabParty.Application.Common.Dtos;
 using CollabParty.Application.Common.Models;
+using CollabParty.Application.Common.Utility;
 using CollabParty.Application.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
@@ -22,18 +23,16 @@ public class AuthController : ControllerBase
     {
         try
         {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
             var result = await _authService.Register(dto);
+
             if (result.IsSuccess)
-            {
                 return Ok(ApiResponse.Success(result.Data));
-            }
 
-            var errors = new Dictionary<string, List<string>>
-            {
-                { "email", new List<string> { result.ErrorMessage } }
-            };
-
-            return BadRequest(ApiResponse.ValidationError(errors));
+            var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
+            return BadRequest(ApiResponse.ValidationError(formattedErrors));
         }
         catch (Exception ex)
         {

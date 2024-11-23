@@ -32,19 +32,30 @@ public class AuthService : IAuthService
 
     public async Task<Result<LoginDto>> Login(LoginCredentialsDto dto)
     {
-        var user = await _unitOfWork.User.GetAsync(u => u.Email == dto.Email,
+        var user = await _unitOfWork.User.GetAsync(
+            u => u.Email == dto.Email,
             includeProperties: "UserAvatars,UserAvatars.Avatar");
+
+        if (user == null)
+            return Result<LoginDto>.Failure("email", new[] { "User with this email does not exist" });
+
         bool isPasswordValid = await _userManager.CheckPasswordAsync(user, dto.Password);
 
-        if (!isPasswordValid) return Result<LoginDto>.Failure("Invalid email or password");
+        if (!isPasswordValid)
+            return Result<LoginDto>.Failure("password", new[] { "Invalid password" });
 
         var sessionId = $"SESS{Guid.NewGuid()}";
         var accessToken = CreateAccessToken(user, sessionId);
         var refreshToken = await CreateRefreshToken(user.Id, sessionId);
-        var userAvatar = await _unitOfWork.UserAvatar.GetAsync(ua => ua.UserId == user.Id && ua.IsActive, includeProperties: "Avatar");
+        var userAvatar = await _unitOfWork.UserAvatar.GetAsync(
+            ua => ua.UserId == user.Id && ua.IsActive,
+            includeProperties: "Avatar");
+
+        if (userAvatar == null)
+            return Result<LoginDto>.Failure("avatar", new[] { "Active avatar not found for user" });
 
         var avatarDto = _mapper.Map<ActiveAvatarDto>(userAvatar.Avatar);
-        
+
         var loginDto = _mapper.Map<LoginDto>(user);
         loginDto.Avatar = avatarDto;
         loginDto.Tokens = new TokenDto()
@@ -56,51 +67,58 @@ public class AuthService : IAuthService
         return Result<LoginDto>.Success(loginDto);
     }
 
+
     public async Task<Result<LoginDto>> Register(RegisterCredentialsDto dto)
     {
-        try
+        var existingUser = await _userManager.FindByEmailAsync(dto.Email);
+        if (existingUser != null)
         {
-            var existingUser = await _userManager.FindByEmailAsync(dto.Email);
-            if (existingUser != null)
-                return Result<LoginDto>.Failure("A user with this email already exists");
-
-            ApplicationUser user = new()
-            {
-                UserName = dto.Username,
-                Email = dto.Email,
-                NormalizedEmail = dto.Email.ToUpper(),
-                NormalizedUserName = dto.Username.ToUpper(),
-                CurrentExp = 0,
-                CurrentLevel = 1,
-                ExpToNextLevel = 100,
-                CreatedAt = DateTime.UtcNow
-            };
-
-            
-            // TODO: Need to come up with better Error Handling.
-            var result = await _userManager.CreateAsync(user, dto.Password);
-            if (!result.Succeeded)
-            {
-                var errorMessages = string.Join(", ", result.Errors.Select(e => e.Description));
-                return Result<LoginDto>.Failure(errorMessages);
-            }
-
-
-            await UnlockAndSetActiveAvatars(user);
-            await SetNewUsersAvatar(dto.AvatarId);
-
-            var loginCredentialsDto = new LoginCredentialsDto
-            {
-                Email = dto.Email,
-                Password = dto.Password,
-            };
-
-            return await Login(loginCredentialsDto);
+            return Result<LoginDto>.Failure("email", new[] { "A user with this email already exists" });
         }
-        catch (Exception ex)
+
+        var existingUserByUsername = await _userManager.FindByNameAsync(dto.Username);
+        if (existingUserByUsername != null)
         {
-            return Result<LoginDto>.Failure($"An unexpected error occurred: {ex.Message}");
+            return Result<LoginDto>.Failure("username", new[] { "A user with this username already exists" });
         }
+
+        ApplicationUser user = new()
+        {
+            UserName = dto.Username,
+            Email = dto.Email,
+            NormalizedEmail = dto.Email.ToUpper(),
+            NormalizedUserName = dto.Username.ToUpper(),
+            CurrentExp = 0,
+            CurrentLevel = 1,
+            ExpToNextLevel = 100,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        var creationResult = await _userManager.CreateAsync(user, dto.Password);
+        if (!creationResult.Succeeded)
+        {
+            var errors = creationResult.Errors
+                .Select(e => new ValidationError("user", new[] { e.Description }))
+                .ToList();
+            return Result<LoginDto>.Failure(errors);
+        }
+
+        await UnlockAndSetActiveAvatars(user);
+        await SetNewUsersAvatar(user.Id, dto.AvatarId);
+
+        var loginCredentialsDto = new LoginCredentialsDto
+        {
+            Email = dto.Email,
+            Password = dto.Password,
+        };
+
+        var loginResult = await Login(loginCredentialsDto);
+        if (!loginResult.IsSuccess)
+        {
+            return loginResult;
+        }
+
+        return loginResult;
     }
 
 
@@ -179,9 +197,9 @@ public class AuthService : IAuthService
         await _unitOfWork.SaveAsync();
     }
 
-    private async Task SetNewUsersAvatar(int selectedAvatarId)
+    private async Task SetNewUsersAvatar(string userId, int selectedAvatarId)
     {
-        var activeAvatar = await _unitOfWork.UserAvatar.GetAsync(ua => ua.AvatarId == selectedAvatarId);
+        var activeAvatar = await _unitOfWork.UserAvatar.GetAsync(ua => ua.UserId == userId && ua.AvatarId == selectedAvatarId);
         if (activeAvatar != null)
         {
             activeAvatar.IsActive = true;
