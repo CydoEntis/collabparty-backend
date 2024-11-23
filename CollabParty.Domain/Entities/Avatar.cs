@@ -9,12 +9,14 @@ namespace CollabParty.Domain.Entities
         [Required]
         [MaxLength(50)]
         public string Name { get; set; }
+
+        public string DisplayName { get; set; }
         
         [Required]
         public string ImageUrl { get; set; }
 
         public int UnlockLevel { get; set; }
-        public int UnlockCurrency { get; set; }
+        public int UnlockCost { get; set; }
 
         [Required]
         public int Tier { get; set; }

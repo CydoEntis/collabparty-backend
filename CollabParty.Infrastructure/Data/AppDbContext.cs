@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using CollabParty.Domain.Entities;
+using CollabParty.Infrastructure.Persistence.Seeders;
 
 namespace CollabParty.Infrastructure.Data
 {
@@ -52,6 +53,9 @@ namespace CollabParty.Infrastructure.Data
 
             builder.Entity<UserQuest>()
                 .HasKey(uq => new { uq.UserId, uq.QuestId });
+            
+            
+            AvatarSeeder.Seed(builder);
 
         }
     }
