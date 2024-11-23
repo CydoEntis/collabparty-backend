@@ -7,19 +7,20 @@ namespace CollabParty.Domain.Entities
     {
         public int Id { get; set; }
 
+        [Required]
+        public string SessionId { get; set; }
+        
         [ForeignKey("User")]
         public string UserId { get; set; }
         public ApplicationUser User { get; set; }
 
         [Required]
-        public string AccessToken { get; set; }
-
-        [Required]
         public string RefreshToken { get; set; }
 
-        public DateTime AccessTokenExpiry { get; set; }
         public DateTime RefreshTokenExpiry { get; set; }
 
+        public bool IsValid { get; set; }
+        
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
     }
