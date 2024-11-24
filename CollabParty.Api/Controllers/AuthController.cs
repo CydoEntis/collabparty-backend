@@ -36,9 +36,8 @@ public class AuthController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode((int)HttpStatusCode.InternalServerError,
-                ApiResponse.Error("An unexpected error occurred.",
-                    new Dictionary<string, List<string>> { { "Exception", new List<string> { ex.Message } } }));
+            return
+                ApiResponse.Error("internal", ex.InnerException.Message, HttpStatusCode.InternalServerError);
         }
     }
 
@@ -59,12 +58,11 @@ public class AuthController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode((int)HttpStatusCode.InternalServerError,
-                ApiResponse.Error("An unexpected error occurred.",
-                    new Dictionary<string, List<string>> { { "Exception", new List<string> { ex.Message } } }));
+            return
+                ApiResponse.Error("internal", ex.InnerException.Message, HttpStatusCode.InternalServerError);
         }
     }
-    
+
     [HttpPost("logout")]
     public async Task<ActionResult<ApiResponse>> Logout([FromBody] TokenDto dto)
     {
@@ -78,12 +76,11 @@ public class AuthController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode((int)HttpStatusCode.InternalServerError,
-                ApiResponse.Error("An unexpected error occurred.",
-                    new Dictionary<string, List<string>> { { "Exception", new List<string> { ex.Message } } }));
+            return
+                ApiResponse.Error("internal", ex.InnerException.Message, HttpStatusCode.InternalServerError);
         }
     }
-    
+
     [HttpPost("refresh")]
     public async Task<ActionResult<ApiResponse>> RefreshTokens([FromBody] TokenDto dto)
     {
@@ -101,9 +98,8 @@ public class AuthController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode((int)HttpStatusCode.InternalServerError,
-                ApiResponse.Error("An unexpected error occurred.",
-                    new Dictionary<string, List<string>> { { "Exception", new List<string> { ex.Message } } }));
+            return
+                ApiResponse.Error("internal", ex.InnerException.Message, HttpStatusCode.InternalServerError);
         }
     }
 }
