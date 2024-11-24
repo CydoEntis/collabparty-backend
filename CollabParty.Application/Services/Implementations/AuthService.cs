@@ -103,7 +103,7 @@ public class AuthService : IAuthService
             return Result<LoginDto>.Failure(errors);
         }
 
-        await UnlockAndSetActiveAvatars(user);
+        await UnlockStarterAvatars(user);
         await SetNewUsersAvatar(user.Id, dto.AvatarId);
 
         var loginCredentialsDto = new LoginCredentialsDto
@@ -159,50 +159,47 @@ public class AuthService : IAuthService
     }
 
 
-    public async Task<Result<TokenDto>> RefreshTokens(TokenDto dto)
+public async Task<Result<TokenDto>> RefreshTokens(TokenDto dto)
+{
+    var foundSession = await _unitOfWork.Session.GetAsync(s => s.RefreshToken == dto.RefreshToken);
+    if (foundSession == null)
+        return Result<TokenDto>.Failure("refreshToken", new[] { "Refresh token not found." });
+
+    if (!CheckIfRefreshTokenIsValid(dto.RefreshToken, foundSession))
     {
-        var foundSession = await _unitOfWork.Session.GetAsync(s => s.RefreshToken == dto.RefreshToken);
-        if (foundSession == null)
-            return Result<TokenDto>.Failure("refreshToken", new[] { "Refresh token not found." });
-
-        var isAccessTokenValid = await
-            CheckIfAccessTokenIsValid(dto.AccessToken, foundSession.RefreshToken, foundSession.SessionId);
-        if (!isAccessTokenValid)
-        {
-            await InvalidateSession(foundSession);
-            return Result<TokenDto>.Failure("accessToken", new[] { "Invalid access token." });
-        }
-
-        if (!foundSession.IsValid)
-            await _unitOfWork.Session.InvalidateAllUsersTokens(foundSession.UserId, foundSession.SessionId);
-
-        if (foundSession.RefreshTokenExpiry < DateTime.UtcNow)
-        {
-            await InvalidateSession(foundSession);
-            return Result<TokenDto>.Failure("refreshToken", new[] { "Refresh token expired." });
-        }
-
-        var newRefreshToken = await CreateRefreshToken(foundSession.UserId, foundSession.SessionId);
         await InvalidateSession(foundSession);
-
-        var applicationUser = await _unitOfWork.User.GetAsync(u => u.Id == foundSession.UserId);
-
-        if (applicationUser == null)
-            return Result<TokenDto>.Failure("user", new[] { "User not found." });
-
-        var newAccessToken = CreateAccessToken(applicationUser, foundSession.SessionId);
-
-        var tokenDto = new TokenDto
-        {
-            AccessToken = newAccessToken,
-            RefreshToken = newRefreshToken
-        };
-
-        return Result<TokenDto>.Success(tokenDto); // Return new tokens in the success result.
+        return Result<TokenDto>.Failure("refreshToken", new[] { "Invalid refresh token." });
     }
 
+    var isAccessTokenValid = await CheckIfAccessTokenIsValid(dto.AccessToken, foundSession.UserId, foundSession.SessionId);
 
-    private async Task UnlockAndSetActiveAvatars(ApplicationUser user)
+
+    if (foundSession.RefreshTokenExpiry < DateTime.UtcNow && !isAccessTokenValid)
+    {
+        await InvalidateSession(foundSession);
+        return Result<TokenDto>.Failure("refreshToken", new[] { "Refresh token expired." });
+    }
+
+    var newRefreshToken = await CreateRefreshToken(foundSession.UserId, foundSession.SessionId);
+    await InvalidateSession(foundSession);
+
+    var applicationUser = await _unitOfWork.User.GetAsync(u => u.Id == foundSession.UserId);
+    if (applicationUser == null)
+        return Result<TokenDto>.Failure("user", new[] { "User not found." });
+
+    var newAccessToken = CreateAccessToken(applicationUser, foundSession.SessionId);
+
+    var tokenDto = new TokenDto
+    {
+        AccessToken = newAccessToken,
+        RefreshToken = newRefreshToken
+    };
+
+    return Result<TokenDto>.Success(tokenDto);
+}
+
+
+    private async Task UnlockStarterAvatars(ApplicationUser user)
     {
         var starterAvatars = await _unitOfWork.Avatar.GetAllAsync(a => a.Tier == 0);
 
@@ -232,7 +229,7 @@ public class AuthService : IAuthService
         }
     }
 
-    public string CreateAccessToken(ApplicationUser user, string sessionId)
+    private string CreateAccessToken(ApplicationUser user, string sessionId)
     {
         var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSecret));
         var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
@@ -246,7 +243,7 @@ public class AuthService : IAuthService
                     new Claim(JwtRegisteredClaimNames.Jti, sessionId),
                 }
             ),
-            Expires = DateTime.UtcNow.AddMinutes(60),
+            Expires = DateTime.UtcNow.AddMinutes(2),
             SigningCredentials = credentials
         };
 
@@ -254,32 +251,6 @@ public class AuthService : IAuthService
         var token = tokenHandler.CreateToken(tokenDescriptor);
         return token;
     }
-
-    // public string CreateAccessToken(ApplicationUser user, string sessionId)
-    // {
-    //     var tokenHandler = new JwtSecurityTokenHandler();
-    //     var key = Encoding.ASCII.GetBytes(_jwtSecret);
-    //
-    //     var tokenDescriptor = new SecurityTokenDescriptor
-    //     {
-    //         Subject = new ClaimsIdentity(new Claim[]
-    //         {
-    //             new Claim(ClaimTypes.Name, user.UserName.ToString()),
-    //             new Claim(JwtRegisteredClaimNames.Jti, sessionId),
-    //             new Claim(JwtRegisteredClaimNames.Sub, user.Id),
-    //         }),
-    //         Expires = DateTime.UtcNow.AddMinutes(30),
-    //         SigningCredentials = new(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature),
-    //         Issuer = "https://localhost:7059",
-    //         Audience = "http://localhost:5173/",
-    //     };
-    //
-    //     var token = tokenHandler.CreateToken(tokenDescriptor);
-    //     var tokenStr = tokenHandler.WriteToken(token);
-    //
-    //     return tokenStr;
-    // }
-
 
     private async Task<string> CreateRefreshToken(string userId, string sessionId)
     {
@@ -322,20 +293,16 @@ public class AuthService : IAuthService
 
             var tokenValidationResult = await tokenHandler.ValidateTokenAsync(accessToken, tokenValidationParameters);
 
-            // Extract the claims
             var userId = tokenValidationResult.Claims.FirstOrDefault(c => c.Key == "sub").Value?.ToString();
             var sessionId = tokenValidationResult.Claims.FirstOrDefault(c => c.Key == "jti").Value?.ToString();
 
-            // Return true if both userId and sessionId match
             return userId == expectedUserId && sessionId == expectedSessionId;
         }
         catch
         {
-            // Return false if there's any exception (invalid token)
             return false;
         }
     }
-
 
     private bool CheckIfRefreshTokenIsValid(string refreshToken, Session session)
     {

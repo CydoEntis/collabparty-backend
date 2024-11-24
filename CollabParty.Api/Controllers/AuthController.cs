@@ -98,7 +98,6 @@ public class AuthController : ControllerBase
 
             var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
             return BadRequest(ApiResponse.ValidationError(formattedErrors));
-            return Ok(ApiResponse.Success());
         }
         catch (Exception ex)
         {
