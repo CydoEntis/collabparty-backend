@@ -8,6 +8,6 @@ public class AvatarMappingProfile : Profile
 {
     public AvatarMappingProfile()
     {
-        CreateMap<Avatar, ActiveAvatarDto>().ReverseMap();
+        CreateMap<Avatar, UserAvatarDto>().ReverseMap();
     }
 }

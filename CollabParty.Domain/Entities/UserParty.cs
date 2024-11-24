@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using CollabParty.Domain.Enums;
 
 namespace CollabParty.Domain.Entities
 {
@@ -17,9 +18,9 @@ namespace CollabParty.Domain.Entities
 
         [Required]
         [MaxLength(50)]
-        public string Role { get; set; }
+        public UserRole Role { get; set; }
 
-        public DateTime JoinedAt { get; set; }
+        public DateTime JoinedAt { get; set; } = DateTime.UtcNow;
 
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     }

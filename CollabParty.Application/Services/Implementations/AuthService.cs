@@ -54,7 +54,7 @@ public class AuthService : IAuthService
         if (userAvatar == null)
             return Result<LoginDto>.Failure("avatar", new[] { "Active avatar not found for user" });
 
-        var avatarDto = _mapper.Map<ActiveAvatarDto>(userAvatar.Avatar);
+        var avatarDto = _mapper.Map<UserAvatarDto>(userAvatar.Avatar);
 
         var loginDto = _mapper.Map<LoginDto>(user);
         loginDto.Avatar = avatarDto;

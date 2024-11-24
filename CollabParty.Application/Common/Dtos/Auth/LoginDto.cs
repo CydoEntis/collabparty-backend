@@ -8,7 +8,7 @@ public class LoginDto
     public string Email { get; set; }
     public string Username { get; set; }
     public TokenDto Tokens { get; set; }
-    public ActiveAvatarDto Avatar { get; set; }
+    public UserAvatarDto Avatar { get; set; }
     public int Currency { get; set; }
     public int CurrentLevel { get; set; }
     public int CurrentExp { get; set; }

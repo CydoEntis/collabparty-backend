@@ -6,6 +6,11 @@ public class MappingConfig
 {
     public static MapperConfiguration RegisterMappings()
     {
-        return new MapperConfiguration(cfg => { cfg.AddProfile(new AuthMappingProfile()); });
+        return new MapperConfiguration(cfg =>
+        {
+            cfg.AddProfile(new AuthMappingProfile());
+            cfg.AddProfile(new AvatarMappingProfile());
+            cfg.AddProfile(new PartyMappingProfile());
+        });
     }
 }
