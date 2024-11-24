@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json;
 using CollabParty.Api.Mappings;
 using CollabParty.Application.Common.Validators.Auth;
+using CollabParty.Application.Common.Validators.Party;
 using CollabParty.Application.Services.Implementations;
 using CollabParty.Application.Services.Interfaces;
 using CollabParty.Domain.Entities;
@@ -70,6 +71,7 @@ builder.Services.AddFluentValidationAutoValidation()
 builder.Services.AddValidatorsFromAssemblyContaining<LoginCredentialsDtoValidator>();
 builder.Services.AddValidatorsFromAssemblyContaining<RegisterCredentialsDtoValidator>();
 builder.Services.AddValidatorsFromAssemblyContaining<TokenDtoValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<CreatePartyDtoValidator>();
 
 // JWT Authentication Configuration
 var jwtKey = builder.Configuration["JwtSecret"];
