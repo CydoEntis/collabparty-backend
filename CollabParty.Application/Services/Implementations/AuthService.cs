@@ -1,5 +1,4 @@
 ﻿using System.Text;
-using AutoMapper;
 using CollabParty.Application.Common.Dtos;
 using CollabParty.Application.Common.Dtos.Avatar;
 using CollabParty.Application.Common.Models;
@@ -8,6 +7,8 @@ using CollabParty.Domain.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using System.Security.Claims;
+using CollabParty.Application.Common.Dtos.Auth;
+using CollabParty.Application.Common.Mappings;
 using CollabParty.Domain.Entities;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
@@ -18,17 +19,15 @@ public class AuthService : IAuthService
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly UserManager<ApplicationUser> _userManager;
-    private readonly IMapper _mapper;
     private readonly string _jwtSecret;
     private readonly string _jwtAudience;
     private readonly string _jwtIssuer;
 
-    public AuthService(IUnitOfWork unitOfWork, UserManager<ApplicationUser> userManager, IMapper mapper,
+    public AuthService(IUnitOfWork unitOfWork, UserManager<ApplicationUser> userManager,
         IConfiguration configuration)
     {
         _unitOfWork = unitOfWork;
         _userManager = userManager;
-        _mapper = mapper;
         _jwtSecret = configuration["JwtSecret"];
         _jwtAudience = configuration["JwtAudience"];
         _jwtIssuer = configuration["JwtIssuer"];
@@ -55,18 +54,16 @@ public class AuthService : IAuthService
             ua => ua.UserId == user.Id && ua.IsActive,
             includeProperties: "Avatar");
 
+
         if (userAvatar == null)
             return Result<LoginDto>.Failure("avatar", new[] { "Active avatar not found for user" });
 
-        var avatarDto = _mapper.Map<UserAvatarDto>(userAvatar.Avatar);
-
-        var loginDto = _mapper.Map<LoginDto>(user);
-        loginDto.Avatar = avatarDto;
-        loginDto.Tokens = new TokenDto()
+        var tokens = new Tokens()
         {
             AccessToken = accessToken,
             RefreshToken = refreshToken,
         };
+        var loginDto = AuthMapper.ToLoginDto(user, tokens);
 
         return Result<LoginDto>.Success(loginDto);
     }
@@ -110,11 +107,7 @@ public class AuthService : IAuthService
         await UnlockStarterAvatars(user);
         await SetNewUsersAvatar(user.Id, dto.AvatarId);
 
-        var loginCredentialsDto = new LoginCredentialsDto
-        {
-            Email = dto.Email,
-            Password = dto.Password,
-        };
+        var loginCredentialsDto = AuthMapper.ToLoginCredentialsDto(dto);
 
         var loginResult = await Login(loginCredentialsDto);
         if (!loginResult.IsSuccess)
@@ -246,7 +239,6 @@ public class AuthService : IAuthService
                 {
                     new Claim(JwtRegisteredClaimNames.Sub, user.Id),
                     new Claim(JwtRegisteredClaimNames.Jti, sessionId),
-                    // new Claim(JwtRegisteredClaimNames.Aud, _jwtAudience)
                 }
             ),
             Expires = DateTime.UtcNow.AddMinutes(30),

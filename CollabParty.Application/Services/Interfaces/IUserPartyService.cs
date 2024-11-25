@@ -6,5 +6,5 @@ namespace CollabParty.Application.Services.Interfaces;
 
 public interface IUserPartyService
 {
-    Task<Result<UserParty>> AssignUserAndRole(string userId, int partyId, UserRole role);
+    // Task<Result<UserParty>> AssignUserAndRole(string userId, int partyId, UserRole role);
 }

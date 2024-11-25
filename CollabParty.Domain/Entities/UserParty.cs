@@ -6,8 +6,6 @@ namespace CollabParty.Domain.Entities
 {
     public class UserParty
     {
-        public int Id { get; set; }
-
         [ForeignKey("User")]
         public string UserId { get; set; }
         public ApplicationUser User { get; set; }

@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using System.Security.Claims;
 using CollabParty.Application.Common.Dtos.Party;
 using CollabParty.Application.Common.Models;
 using CollabParty.Application.Common.Utility;
@@ -20,23 +21,23 @@ public class PartyController : ControllerBase
         _partyService = partyService;
     }
 
-    [HttpPost]
-    public async Task<ActionResult<ApiResponse>> CreateParty([FromBody] CreatePartyDto dto)
-    {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
-
-        var userId = User.FindFirst("sub")?.Value;
-        
-        if (string.IsNullOrEmpty(userId))
-            return Unauthorized(ApiResponse.Error("authorization", "Unauthorized access.", HttpStatusCode.Unauthorized));
-
-        var result = await _partyService.CreateParty(userId, dto);
-
-        if (result.IsSuccess)
-            return Ok(ApiResponse.Success(result.Data));
-
-        var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
-        return BadRequest(ApiResponse.ValidationError(formattedErrors));
-    }
+    // [HttpPost]
+    // public async Task<ActionResult<ApiResponse>> CreateParty([FromBody] CreatePartyDto dto)
+    // {
+    //     if (!ModelState.IsValid)
+    //         return BadRequest(ModelState);
+    //
+    //     var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+    //     
+    //     if (string.IsNullOrEmpty(userId))
+    //         return Unauthorized(ApiResponse.Error("authorization", "Unauthorized access.", HttpStatusCode.Unauthorized));
+    //
+    //     var result = await _partyService.CreateParty(userId, dto);
+    //
+    //     if (result.IsSuccess)
+    //         return Ok(ApiResponse.Success(result.Data));
+    //
+    //     var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
+    //     return BadRequest(ApiResponse.ValidationError(formattedErrors));
+    // }
 }

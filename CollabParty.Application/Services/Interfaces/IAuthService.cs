@@ -1,4 +1,5 @@
 ﻿using CollabParty.Application.Common.Dtos;
+using CollabParty.Application.Common.Dtos.Auth;
 using CollabParty.Application.Common.Models;
 
 namespace CollabParty.Application.Services.Interfaces;

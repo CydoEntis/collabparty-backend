@@ -1,12 +1,10 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.Collections.Generic;
 using Microsoft.AspNetCore.Identity;
 
 namespace CollabParty.Domain.Entities
 {
     public class ApplicationUser : IdentityUser
     {
-
         [Required]
         public int CurrentLevel { get; set; } = 1;
 

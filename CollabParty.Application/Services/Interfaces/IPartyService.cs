@@ -5,5 +5,5 @@ namespace CollabParty.Application.Services.Interfaces;
 
 public interface IPartyService
 {
-    Task<Result<PartyDto>> CreateParty(string userId, CreatePartyDto dto);
+    // Task<Result<PartyDto>> CreateParty(string userId, CreatePartyDto dto);
 }

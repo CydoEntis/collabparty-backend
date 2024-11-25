@@ -1,6 +1,5 @@
 using System.Text;
 using System.Text.Json;
-using CollabParty.Api.Mappings;
 using CollabParty.Application.Common.Validators.Auth;
 using CollabParty.Application.Common.Validators.Party;
 using CollabParty.Application.Services.Implementations;
@@ -40,11 +39,12 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
     .AddDefaultTokenProviders();
 
 // AutoMapper Configuration
-builder.Services.AddAutoMapper(typeof(MappingConfig));
+// builder.Services.AddAutoMapper(typeof(MappingConfig));
 
 // Dependency Injection for Repositories and Services
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IUserPartyService, UserPartyService>();
 builder.Services.AddScoped<IPartyService, PartyService>();
 
 // Suppress Model State Validation for Custom Filters
@@ -91,7 +91,7 @@ builder.Services.AddAuthentication(options =>
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(jwtKey)),
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
             ValidateIssuer = true,
             ValidIssuer = jwtIssuer,
             ValidateAudience = true,
