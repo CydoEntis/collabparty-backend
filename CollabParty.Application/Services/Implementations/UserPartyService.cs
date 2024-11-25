@@ -182,4 +182,6 @@ public class UserPartyService : IUserPartyService
             return Result<List<MemberDto>>.Failure("An error occurred while updating member roles.");
         }
     }
+    // TODO: Add method to allow the logged in user to leave a party if they are part of that party.   
+    
 }

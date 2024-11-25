@@ -45,4 +45,42 @@ public class PartyService : IPartyService
             return Result<PartyDto>.Failure("An error occurred while creating the party.");
         }
     }
+    
+    // Todo: Add a method to Update A Party
+    
+    public async Task<Result<PartyDto>> UpdateParty(string userId, UpdatePartyDto dto)
+    {
+        try
+        {
+            var foundParty = await _unitOfWork.Party.GetAsync(
+                p => p.Id == dto.PartyId,
+                includeProperties: "UserParties.User.UserAvatars.Avatar");
+
+            if (foundParty == null)
+                return Result<PartyDto>.Failure($"No party found with ID {dto.PartyId}");
+
+            var userParty = foundParty.UserParties
+                .FirstOrDefault(up => up.UserId == userId && up.Role == UserRole.Leader);
+
+            if (userParty == null)
+                return Result<PartyDto>.Failure("Only a party leader can update the party");
+
+            foundParty.PartyName = dto.PartyName;
+            foundParty.Description = dto.Description;
+            foundParty.UpdatedAt = DateTime.UtcNow;
+
+            var updatedParty = await _unitOfWork.Party.UpdateAsync(foundParty);
+
+            var partyDto = PartyMapper.ToPartyDto(updatedParty);
+            return Result<PartyDto>.Success(partyDto);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update party.");
+            return Result<PartyDto>.Failure("An error occurred while updating the party.");
+        }
+    }
+
+    
+    // Todo Add a method to Delete a party. - Deleting should also delete all the records in the UserParty table for that Party.
 }

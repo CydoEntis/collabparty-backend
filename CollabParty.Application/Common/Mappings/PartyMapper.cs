@@ -31,6 +31,7 @@ public static class PartyMapper
         {
             Id = userParty.Party.Id,
             PartyName = userParty.Party.PartyName,
+            Description = userParty.Party.Description,
             CreatedAt = userParty.Party.CreatedAt,
             UpdatedAt = userParty.Party.UpdatedAt,
             Members = MemberMapper.ToMemberDtoList(userParty.Party.UserParties)
