@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace CollabParty.Api.Controllers;
 
-[Route("api/party")]
+[Route("api/parties")]
 [ApiController]
 [Authorize]
 public class PartyController : ControllerBase
@@ -72,6 +72,24 @@ public class PartyController : ControllerBase
                 HttpStatusCode.Unauthorized));
 
         var result = await _userPartyService.GetParty(userId, partyId);
+
+        if (result.IsSuccess)
+            return Ok(ApiResponse.Success(result.Data));
+
+        var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
+        return BadRequest(ApiResponse.ValidationError(formattedErrors));
+    }
+    
+    [HttpGet("{partyId:int}/members")]
+    public async Task<ActionResult<ApiResponse>> GetPartyMembers(int partyId)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized(ApiResponse.Error("authorization", "Unauthorized access.",
+                HttpStatusCode.Unauthorized));
+
+        var result = await _userPartyService.GetPartyMembers(userId, partyId);
 
         if (result.IsSuccess)
             return Ok(ApiResponse.Success(result.Data));

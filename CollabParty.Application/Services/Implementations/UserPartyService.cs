@@ -1,4 +1,5 @@
 ﻿using CollabParty.Application.Common.Dtos.Party;
+using CollabParty.Application.Common.Dtos.User;
 using CollabParty.Application.Common.Mappings;
 using CollabParty.Application.Common.Models;
 using CollabParty.Application.Services.Interfaces;
@@ -85,23 +86,23 @@ public class UserPartyService : IUserPartyService
         }
     }
 
-    public async Task<Result<PartyDto>> GetPartyMembers(string userId, int partyId)
+    public async Task<Result<List<UserDto>>> GetPartyMembers(string userId, int partyId)
     {
         try
         {
             var foundParty = await _unitOfWork.UserParty.GetAsync(up => up.PartyId == partyId && up.UserId == userId,
-                includeProperties: "User.UserAvatars.Avatar");
+                includeProperties: "Party,User.UserAvatars.Avatar");
 
             if (foundParty == null)
-                return Result<PartyDto>.Failure($"No party with the {partyId} exists");
+                return Result<List<UserDto>>.Failure($"No party with the {partyId} exists");
 
-            var partyDto = PartyMapper.ToPartyDto(foundParty);
-            return Result<PartyDto>.Success(partyDto);
+            var partyDto = UserMapper.ToUserDtoList(foundParty.Party.UserParties);
+            return Result<List<UserDto>>.Success(partyDto);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to get party members");
-            return Result<PartyDto>.Failure("An error occurred while fetching party members.");
+            return Result<List<UserDto>>.Failure("An error occurred while fetching party members.");
         }
     }
 }
