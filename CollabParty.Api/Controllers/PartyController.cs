@@ -80,7 +80,7 @@ public class PartyController : ControllerBase
         var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
         return BadRequest(ApiResponse.ValidationError(formattedErrors));
     }
-    
+
     [HttpGet("{partyId:int}/members")]
     public async Task<ActionResult<ApiResponse>> GetPartyMembers(int partyId)
     {
@@ -98,7 +98,7 @@ public class PartyController : ControllerBase
         var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
         return BadRequest(ApiResponse.ValidationError(formattedErrors));
     }
-    
+
     [HttpDelete("{partyId:int}/members")]
     public async Task<ActionResult<ApiResponse>> RemovePartyMembers(int partyId, [FromBody] RemoverUserFromPartyDto dto)
     {
@@ -109,6 +109,25 @@ public class PartyController : ControllerBase
                 HttpStatusCode.Unauthorized));
 
         var result = await _userPartyService.RemovePartyMembers(userId, partyId, dto);
+
+        if (result.IsSuccess)
+            return Ok(ApiResponse.Success(result.Data));
+
+        var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
+        return BadRequest(ApiResponse.ValidationError(formattedErrors));
+    }
+
+    [HttpPut("{partyId:int}/members/change-role")]
+    public async Task<ActionResult<ApiResponse>> UpdatePartyMembersRole(int partyId,
+        [FromBody] UpdatePartyMembersRoleDto dto)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized(ApiResponse.Error("authorization", "Unauthorized access.",
+                HttpStatusCode.Unauthorized));
+
+        var result = await _userPartyService.UpdatePartyMemberRoles(userId, partyId, dto);
 
         if (result.IsSuccess)
             return Ok(ApiResponse.Success(result.Data));

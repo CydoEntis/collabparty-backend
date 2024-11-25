@@ -1,5 +1,4 @@
 ﻿using CollabParty.Application.Common.Dtos.Party;
-using CollabParty.Application.Common.Dtos.User;
 using CollabParty.Domain.Entities;
 
 namespace CollabParty.Application.Common.Mappings;
@@ -22,7 +21,7 @@ public static class PartyMapper
             PartyName = party.PartyName,
             CreatedAt = party.CreatedAt,
             UpdatedAt = party.UpdatedAt,
-            Members = party.UserParties.Select(ua => ua.User).Select(user => UserMapper.ToUserDto(user)).ToList()
+            Members = MemberMapper.ToMemberDtoList(party.UserParties)
         };
     }
 
@@ -34,9 +33,7 @@ public static class PartyMapper
             PartyName = userParty.Party.PartyName,
             CreatedAt = userParty.Party.CreatedAt,
             UpdatedAt = userParty.Party.UpdatedAt,
-            Members = userParty.Party.UserParties
-                .Select(up => UserMapper.ToUserDto(up.User))
-                .ToList()
+            Members = MemberMapper.ToMemberDtoList(userParty.Party.UserParties)
         };
     }
 }

@@ -87,7 +87,7 @@ public class UserPartyService : IUserPartyService
         }
     }
 
-    public async Task<Result<List<UserDto>>> GetPartyMembers(string userId, int partyId)
+    public async Task<Result<List<MemberDto>>> GetPartyMembers(string userId, int partyId)
     {
         try
         {
@@ -95,19 +95,19 @@ public class UserPartyService : IUserPartyService
                 includeProperties: "Party,User.UserAvatars.Avatar");
 
             if (foundParty == null)
-                return Result<List<UserDto>>.Failure($"No party with the {partyId} exists");
+                return Result<List<MemberDto>>.Failure($"No party with the {partyId} exists");
 
-            var partyDto = UserMapper.ToUserDtoList(foundParty.Party.UserParties);
-            return Result<List<UserDto>>.Success(partyDto);
+            var memberDto = MemberMapper.ToMemberDtoList(foundParty.Party.UserParties);
+            return Result<List<MemberDto>>.Success(memberDto);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to get party members");
-            return Result<List<UserDto>>.Failure("An error occurred while fetching party members.");
+            return Result<List<MemberDto>>.Failure("An error occurred while fetching party members.");
         }
     }
 
-    public async Task<Result<List<UserDto>>> RemovePartyMembers(string userId, int partyId, RemoverUserFromPartyDto dto)
+    public async Task<Result<List<MemberDto>>> RemovePartyMembers(string userId, int partyId, RemoverUserFromPartyDto dto)
     {
         try
         {
@@ -116,10 +116,10 @@ public class UserPartyService : IUserPartyService
                 includeProperties: "Party,User.UserAvatars.Avatar");
 
             if (foundParty == null)
-                return Result<List<UserDto>>.Failure($"No party with the {dto.PartyId} exists");
+                return Result<List<MemberDto>>.Failure($"No party with the {dto.PartyId} exists");
 
             if (foundParty.Role == UserRole.Member)
-                return Result<List<UserDto>>.Failure("User must have a role of Leader or Captain to remove members");
+                return Result<List<MemberDto>>.Failure("User must have a role of Leader or Captain to remove members");
 
             var usersToRemove = await _unitOfWork.UserParty.GetAllAsync(
                 up => up.PartyId == dto.PartyId && dto.UserIds.Contains(up.UserId));
@@ -127,17 +127,59 @@ public class UserPartyService : IUserPartyService
             var usersToRemoveList = usersToRemove.ToList();
 
             if (!usersToRemoveList.Any())
-                return Result<List<UserDto>>.Failure("Users to remove could not be found");
+                return Result<List<MemberDto>>.Failure("Users to remove could not be found");
 
             await _unitOfWork.UserParty.RemoveUsersAsync(usersToRemoveList);
 
-            var partyDto = UserMapper.ToUserDtoList(usersToRemoveList);
-            return Result<List<UserDto>>.Success(partyDto);
+            var memberDtos = MemberMapper.ToMemberDtoList(usersToRemoveList);
+            return Result<List<MemberDto>>.Success(memberDtos);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to get party members");
-            return Result<List<UserDto>>.Failure("An error occurred while fetching party members.");
+            return Result<List<MemberDto>>.Failure("An error occurred while fetching party members.");
+        }
+    }
+
+    public async Task<Result<List<MemberDto>>> UpdatePartyMemberRoles(string userId, int partyId, UpdatePartyMembersRoleDto dto)
+    {
+        try
+        {
+            var foundParty = await _unitOfWork.UserParty.GetAsync(
+                up => up.PartyId == partyId && up.UserId == userId,
+                includeProperties: "Party,User.UserAvatars.Avatar");
+
+            if (foundParty == null)
+                return Result<List<MemberDto>>.Failure($"No party with ID {partyId} exists");
+
+            if (foundParty.Role == UserRole.Member)
+                return Result<List<MemberDto>>.Failure("User must have a role of Leader or Captain to update member roles");
+
+            var allPartyMembers = await _unitOfWork.UserParty
+                .GetAllAsync(up => up.PartyId == partyId);
+
+            var usersToUpdate = allPartyMembers
+                .Where(up => dto.NewRoles.Any(nr => nr.UserId == up.UserId))
+                .ToList();
+
+            if (!usersToUpdate.Any())
+                return Result<List<MemberDto>>.Failure("No matching users found to update roles");
+
+            foreach (var user in usersToUpdate)
+            {
+                var newRole = dto.NewRoles.First(nr => nr.UserId == user.UserId).Role;
+                user.Role = newRole; 
+            }
+
+            await _unitOfWork.UserParty.UpdateUsersAsync(usersToUpdate);
+
+            var updatedMemberDtos = MemberMapper.ToMemberDtoList(usersToUpdate);
+            return Result<List<MemberDto>>.Success(updatedMemberDtos);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update party member roles");
+            return Result<List<MemberDto>>.Failure("An error occurred while updating member roles.");
         }
     }
 }

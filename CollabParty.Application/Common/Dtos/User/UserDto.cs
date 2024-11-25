@@ -1,4 +1,4 @@
-﻿using CollabParty.Application.Common.Dtos.Avatar;
+using CollabParty.Application.Common.Dtos.Avatar;
 
 namespace CollabParty.Application.Common.Dtos.User;
 public class UserDto

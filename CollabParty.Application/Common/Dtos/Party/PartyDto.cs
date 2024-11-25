@@ -1,4 +1,5 @@
 ﻿using CollabParty.Application.Common.Dtos.Avatar;
+using CollabParty.Application.Common.Dtos.Member;
 using CollabParty.Application.Common.Dtos.User;
 
 namespace CollabParty.Application.Common.Dtos.Party;
@@ -9,7 +10,7 @@ public class PartyDto
     public string  PartyName { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
-    public List<UserDto> Members { get; set; }
+    public List<MemberDto> Members { get; set; }
     // public int TotalMembers { get; set; }
     // public int TotalQuests { get; set; }
     // public int CompletedQuests { get; set; }

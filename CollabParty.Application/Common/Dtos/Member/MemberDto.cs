@@ -5,9 +5,9 @@ namespace CollabParty.Application.Common.Dtos.Member;
 
 public class MemberDto
 {
-    public int Id { get; set; }
+    public string Id { get; set; }
     public string Username { get; set; }
+    public int CurrentLevel { get; set; }
     public UserRole Role { get; set; }
     public AvatarDto Avatar { get; set; }
-    public DateTime JoinedAt { get; set; }
 }
