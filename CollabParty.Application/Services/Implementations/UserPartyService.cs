@@ -182,6 +182,29 @@ public class UserPartyService : IUserPartyService
             return Result<List<MemberDto>>.Failure("An error occurred while updating member roles.");
         }
     }
-    // TODO: Add method to allow the logged in user to leave a party if they are part of that party.   
+    
+    public async Task<Result> LeaveParty(string userId, int partyId)
+    {
+        try
+        {
+            var foundParty = await _unitOfWork.UserParty.GetAsync(
+                up => up.PartyId == partyId && up.UserId == userId,
+                includeProperties: "Party,User.UserAvatars.Avatar");
+
+            if (foundParty == null)
+                return Result.Failure($"No party with ID {partyId} exists");
+
+
+            await _unitOfWork.UserParty.RemoveAsync(foundParty);
+
+            return Result.Success();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update party member roles");
+            return Result.Failure("An error occurred while updating member roles.");
+        }
+    }
+
     
 }

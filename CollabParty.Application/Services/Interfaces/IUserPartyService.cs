@@ -17,4 +17,6 @@ public interface IUserPartyService
     Task<Result<List<MemberDto>>> RemovePartyMembers(string userId, int partyId, RemoverUserFromPartyDto dto);
     Task<Result<List<MemberDto>>> UpdatePartyMemberRoles(string userId, int partyId,
         UpdatePartyMembersRoleDto dto);
+
+    Task<Result> LeaveParty(string userId, int partyId);
 }

@@ -135,4 +135,22 @@ public class UserPartyController : ControllerBase
         var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
         return BadRequest(ApiResponse.ValidationError(formattedErrors));
     }
+
+    [HttpDelete("{partyId:int}/leave")]
+    public async Task<ActionResult<ApiResponse>> LeaveParty(int partyId)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized(ApiResponse.Error("authorization", "Unauthorized access.",
+                HttpStatusCode.Unauthorized));
+
+        var result = await _userPartyService.LeaveParty(userId, partyId);
+
+        if (result.IsSuccess)
+            return Ok(ApiResponse.Success());
+
+        var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
+        return BadRequest(ApiResponse.ValidationError(formattedErrors));
+    }
 }
