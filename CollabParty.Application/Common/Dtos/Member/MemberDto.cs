@@ -8,6 +8,6 @@ public class MemberDto
     public int Id { get; set; }
     public string Username { get; set; }
     public UserRole Role { get; set; }
-    public UserAvatarDto Avatar { get; set; }
+    public AvatarDto Avatar { get; set; }
     public DateTime JoinedAt { get; set; }
 }

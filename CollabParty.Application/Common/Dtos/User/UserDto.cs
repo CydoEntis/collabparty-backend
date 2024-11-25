@@ -8,5 +8,5 @@ public class UserDto
     public int CurrentLevel { get; set; }
     public int CurrentExp { get; set; }
     public int ExpToNextLevel { get; set; }
-    public UserAvatarDto Avatar { get; set; }
+    public AvatarDto Avatar { get; set; }
 }

@@ -17,7 +17,14 @@ public static class UserMapper
             CurrentLevel = user.CurrentLevel,
             CurrentExp = user.CurrentExp,
             ExpToNextLevel = user.ExpToNextLevel,
-            Avatar = AvatarMapper.ToUserAvatarDto(activeAvatar),
+            Avatar = AvatarMapper.ToAvatarDto(activeAvatar),
         };
+    }
+    
+    public static List<UserDto> ToUserDtoList(IEnumerable<UserParty> userParties)
+    {
+        return userParties
+            .Select(userParty => ToUserDto(userParty.User))
+            .ToList();
     }
 }

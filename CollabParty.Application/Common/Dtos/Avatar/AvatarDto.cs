@@ -1,6 +1,6 @@
 ﻿namespace CollabParty.Application.Common.Dtos.Avatar;
 
-public class UserAvatarDto
+public class AvatarDto
 {
     public string Name{ get; set; }
     public string DisplayName { get; set; }

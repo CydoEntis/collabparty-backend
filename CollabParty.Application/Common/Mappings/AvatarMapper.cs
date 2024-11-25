@@ -5,9 +5,9 @@ namespace CollabParty.Application.Common.Mappings;
 
 public static class AvatarMapper
 {
-    public static UserAvatarDto ToUserAvatarDto(Avatar avatar)
+    public static AvatarDto ToAvatarDto(Avatar avatar)
     {
-        return new UserAvatarDto
+        return new AvatarDto
         {
             Name = avatar.Name,
             DisplayName = avatar.DisplayName,

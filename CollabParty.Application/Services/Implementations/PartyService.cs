@@ -1,5 +1,6 @@
 ﻿using CollabParty.Application.Common.Dtos.Avatar;
 using CollabParty.Application.Common.Dtos.Party;
+using CollabParty.Application.Common.Mappings;
 using CollabParty.Application.Common.Models;
 using CollabParty.Application.Services.Interfaces;
 using CollabParty.Domain.Entities;
@@ -23,44 +24,25 @@ public class PartyService : IPartyService
         _logger = logger;
     }
 
-    // public async Task<Result<PartyDto>> CreateParty(string userId, CreatePartyDto dto)
-    // {
-    //     try
-    //     {
-    //         var newParty = _mapper.Map<Party>(dto);
-    //         Party createdParty = await _unitOfWork.Party.CreateAsync(newParty);
-    //
-    //         var newUserParty = await _userPartyService.AssignUserAndRole(userId, createdParty.Id, UserRole.Leader);
-    //
-    //         var partyResult = await GetParty(newParty.Id);
-    //
-    //         var partyDto = _mapper.Map<PartyDto>(partyResult.Data);
-    //         return Result<PartyDto>.Success(partyDto);
-    //     }
-    //     catch (Exception ex)
-    //     {
-    //         _logger.LogError(ex, "Failed to assign user to party.");
-    //         return Result<PartyDto>.Failure("An error occurred while creating the party.");
-    //     }
-    // }
-    //
-    //
-    //
-    // public async Task<Result<Party>> GetParty(int partyId)
-    // {
-    //     try
-    //     {
-    //         Party foundParty = await _unitOfWork.Party.GetAsync(p => p.Id == partyId, includeProperties: "UserParties.User.UserAvatars");
-    //         
-    //         if(foundParty == null)
-    //             return Result<Party>.Failure($"No party with the {partyId} exists");
-    //         
-    //         return Result<Party>.Success(foundParty);
-    //     }
-    //     catch (Exception ex)
-    //     {
-    //         _logger.LogError(ex, "Failed to assign user to party.");
-    //         return Result<Party>.Failure("An error occurred while creating party.");
-    //     }
-    // }
+    public async Task<Result<PartyDto>> CreateParty(string userId, CreatePartyDto dto)
+    {
+        try
+        {
+            var newParty = PartyMapper.FromCreatePartyDto(dto);
+            Party createdParty = await _unitOfWork.Party.CreateAsync(newParty);
+
+            await _userPartyService.AssignUserAndRole(userId, createdParty.Id, UserRole.Leader);
+
+            var foundParty = await _unitOfWork.Party.GetAsync(p => p.Id == newParty.Id,
+                includeProperties: "User.UserAvatars.Avatar");
+
+            var partyDto = PartyMapper.ToPartyDto(foundParty);
+            return Result<PartyDto>.Success(partyDto);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to assign user to party.");
+            return Result<PartyDto>.Failure("An error occurred while creating the party.");
+        }
+    }
 }
