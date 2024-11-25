@@ -20,6 +20,8 @@ public class AuthService : IAuthService
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IMapper _mapper;
     private readonly string _jwtSecret;
+    private readonly string _jwtAudience;
+    private readonly string _jwtIssuer;
 
     public AuthService(IUnitOfWork unitOfWork, UserManager<ApplicationUser> userManager, IMapper mapper,
         IConfiguration configuration)
@@ -28,6 +30,8 @@ public class AuthService : IAuthService
         _userManager = userManager;
         _mapper = mapper;
         _jwtSecret = configuration["JwtSecret"];
+        _jwtAudience = configuration["JwtAudience"];
+        _jwtIssuer = configuration["JwtIssuer"];
     }
 
     public async Task<Result<LoginDto>> Login(LoginCredentialsDto dto)
@@ -159,44 +163,45 @@ public class AuthService : IAuthService
     }
 
 
-public async Task<Result<TokenDto>> RefreshTokens(TokenDto dto)
-{
-    var foundSession = await _unitOfWork.Session.GetAsync(s => s.RefreshToken == dto.RefreshToken);
-    if (foundSession == null)
-        return Result<TokenDto>.Failure("refreshToken", new[] { "Refresh token not found." });
-
-    if (!CheckIfRefreshTokenIsValid(dto.RefreshToken, foundSession))
+    public async Task<Result<TokenDto>> RefreshTokens(TokenDto dto)
     {
+        var foundSession = await _unitOfWork.Session.GetAsync(s => s.RefreshToken == dto.RefreshToken);
+        if (foundSession == null)
+            return Result<TokenDto>.Failure("refreshToken", new[] { "Refresh token not found." });
+
+        if (!CheckIfRefreshTokenIsValid(dto.RefreshToken, foundSession))
+        {
+            await InvalidateSession(foundSession);
+            return Result<TokenDto>.Failure("refreshToken", new[] { "Invalid refresh token." });
+        }
+
+        var isAccessTokenValid =
+            await CheckIfAccessTokenIsValid(dto.AccessToken, foundSession.UserId, foundSession.SessionId);
+
+
+        if (foundSession.RefreshTokenExpiry < DateTime.UtcNow && !isAccessTokenValid)
+        {
+            await InvalidateSession(foundSession);
+            return Result<TokenDto>.Failure("refreshToken", new[] { "Refresh token expired." });
+        }
+
+        var newRefreshToken = await CreateRefreshToken(foundSession.UserId, foundSession.SessionId);
         await InvalidateSession(foundSession);
-        return Result<TokenDto>.Failure("refreshToken", new[] { "Invalid refresh token." });
+
+        var applicationUser = await _unitOfWork.User.GetAsync(u => u.Id == foundSession.UserId);
+        if (applicationUser == null)
+            return Result<TokenDto>.Failure("user", new[] { "User not found." });
+
+        var newAccessToken = CreateAccessToken(applicationUser, foundSession.SessionId);
+
+        var tokenDto = new TokenDto
+        {
+            AccessToken = newAccessToken,
+            RefreshToken = newRefreshToken
+        };
+
+        return Result<TokenDto>.Success(tokenDto);
     }
-
-    var isAccessTokenValid = await CheckIfAccessTokenIsValid(dto.AccessToken, foundSession.UserId, foundSession.SessionId);
-
-
-    if (foundSession.RefreshTokenExpiry < DateTime.UtcNow && !isAccessTokenValid)
-    {
-        await InvalidateSession(foundSession);
-        return Result<TokenDto>.Failure("refreshToken", new[] { "Refresh token expired." });
-    }
-
-    var newRefreshToken = await CreateRefreshToken(foundSession.UserId, foundSession.SessionId);
-    await InvalidateSession(foundSession);
-
-    var applicationUser = await _unitOfWork.User.GetAsync(u => u.Id == foundSession.UserId);
-    if (applicationUser == null)
-        return Result<TokenDto>.Failure("user", new[] { "User not found." });
-
-    var newAccessToken = CreateAccessToken(applicationUser, foundSession.SessionId);
-
-    var tokenDto = new TokenDto
-    {
-        AccessToken = newAccessToken,
-        RefreshToken = newRefreshToken
-    };
-
-    return Result<TokenDto>.Success(tokenDto);
-}
 
 
     private async Task UnlockStarterAvatars(ApplicationUser user)
@@ -241,10 +246,13 @@ public async Task<Result<TokenDto>> RefreshTokens(TokenDto dto)
                 {
                     new Claim(JwtRegisteredClaimNames.Sub, user.Id),
                     new Claim(JwtRegisteredClaimNames.Jti, sessionId),
+                    // new Claim(JwtRegisteredClaimNames.Aud, _jwtAudience)
                 }
             ),
-            Expires = DateTime.UtcNow.AddMinutes(2),
-            SigningCredentials = credentials
+            Expires = DateTime.UtcNow.AddMinutes(30),
+            SigningCredentials = credentials,
+            Audience = _jwtAudience,
+            Issuer = _jwtIssuer
         };
 
         var tokenHandler = new JsonWebTokenHandler();

@@ -45,6 +45,7 @@ builder.Services.AddAutoMapper(typeof(MappingConfig));
 // Dependency Injection for Repositories and Services
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IPartyService, PartyService>();
 
 // Suppress Model State Validation for Custom Filters
 builder.Services.Configure<ApiBehaviorOptions>(options =>
@@ -96,6 +97,23 @@ builder.Services.AddAuthentication(options =>
             ValidateAudience = true,
             ValidAudience = jwtAudience,
             ClockSkew = TimeSpan.Zero,
+        };
+
+        // Add custom logging for validation failures
+        options.Events = new JwtBearerEvents
+        {
+            OnAuthenticationFailed = context =>
+            {
+                // Log the error or handle it in some way
+                Console.WriteLine("Authentication failed: " + context.Exception.Message);
+                return Task.CompletedTask;
+            },
+            OnTokenValidated = context =>
+            {
+                // Optionally log token validation success here
+                Console.WriteLine("Token validated successfully.");
+                return Task.CompletedTask;
+            }
         };
     });
 
