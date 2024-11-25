@@ -20,4 +20,13 @@ public class UserPartyRepository : BaseRepository<UserParty>, IUserPartyReposito
         await _db.SaveChangesAsync();
         return entity;
     }
+    
+    public async Task RemoveUsersAsync(List<UserParty> userParties)
+    {
+        if (userParties == null || !userParties.Any())
+            throw new ArgumentException("The userParties list cannot be null or empty.", nameof(userParties));
+
+        _db.UserParties.RemoveRange(userParties);
+        await _db.SaveChangesAsync();
+    }
 }

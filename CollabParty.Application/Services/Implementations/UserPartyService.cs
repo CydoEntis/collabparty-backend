@@ -1,4 +1,5 @@
-﻿using CollabParty.Application.Common.Dtos.Party;
+﻿using CollabParty.Application.Common.Dtos.Member;
+using CollabParty.Application.Common.Dtos.Party;
 using CollabParty.Application.Common.Dtos.User;
 using CollabParty.Application.Common.Mappings;
 using CollabParty.Application.Common.Models;
@@ -97,6 +98,40 @@ public class UserPartyService : IUserPartyService
                 return Result<List<UserDto>>.Failure($"No party with the {partyId} exists");
 
             var partyDto = UserMapper.ToUserDtoList(foundParty.Party.UserParties);
+            return Result<List<UserDto>>.Success(partyDto);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get party members");
+            return Result<List<UserDto>>.Failure("An error occurred while fetching party members.");
+        }
+    }
+
+    public async Task<Result<List<UserDto>>> RemovePartyMembers(string userId, int partyId, RemoverUserFromPartyDto dto)
+    {
+        try
+        {
+            var foundParty = await _unitOfWork.UserParty.GetAsync(
+                up => up.PartyId == partyId && up.UserId == userId,
+                includeProperties: "Party,User.UserAvatars.Avatar");
+
+            if (foundParty == null)
+                return Result<List<UserDto>>.Failure($"No party with the {dto.PartyId} exists");
+
+            if (foundParty.Role == UserRole.Member)
+                return Result<List<UserDto>>.Failure("User must have a role of Leader or Captain to remove members");
+
+            var usersToRemove = await _unitOfWork.UserParty.GetAllAsync(
+                up => up.PartyId == dto.PartyId && dto.UserIds.Contains(up.UserId));
+
+            var usersToRemoveList = usersToRemove.ToList();
+
+            if (!usersToRemoveList.Any())
+                return Result<List<UserDto>>.Failure("Users to remove could not be found");
+
+            await _unitOfWork.UserParty.RemoveUsersAsync(usersToRemoveList);
+
+            var partyDto = UserMapper.ToUserDtoList(usersToRemoveList);
             return Result<List<UserDto>>.Success(partyDto);
         }
         catch (Exception ex)

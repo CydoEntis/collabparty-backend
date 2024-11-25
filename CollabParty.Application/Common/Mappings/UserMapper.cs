@@ -27,4 +27,22 @@ public static class UserMapper
             .Select(userParty => ToUserDto(userParty.User))
             .ToList();
     }
+
+    // public static User FromRemoveUserFromPartyDto(RemoverUserFromPartyDto dto)
+    // {
+    //     return new User
+    //     {
+    //         Id = user.Id,
+    //         Username = user.UserName,
+    //         CurrentLevel = user.CurrentLevel,
+    //         CurrentExp = user.CurrentExp,
+    //         ExpToNextLevel = user.ExpToNextLevel,
+    //         Avatar = AvatarMapper.ToAvatarDto(activeAvatar),
+    //     };
+    // }
+    //
+    // public static List<UserParty> FromRemoveUserDtoList(IEnumerable<RemoverUserFromPartyDto> dtos)
+    // {
+    //     return userParties.Select(user => From)
+    // }
 }
