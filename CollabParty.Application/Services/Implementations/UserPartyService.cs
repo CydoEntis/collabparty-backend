@@ -1,4 +1,6 @@
-﻿using CollabParty.Application.Common.Dtos.Member;
+﻿using CollabParty.Application.Common;
+using CollabParty.Application.Common.Dtos;
+using CollabParty.Application.Common.Dtos.Member;
 using CollabParty.Application.Common.Dtos.Party;
 using CollabParty.Application.Common.Dtos.User;
 using CollabParty.Application.Common.Mappings;
@@ -49,14 +51,31 @@ public class UserPartyService : IUserPartyService
         }
     }
 
-    public async Task<Result<List<PartyDto>>> GetAllPartiesForUser(string userId)
+    public async Task<Result<List<PartyDto>>> GetAllPartiesForUser(string userId, QueryParamsDto dto)
     {
         try
         {
-            var parties = await _unitOfWork.UserParty.GetAllAsync(up => up.UserId == userId,
-                includeProperties: "Party,User.UserAvatars.Avatar");
+            var queryParams = new QueryParams<UserParty>
+            {
+                SearchTerm = dto.SearchTerm,
+                SortDirection = dto.SortDirection,
+                SortField = dto.SortField,
+                DateFilterField = dto.DateFilterField,
+                StartDate = dto.StartDate,
+                EndDate = dto.EndDate,
+                PageNumber = dto.PageNumber,
+                PageSize = dto.PageSize,
+                IncludeProperties = "Party,User.UserAvatars.Avatar",
+                Filter = up => up.UserId == userId,
+            };
 
-            var partyDtos = parties.Select(p => PartyMapper.ToPartyDto(p.Party)).ToList();
+
+            // var parties = await _unitOfWork.UserParty.GetAllAsync(up => up.UserId == userId,
+            //     includeProperties: "Party,User.UserAvatars.Avatar");
+
+            var paginatedResult = await _unitOfWork.UserParty.GetPaginatedAsync(queryParams);
+            
+            // var partyDtos = parties.Select(p => PartyMapper.ToPartyDto(p.Party)).ToList();
 
             return Result<List<PartyDto>>.Success(partyDtos);
         }
@@ -107,7 +126,8 @@ public class UserPartyService : IUserPartyService
         }
     }
 
-    public async Task<Result<List<MemberDto>>> RemovePartyMembers(string userId, int partyId, RemoverUserFromPartyDto dto)
+    public async Task<Result<List<MemberDto>>> RemovePartyMembers(string userId, int partyId,
+        RemoverUserFromPartyDto dto)
     {
         try
         {
@@ -141,7 +161,8 @@ public class UserPartyService : IUserPartyService
         }
     }
 
-    public async Task<Result<List<MemberDto>>> UpdatePartyMemberRoles(string userId, int partyId, UpdatePartyMembersRoleDto dto)
+    public async Task<Result<List<MemberDto>>> UpdatePartyMemberRoles(string userId, int partyId,
+        UpdatePartyMembersRoleDto dto)
     {
         try
         {
@@ -153,7 +174,8 @@ public class UserPartyService : IUserPartyService
                 return Result<List<MemberDto>>.Failure($"No party with ID {partyId} exists");
 
             if (foundParty.Role == UserRole.Member)
-                return Result<List<MemberDto>>.Failure("User must have a role of Leader or Captain to update member roles");
+                return Result<List<MemberDto>>.Failure(
+                    "User must have a role of Leader or Captain to update member roles");
 
             var allPartyMembers = await _unitOfWork.UserParty
                 .GetAllAsync(up => up.PartyId == partyId);
@@ -168,7 +190,7 @@ public class UserPartyService : IUserPartyService
             foreach (var user in usersToUpdate)
             {
                 var newRole = dto.NewRoles.First(nr => nr.UserId == user.UserId).Role;
-                user.Role = newRole; 
+                user.Role = newRole;
             }
 
             await _unitOfWork.UserParty.UpdateUsersAsync(usersToUpdate);
@@ -182,7 +204,7 @@ public class UserPartyService : IUserPartyService
             return Result<List<MemberDto>>.Failure("An error occurred while updating member roles.");
         }
     }
-    
+
     public async Task<Result> LeaveParty(string userId, int partyId)
     {
         try
@@ -205,6 +227,4 @@ public class UserPartyService : IUserPartyService
             return Result.Failure("An error occurred while updating member roles.");
         }
     }
-
-    
 }
