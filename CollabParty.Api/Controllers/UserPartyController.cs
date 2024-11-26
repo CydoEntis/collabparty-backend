@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Security.Claims;
+using CollabParty.Application.Common.Dtos;
 using CollabParty.Application.Common.Dtos.Party;
 using CollabParty.Application.Common.Dtos.User;
 using CollabParty.Application.Common.Models;
@@ -46,7 +47,7 @@ public class UserPartyController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<ApiResponse>> GetParties()
+    public async Task<ActionResult<ApiResponse>> GetParties([FromBody] QueryParamsDto dto)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
@@ -54,7 +55,7 @@ public class UserPartyController : ControllerBase
             return Unauthorized(ApiResponse.Error("authorization", "Unauthorized access.",
                 HttpStatusCode.Unauthorized));
 
-        var result = await _userPartyService.GetAllPartiesForUser(userId);
+        var result = await _userPartyService.GetAllPartiesForUser(userId, dto);
 
         if (result.IsSuccess)
             return Ok(ApiResponse.Success(result.Data));

@@ -7,35 +7,38 @@ public class UserAvatarSeeder
 {
     public static void Seed(AppDbContext dbContext)
     {
-        var userAvatars = new List<UserAvatar>();
-        var random = new Random();
-
-        var users = dbContext.ApplicationUsers.ToList();
-        var avatars = dbContext.Avatars.ToList();
-
-        foreach (var user in users)
+        if (!dbContext.UserAvatars.Any()) 
         {
-            var unlockedAvatars = avatars.Where(a => a.UnlockLevel <= user.CurrentLevel).ToList();
-            if (unlockedAvatars.Any())
-            {
-                var activeAvatar = unlockedAvatars[random.Next(unlockedAvatars.Count)];
+            var userAvatars = new List<UserAvatar>();
+            var random = new Random();
 
-                foreach (var avatar in unlockedAvatars)
+            var users = dbContext.ApplicationUsers.ToList();
+            var avatars = dbContext.Avatars.ToList();
+
+            foreach (var user in users)
+            {
+                var unlockedAvatars = avatars.Where(a => a.UnlockLevel <= user.CurrentLevel).ToList();
+                if (unlockedAvatars.Any())
                 {
-                    userAvatars.Add(new UserAvatar
+                    var activeAvatar = unlockedAvatars[random.Next(unlockedAvatars.Count)];
+
+                    foreach (var avatar in unlockedAvatars)
                     {
-                        UserId = user.Id,
-                        AvatarId = avatar.Id,
-                        UnlockedAt = DateTime.UtcNow,
-                        IsActive = avatar.Id == activeAvatar.Id,
-                        CreatedAt = DateTime.UtcNow,
-                        UpdatedAt = DateTime.UtcNow
-                    });
+                        userAvatars.Add(new UserAvatar
+                        {
+                            UserId = user.Id,
+                            AvatarId = avatar.Id,
+                            UnlockedAt = DateTime.UtcNow,
+                            IsActive = avatar.Id == activeAvatar.Id,
+                            CreatedAt = DateTime.UtcNow,
+                            UpdatedAt = DateTime.UtcNow
+                        });
+                    }
                 }
             }
-        }
 
-        dbContext.UserAvatars.AddRange(userAvatars);
-        dbContext.SaveChanges();
+            dbContext.UserAvatars.AddRange(userAvatars);
+            dbContext.SaveChanges();
+        }
     }
 }

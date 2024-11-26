@@ -6,11 +6,13 @@ using System.Collections.Generic;
 using System.Linq;
 using CollabParty.Infrastructure.Data;
 
-namespace CollabParty.Infrastructure.Persistence.Seeders
+namespace CollabParty.Infrastructure.Persistence.Seeders;
+
+public class UserSeeder
 {
-    public class UserSeeder
+    public static void Seed(AppDbContext dbContext)
     {
-        public static void Seed(AppDbContext dbContext)
+        if (!dbContext.Users.Any()) 
         {
             var random = new Random();
             string[] userDisplayNames =
@@ -42,17 +44,14 @@ namespace CollabParty.Infrastructure.Persistence.Seeders
                 users.Add(user);
             }
 
-            if (!dbContext.Users.Any())
-            {
-                dbContext.Users.AddRange(users);
-                dbContext.SaveChanges();
-            }
+            dbContext.Users.AddRange(users);
+            dbContext.SaveChanges();
         }
+    }
 
-        private static int CalculateExpForLevel(int level)
-        {
-            int baseExp = 100;
-            return baseExp * level;
-        }
+    private static int CalculateExpForLevel(int level)
+    {
+        int baseExp = 100;
+        return baseExp * level;
     }
 }

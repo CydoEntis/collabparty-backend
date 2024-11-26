@@ -10,7 +10,7 @@ namespace CollabParty.Infrastructure.Persistence.Seeders
     {
         public static void Seed(AppDbContext dbContext)
         {
-            if (!dbContext.Avatars.Any()) // Avoid seeding if data already exists
+            if (!dbContext.Avatars.Any()) 
             {
                 dbContext.Avatars.AddRange(
                     new Avatar

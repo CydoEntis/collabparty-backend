@@ -5,7 +5,6 @@ using CollabParty.Domain.Enums;
 using CollabParty.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Questlog.Application.Common.Models;
-using UserPartylog.Application.Common.Models;
 
 namespace CollabParty.Infrastructure.Repositories;
 

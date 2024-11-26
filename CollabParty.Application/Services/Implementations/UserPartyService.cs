@@ -10,6 +10,7 @@ using CollabParty.Domain.Entities;
 using CollabParty.Domain.Enums;
 using CollabParty.Domain.Interfaces;
 using Microsoft.Extensions.Logging;
+using Questlog.Application.Common.Models;
 
 namespace CollabParty.Application.Services.Implementations;
 
@@ -51,7 +52,7 @@ public class UserPartyService : IUserPartyService
         }
     }
 
-    public async Task<Result<List<PartyDto>>> GetAllPartiesForUser(string userId, QueryParamsDto dto)
+    public async Task<Result<PaginatedResult<PartyDto>>> GetAllPartiesForUser(string userId, QueryParamsDto dto)
     {
         try
         {
@@ -74,15 +75,18 @@ public class UserPartyService : IUserPartyService
             //     includeProperties: "Party,User.UserAvatars.Avatar");
 
             var paginatedResult = await _unitOfWork.UserParty.GetPaginatedAsync(queryParams);
-            
-            // var partyDtos = parties.Select(p => PartyMapper.ToPartyDto(p.Party)).ToList();
 
-            return Result<List<PartyDto>>.Success(partyDtos);
+            var partyDtos = paginatedResult.Items.Select(p => PartyMapper.ToPartyDto(p.Party)).ToList();
+
+            var result = new PaginatedResult<PartyDto>(partyDtos, paginatedResult.TotalItems,
+                paginatedResult.CurrentPage, queryParams.PageSize);
+
+            return Result<PaginatedResult<PartyDto>>.Success(result);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to assign user to party.");
-            return Result<List<PartyDto>>.Failure("An error occurred while creating party.");
+            return Result<PaginatedResult<PartyDto>>.Failure("An error occurred while creating party.");
         }
     }
 
