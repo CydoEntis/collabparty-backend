@@ -23,5 +23,9 @@
         <ProjectReference Include="..\CollabParty.Application\CollabParty.Application.csproj" />
         <ProjectReference Include="..\CollabParty.Domain\CollabParty.Domain.csproj" />
     </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Migrations\" />
+    </ItemGroup>
     
 </Project>

@@ -1,0 +1,41 @@
+﻿using CollabParty.Domain.Entities;
+using CollabParty.Infrastructure.Data;
+
+namespace CollabParty.Infrastructure.Persistence.Seeders;
+
+public class UserAvatarSeeder
+{
+    private static void SeedUserAvatars(AppDbContext dbContext)
+    {
+        var userAvatars = new List<UserAvatar>();
+        var random = new Random();
+
+        var users = dbContext.ApplicationUsers.ToList();
+        var avatars = dbContext.Avatars.ToList();
+
+        foreach (var user in users)
+        {
+            var unlockedAvatars = avatars.Where(a => a.UnlockLevel <= user.CurrentLevel).ToList();
+            if (unlockedAvatars.Any())
+            {
+                var activeAvatar = unlockedAvatars[random.Next(unlockedAvatars.Count)];
+
+                foreach (var avatar in unlockedAvatars)
+                {
+                    userAvatars.Add(new UserAvatar
+                    {
+                        UserId = user.Id,
+                        AvatarId = avatar.Id,
+                        UnlockedAt = DateTime.UtcNow,
+                        IsActive = avatar.Id == activeAvatar.Id,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    });
+                }
+            }
+        }
+
+        dbContext.UserAvatars.AddRange(userAvatars);
+        dbContext.SaveChanges();
+    }
+}

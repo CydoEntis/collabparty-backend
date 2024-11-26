@@ -53,10 +53,6 @@ namespace CollabParty.Infrastructure.Data
 
             builder.Entity<UserQuest>()
                 .HasKey(uq => new { uq.UserId, uq.QuestId });
-            
-            
-            AvatarSeeder.Seed(builder);
-
         }
     }
 }

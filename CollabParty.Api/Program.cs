@@ -7,6 +7,7 @@ using CollabParty.Application.Services.Interfaces;
 using CollabParty.Domain.Entities;
 using CollabParty.Domain.Interfaces;
 using CollabParty.Infrastructure.Data;
+using CollabParty.Infrastructure.Persistence.Seeders;
 using CollabParty.Infrastructure.Repositories;
 using FluentValidation;
 using FluentValidation.AspNetCore;
@@ -50,9 +51,6 @@ builder.Services.AddScoped<IPartyService, PartyService>();
 // Suppress Model State Validation for Custom Filters
 builder.Services.Configure<ApiBehaviorOptions>(options =>
     options.SuppressModelStateInvalidFilter = true);
-
-
-
 
 // JSON and FluentValidation Configuration
 builder.Services.AddControllers(options =>
@@ -128,6 +126,15 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+}
+
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    dbContext.Database.Migrate();
+
+    AvatarSeeder.Seed(dbContext);
+    UserSeeder.Seed(dbContext);
 }
 
 app.UseHttpsRedirection();
