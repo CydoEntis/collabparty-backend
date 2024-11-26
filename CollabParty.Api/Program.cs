@@ -134,7 +134,11 @@ using (var scope = app.Services.CreateScope())
     dbContext.Database.Migrate();
 
     AvatarSeeder.Seed(dbContext);
+    PartySeeder.Seed(dbContext);
     UserSeeder.Seed(dbContext);
+    UserAvatarSeeder.Seed(dbContext);
+    UserPartySeeder.Seed(dbContext);
+
 }
 
 app.UseHttpsRedirection();

@@ -5,7 +5,7 @@ namespace CollabParty.Infrastructure.Persistence.Seeders;
 
 public class UserAvatarSeeder
 {
-    private static void SeedUserAvatars(AppDbContext dbContext)
+    public static void Seed(AppDbContext dbContext)
     {
         var userAvatars = new List<UserAvatar>();
         var random = new Random();
