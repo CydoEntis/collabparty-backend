@@ -40,12 +40,12 @@ public class AuthService : IAuthService
             includeProperties: "UserAvatars,UserAvatars.Avatar");
 
         if (user == null)
-            return Result<LoginDto>.Failure("email", new[] { "User with this email does not exist" });
+            return Result<LoginDto>.Failure("email", new[] { "Invalid username or password" });
 
         bool isPasswordValid = await _userManager.CheckPasswordAsync(user, dto.Password);
 
         if (!isPasswordValid)
-            return Result<LoginDto>.Failure("password", new[] { "Invalid password" });
+            return Result<LoginDto>.Failure("email", new[] { "Invalid username or password" });
 
         var sessionId = $"SESS{Guid.NewGuid()}";
         var accessToken = CreateAccessToken(user, sessionId);
