@@ -15,7 +15,7 @@ namespace CollabParty.Infrastructure.Persistence.Seeders
             var random = new Random();
             string[] userDisplayNames =
             {
-                "Alex", "Jordan", "Taylor", "Casey", "Riley",
+                "Test", "Alex", "Jordan", "Taylor", "Casey", "Riley",
                 "Morgan", "Skylar", "Jamie", "Cameron", "Avery"
             };
 
@@ -23,11 +23,11 @@ namespace CollabParty.Infrastructure.Persistence.Seeders
             foreach (var name in userDisplayNames)
             {
                 var userLevel = random.Next(1, 101);
-                var expForCurrentLevel = CalculateExpForLevel(userLevel - 1); 
+                var expForCurrentLevel = CalculateExpForLevel(userLevel - 1);
                 var expForNextLevel = CalculateExpForLevel(userLevel);
                 var currencyAmount = random.Next(100, 5001);
                 var currentExp = random.Next(expForCurrentLevel, expForNextLevel);
-                
+
                 var user = new ApplicationUser
                 {
                     UserName = name,
@@ -46,42 +46,7 @@ namespace CollabParty.Infrastructure.Persistence.Seeders
             {
                 dbContext.Users.AddRange(users);
                 dbContext.SaveChanges();
-
-                SeedUserAvatars(dbContext, users);
             }
-        }
-
-        private static void SeedUserAvatars(AppDbContext dbContext, List<ApplicationUser> users)
-        {
-            var userAvatars = new List<UserAvatar>();
-            var random = new Random();
-
-            var avatars = dbContext.Avatars.ToList();
-
-            foreach (var user in users)
-            {
-                var unlockedAvatars = avatars.Where(a => a.UnlockLevel <= user.CurrentLevel).ToList();
-                if (unlockedAvatars.Any())
-                {
-                    var activeAvatar = unlockedAvatars[random.Next(unlockedAvatars.Count)];
-
-                    foreach (var avatar in unlockedAvatars)
-                    {
-                        userAvatars.Add(new UserAvatar
-                        {
-                            UserId = user.Id,
-                            AvatarId = avatar.Id,
-                            UnlockedAt = DateTime.UtcNow,
-                            IsActive = avatar.Id == activeAvatar.Id,
-                            CreatedAt = DateTime.UtcNow,
-                            UpdatedAt = DateTime.UtcNow
-                        });
-                    }
-                }
-            }
-
-            dbContext.UserAvatars.AddRange(userAvatars);
-            dbContext.SaveChanges();
         }
 
         private static int CalculateExpForLevel(int level)
