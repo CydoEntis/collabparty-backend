@@ -21,7 +21,7 @@ public static class AuthMapper
     {
         return new LoginDto
         {
-            Member = UserMapper.ToUserDto(user),
+            User = UserMapper.ToUserDto(user),
             Tokens = ToTokenDto(tokens)
         };
     }
