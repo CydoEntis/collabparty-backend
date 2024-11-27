@@ -47,7 +47,7 @@ public class UserPartyController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<ApiResponse>> GetParties([FromBody] QueryParamsDto dto)
+    public async Task<ActionResult<ApiResponse>> GetParties([FromQuery] QueryParamsDto dto)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 

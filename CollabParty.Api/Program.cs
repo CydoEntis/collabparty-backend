@@ -132,13 +132,13 @@ using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     dbContext.Database.Migrate();
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
     AvatarSeeder.Seed(dbContext);
     PartySeeder.Seed(dbContext);
-    UserSeeder.Seed(dbContext);
+    await UserSeeder.Seed(dbContext, userManager);
     UserAvatarSeeder.Seed(dbContext);
     UserPartySeeder.Seed(dbContext);
-
 }
 
 app.UseHttpsRedirection();
