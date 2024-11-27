@@ -1,12 +1,15 @@
 using System.Text;
 using System.Text.Json;
+using CollabParty.Application.Common.Models;
 using CollabParty.Application.Common.Validators.Auth;
 using CollabParty.Application.Common.Validators.Party;
 using CollabParty.Application.Services.Implementations;
 using CollabParty.Application.Services.Interfaces;
 using CollabParty.Domain.Entities;
 using CollabParty.Domain.Interfaces;
+using CollabParty.Infrastructure;
 using CollabParty.Infrastructure.Data;
+using CollabParty.Infrastructure.DependencyInjection; // Add this
 using CollabParty.Infrastructure.Persistence.Seeders;
 using CollabParty.Infrastructure.Repositories;
 using FluentValidation;
@@ -61,6 +64,9 @@ builder.Services.AddControllers(options =>
     })
     .AddJsonOptions(options =>
         options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase);
+
+// Use the DependencyInjection method for adding EmailService
+builder.Services.AddInfrastructureServices(builder.Configuration); // Add this
 
 // FluentValidation Setup
 builder.Services.AddFluentValidationAutoValidation()

@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using System.Security.Claims;
 using CollabParty.Application.Common.Dtos.Auth;
+using CollabParty.Application.Common.Interfaces;
 using CollabParty.Application.Common.Mappings;
 using CollabParty.Domain.Entities;
 using Microsoft.IdentityModel.JsonWebTokens;
@@ -19,15 +20,17 @@ public class AuthService : IAuthService
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IEmailService _emailService;
     private readonly string _jwtSecret;
     private readonly string _jwtAudience;
     private readonly string _jwtIssuer;
 
     public AuthService(IUnitOfWork unitOfWork, UserManager<ApplicationUser> userManager,
-        IConfiguration configuration)
+        IConfiguration configuration, IEmailService emailService)
     {
         _unitOfWork = unitOfWork;
         _userManager = userManager;
+        _emailService = emailService;
         _jwtSecret = configuration["JwtSecret"];
         _jwtAudience = configuration["JwtAudience"];
         _jwtIssuer = configuration["JwtIssuer"];
@@ -196,7 +199,26 @@ public class AuthService : IAuthService
         return Result<TokenDto>.Success(tokenDto);
     }
 
+    public async Task<Result> ForgotPasswordAsync(ForgotPasswordDto dto)
+    {
+        var user = await _userManager.FindByEmailAsync(dto.Email);
 
+        if (user != null)
+        {
+            var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var resetUrl = $"https://your-app.com/reset-password?token={resetToken}";
+
+            var emailBody = $"<p>Click the link below to reset your password:</p>" +
+                            $"<a href='{resetUrl}'>Reset Password</a>";
+
+            // Send the password reset email
+            await _emailService.SendEmailAsync(dto.Email, "Password Reset Request", emailBody);
+        }
+
+        return Result.Success("If an account with that email exists, a password reset link will be sent.");
+    }
+    
+    
     private async Task UnlockStarterAvatars(ApplicationUser user)
     {
         var starterAvatars = await _unitOfWork.Avatar.GetAllAsync(a => a.Tier == 0);

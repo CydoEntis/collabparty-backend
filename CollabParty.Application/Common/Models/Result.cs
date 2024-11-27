@@ -4,16 +4,18 @@ public class Result
 {
     public bool IsSuccess { get; private set; }
     public List<ValidationError> Errors { get; private set; } = new();
+    public string? Message { get; private set; }
 
-    private Result(bool isSuccess, List<ValidationError> errors)
+    private Result(bool isSuccess, List<ValidationError> errors, string? message = null)
     {
         IsSuccess = isSuccess;
         Errors = errors ?? new List<ValidationError>();
+        Message = message;
     }
 
-    public static Result Success()
+    public static Result Success(string? message = null)
     {
-        return new Result(true, new List<ValidationError>());
+        return new Result(true, new List<ValidationError>(), message);
     }
 
     public static Result Failure(string field, IEnumerable<string> messages)
@@ -32,22 +34,25 @@ public class Result
     }
 }
 
+
 public class Result<T>
 {
     public bool IsSuccess { get; private set; }
     public T? Data { get; private set; }
     public List<ValidationError> Errors { get; private set; } = new();
+    public string? Message { get; private set; }
 
-    private Result(bool isSuccess, T? data, List<ValidationError> errors)
+    private Result(bool isSuccess, T? data, List<ValidationError> errors, string? message = null)
     {
         IsSuccess = isSuccess;
         Data = data;
         Errors = errors ?? new List<ValidationError>();
+        Message = message;
     }
 
-    public static Result<T> Success(T data)
+    public static Result<T> Success(T data, string? message = null)
     {
-        return new Result<T>(true, data, new List<ValidationError>());
+        return new Result<T>(true, data, new List<ValidationError>(), message);
     }
 
     public static Result<T> Failure(string field, IEnumerable<string> messages)
@@ -65,3 +70,4 @@ public class Result<T>
         return new Result<T>(false, default, new List<ValidationError> { new ValidationError("general", new[] { generalErrorMessage }) });
     }
 }
+
