@@ -10,4 +10,7 @@ public interface IAuthService
     Task<Result<LoginDto>> Register(RegisterCredentialsDto dto);
     Task<Result> Logout(TokenDto dto);
     Task<Result<TokenDto>> RefreshTokens(TokenDto dto);
+    Task<Result> ChangePasswordAsync(string userId, ChangePasswordDto dto);
+    Task<Result> ResetPasswordAsync(ResetPasswordDto dto);
+    Task<Result> SendForgotPasswordEmail(ForgotPasswordDto dto);
 }

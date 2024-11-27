@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using CollabParty.Application.Common.Dtos;
+using CollabParty.Application.Common.Dtos.Auth;
 using CollabParty.Application.Common.Models;
 using CollabParty.Application.Common.Utility;
 using CollabParty.Application.Services.Interfaces;
@@ -100,6 +101,72 @@ public class AuthController : ControllerBase
         {
             return
                 ApiResponse.Error("internal", ex.InnerException.Message, HttpStatusCode.InternalServerError);
+        }
+    }
+    
+        [HttpPost("change-password")]
+    public async Task<ActionResult<ApiResponse>> ChangePassword([FromBody] ChangePasswordDto dto)
+    {
+        try
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var result = await _authService.ChangePasswordAsync(dto.UserId, dto);
+
+            if (result.IsSuccess)
+                return Ok(ApiResponse.Success(result.Message));
+
+            var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
+            return BadRequest(ApiResponse.ValidationError(formattedErrors));
+        }
+        catch (Exception ex)
+        {
+            return ApiResponse.Error("internal", ex.InnerException.Message, HttpStatusCode.InternalServerError);
+        }
+    }
+
+    [HttpPost("forgot-password")]
+    public async Task<ActionResult<ApiResponse>> ForgotPassword([FromBody] ForgotPasswordDto dto)
+    {
+        try
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var result = await _authService.SendForgotPasswordEmail(dto);
+
+            if (result.IsSuccess)
+                return Ok(ApiResponse.Success(result.Message));
+
+            var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
+            return BadRequest(ApiResponse.ValidationError(formattedErrors));
+        }
+        catch (Exception ex)
+        {
+            return ApiResponse.Error("internal", ex.InnerException.Message, HttpStatusCode.InternalServerError);
+        }
+    }
+
+    [HttpPost("reset-password")]
+    public async Task<ActionResult<ApiResponse>> ResetPassword([FromBody] ResetPasswordDto dto)
+    {
+        try
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var result = await _authService.ResetPasswordAsync(dto);
+
+            if (result.IsSuccess)
+                return Ok(ApiResponse.Success(result.Message));
+
+            var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
+            return BadRequest(ApiResponse.ValidationError(formattedErrors));
+        }
+        catch (Exception ex)
+        {
+            return ApiResponse.Error("internal", ex.InnerException.Message, HttpStatusCode.InternalServerError);
         }
     }
 }
