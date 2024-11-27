@@ -199,7 +199,59 @@ public class AuthService : IAuthService
         return Result<TokenDto>.Success(tokenDto);
     }
 
-    public async Task<Result> ForgotPasswordAsync(ForgotPasswordDto dto)
+    public async Task<Result> ChangePasswordAsync(string userId, ChangePasswordDto dto)
+    {
+        var user = await _userManager.FindByIdAsync(dto.UserId);
+        if (user == null)
+        {
+            return Result.Failure("user", new[] { "User not found" });
+        }
+
+        var isCurrentPasswordValid = await _userManager.CheckPasswordAsync(user, dto.CurrentPassword);
+        if (!isCurrentPasswordValid)
+        {
+            return Result.Failure("currentPassword", new[] { "Current password is incorrect" });
+        }
+
+        var updateResult = await _userManager.ChangePasswordAsync(user, dto.CurrentPassword, dto.NewPassword);
+        if (!updateResult.Succeeded)
+        {
+            var errors = updateResult.Errors
+                .Select(e => new ValidationError("password", new[] { e.Description }))
+                .ToList();
+            return Result.Failure(errors);
+        }
+
+        return Result.Success("Password changed successfully");
+    }
+
+    public async Task<Result> ResetPasswordAsync(ResetPasswordDto dto)
+    {
+        var user = await _userManager.FindByEmailAsync(dto.Email);
+        if (user == null)
+        {
+            return Result.Failure("email", new[] { "No user found with that email address." });
+        }
+
+        var tokenIsValid = await _userManager.VerifyUserTokenAsync(user, _userManager.Options.Tokens.PasswordResetTokenProvider, "ResetPassword", dto.Token);
+        if (!tokenIsValid)
+        {
+            return Result.Failure("token", new[] { "Invalid or expired password reset token." });
+        }
+
+        var resetPasswordResult = await _userManager.ResetPasswordAsync(user, dto.Token, dto.NewPassword);
+        if (!resetPasswordResult.Succeeded)
+        {
+            var errors = resetPasswordResult.Errors
+                .Select(e => new ValidationError("password", new[] { e.Description }))
+                .ToList();
+            return Result.Failure(errors);
+        }
+
+        return Result.Success("Password has been successfully reset.");
+    }
+    
+    public async Task<Result> SendForgotPasswordEmail(ForgotPasswordDto dto)
     {
         var user = await _userManager.FindByEmailAsync(dto.Email);
 
