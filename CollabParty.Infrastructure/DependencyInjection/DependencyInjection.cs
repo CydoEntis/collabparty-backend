@@ -12,7 +12,8 @@ namespace CollabParty.Infrastructure.DependencyInjection
         {
             services.Configure<EmailSettings>(configuration.GetSection("EmailSettings"));
 
-            services.AddTransient<IEmailService, SendGridEmailService>();
+            // services.AddTransient<IEmailService, SendGridEmailService>();
+            services.AddTransient<IEmailService, MailKitService>();
 
             return services;
         }

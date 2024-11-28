@@ -77,6 +77,9 @@ builder.Services.AddValidatorsFromAssemblyContaining<LoginCredentialsDtoValidato
 builder.Services.AddValidatorsFromAssemblyContaining<RegisterCredentialsDtoValidator>();
 builder.Services.AddValidatorsFromAssemblyContaining<TokenDtoValidator>();
 builder.Services.AddValidatorsFromAssemblyContaining<CreatePartyDtoValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<ChangePasswordDtoValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<ForgotPasswordDtoValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<ResetPasswordDtoValidator>();
 
 // JWT Authentication Configuration
 var jwtKey = builder.Configuration["JwtSecret"];
