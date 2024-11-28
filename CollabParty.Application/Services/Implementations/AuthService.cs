@@ -21,16 +21,18 @@ public class AuthService : IAuthService
     private readonly IUnitOfWork _unitOfWork;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IEmailService _emailService;
+    private readonly IEmailTemplateService _emailTemplateService;
     private readonly string _jwtSecret;
     private readonly string _jwtAudience;
     private readonly string _jwtIssuer;
 
     public AuthService(IUnitOfWork unitOfWork, UserManager<ApplicationUser> userManager,
-        IConfiguration configuration, IEmailService emailService)
+        IConfiguration configuration, IEmailService emailService, IEmailTemplateService emailTemplateService)
     {
         _unitOfWork = unitOfWork;
         _userManager = userManager;
         _emailService = emailService;
+        _emailTemplateService = emailTemplateService;
         _jwtSecret = configuration["JwtSecret"];
         _jwtAudience = configuration["JwtAudience"];
         _jwtIssuer = configuration["JwtIssuer"];
@@ -255,20 +257,27 @@ public class AuthService : IAuthService
     {
         var user = await _userManager.FindByEmailAsync(dto.Email);
 
+        // If user exists
         if (user != null)
         {
             var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
             var resetUrl = $"https://your-app.com/reset-password?token={resetToken}";
 
-            var emailBody = $"<p>Click the link below to reset your password:</p>" +
-                            $"<a href='{resetUrl}'>Reset Password</a>";
+            // Prepare placeholders for the template
+            var placeholders = new Dictionary<string, string>
+            {
+                { "Recipient's Email", dto.Email },
+                { "Reset Link", resetUrl }
+            };
 
-            // Send the password reset email
+            var emailBody = _emailTemplateService.GetEmailTemplate("ForgotPasswordTemplate", placeholders);
+
             await _emailService.SendEmailAsync(dto.Email, "Password Reset Request", emailBody);
         }
 
         return Result.Success("If an account with that email exists, a password reset link will be sent.");
     }
+
     
     
     private async Task UnlockStarterAvatars(ApplicationUser user)

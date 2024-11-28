@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using CollabParty.Application.Common.Interfaces;
 using CollabParty.Application.Common.Models;
 using CollabParty.Application.Common.Validators.Auth;
 using CollabParty.Application.Common.Validators.Party;
@@ -9,7 +10,8 @@ using CollabParty.Domain.Entities;
 using CollabParty.Domain.Interfaces;
 using CollabParty.Infrastructure;
 using CollabParty.Infrastructure.Data;
-using CollabParty.Infrastructure.DependencyInjection; // Add this
+using CollabParty.Infrastructure.DependencyInjection;
+using CollabParty.Infrastructure.Emails; // Add this
 using CollabParty.Infrastructure.Persistence.Seeders;
 using CollabParty.Infrastructure.Repositories;
 using FluentValidation;
@@ -50,6 +52,7 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserPartyService, UserPartyService>();
 builder.Services.AddScoped<IPartyService, PartyService>();
+builder.Services.AddScoped<IEmailTemplateService, EmailTemplateService>();
 
 // Suppress Model State Validation for Custom Filters
 builder.Services.Configure<ApiBehaviorOptions>(options =>

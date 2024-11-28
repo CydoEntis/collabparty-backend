@@ -23,17 +23,17 @@ public class MailKitService : IEmailService
 
     public async Task SendEmailAsync(string toEmail, string subject, string body)
     {
-        // Create a MimeMessage
         var message = new MimeMessage();
         message.From.Add(new MailboxAddress("Your Name", _email));
         message.To.Add(new MailboxAddress("", toEmail));
         message.Subject = subject;
 
-        // Create the email body
-        var bodyBuilder = new BodyBuilder { TextBody = body };
+        var bodyBuilder = new BodyBuilder
+        {
+            HtmlBody = body 
+        };
         message.Body = bodyBuilder.ToMessageBody();
 
-        // Connect to the SMTP server and send the email
         using (var smtpClient = new SmtpClient())
         {
             try
