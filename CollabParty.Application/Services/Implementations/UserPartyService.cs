@@ -70,10 +70,6 @@ public class UserPartyService : IUserPartyService
                 Filter = up => up.UserId == userId,
             };
 
-
-            // var parties = await _unitOfWork.UserParty.GetAllAsync(up => up.UserId == userId,
-            //     includeProperties: "Party,User.UserAvatars.Avatar");
-
             var paginatedResult = await _unitOfWork.UserParty.GetPaginatedAsync(queryParams);
 
             var partyDtos = paginatedResult.Items.Select(p => PartyMapper.ToPartyDto(p.Party)).ToList();
@@ -87,6 +83,24 @@ public class UserPartyService : IUserPartyService
         {
             _logger.LogError(ex, "Failed to assign user to party.");
             return Result<PaginatedResult<PartyDto>>.Failure("An error occurred while creating party.");
+        }
+    }
+
+    public async Task<Result<List<PartyDto>>> GetRecentParties(string userId)
+    {
+        try
+        {
+            var recentParties = await _unitOfWork.UserParty.GetMostRecentPartiesForUserAsync(userId, 
+                includeProperties: "Party,User.UserAvatars.Avatar");
+
+
+            var partyDto = recentParties.Select(p => PartyMapper.ToPartyDto(p.Party)).ToList();
+            return Result<List<PartyDto>>.Success(partyDto);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to assign user to party.");
+            return Result<List<PartyDto>>.Failure("An error occurred while creating party.");
         }
     }
 

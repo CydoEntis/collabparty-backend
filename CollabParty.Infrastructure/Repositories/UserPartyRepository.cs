@@ -52,6 +52,27 @@ public class UserPartyRepository : BaseRepository<UserParty>, IUserPartyReposito
     }
 
 
+    public async Task<List<UserParty>> GetMostRecentPartiesForUserAsync(
+        string userId,
+        string includeProperties = "")
+    {
+        IQueryable<UserParty> query = _db.UserParties
+            .AsNoTracking()
+            .Where(up => up.UserId == userId)
+            .OrderByDescending(up => up.Party.UpdatedAt)
+            .Take(5);
+
+        if (!string.IsNullOrEmpty(includeProperties))
+        {
+            foreach (var includeProperty in includeProperties.Split(',', StringSplitOptions.RemoveEmptyEntries))
+            {
+                query = query.Include(includeProperty.Trim());
+            }
+        }
+
+        return await query.ToListAsync();
+    }
+
     public async Task<UserParty> UpdateAsync(UserParty entity)
     {
         entity.UpdatedAt = DateTime.Now;

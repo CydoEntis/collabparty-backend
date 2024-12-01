@@ -14,6 +14,7 @@ public interface IUserPartyService
 {
     Task<Result> AssignUserAndRole(string userId, int partyId, UserRole role);
     Task<Result<PaginatedResult<PartyDto>>> GetAllPartiesForUser(string userId, QueryParamsDto dto);
+    Task<Result<List<PartyDto>>> GetRecentParties(string userId);
     Task<Result<PartyDto>> GetParty(string userId, int partyId);
     Task<Result<List<MemberDto>>> GetPartyMembers(string userId, int partyId);
     Task<Result<List<MemberDto>>> RemovePartyMembers(string userId, int partyId, RemoverUserFromPartyDto dto);

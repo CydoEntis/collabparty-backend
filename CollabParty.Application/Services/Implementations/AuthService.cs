@@ -247,14 +247,23 @@ public class AuthService : IAuthService
 
         if (!tokenIsValid)
         {
-            return Result.Failure("token", new[] { "Invalid or expired password reset token." });
+            return Result.Failure("token", new[] { "Token is no longer valid." });
+        }
+
+        var currentPasswordHash = user.PasswordHash;
+        var passwordHasher = new PasswordHasher<ApplicationUser>();
+        var passwordVerificationResult = passwordHasher.VerifyHashedPassword(user, currentPasswordHash, dto.NewPassword);
+
+        if (passwordVerificationResult == PasswordVerificationResult.Success)
+        {
+            return Result.Failure("newPassword", new[] { "New password cannot be the same as a previous password." });
         }
 
         var resetPasswordResult = await _userManager.ResetPasswordAsync(user, decodedToken, dto.NewPassword);
         if (!resetPasswordResult.Succeeded)
         {
             var errors = resetPasswordResult.Errors
-                .Select(e => new ValidationError("password", new[] { e.Description }))
+                .Select(e => new ValidationError("newPassword", new[] { e.Description }))
                 .ToList();
             return Result.Failure(errors);
         }

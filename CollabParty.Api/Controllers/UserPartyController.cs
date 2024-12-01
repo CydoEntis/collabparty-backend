@@ -64,6 +64,24 @@ public class UserPartyController : ControllerBase
         return BadRequest(ApiResponse.ValidationError(formattedErrors));
     }
 
+    [HttpGet("most-recent")]
+    public async Task<ActionResult<ApiResponse>> GetMostRecentParties()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized(ApiResponse.Error("authorization", "Unauthorized access.",
+                HttpStatusCode.Unauthorized));
+
+        var result = await _userPartyService.GetRecentParties(userId);
+
+        if (result.IsSuccess)
+            return Ok(ApiResponse.Success(result.Data));
+
+        var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
+        return BadRequest(ApiResponse.ValidationError(formattedErrors));
+    }
+
     [HttpGet("{partyId:int}")]
     public async Task<ActionResult<ApiResponse>> GetParty(int partyId)
     {
