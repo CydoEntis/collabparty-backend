@@ -261,7 +261,7 @@ public class AuthService : IAuthService
         if (user != null)
         {
             var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
-            var resetUrl = $"https://your-app.com/reset-password?token={resetToken}";
+            var resetUrl = $"http://localhost:5173/reset-password?token={resetToken}";
 
             // Prepare placeholders for the template
             var placeholders = new Dictionary<string, string>
