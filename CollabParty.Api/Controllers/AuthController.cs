@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using System.Security.Claims;
 using CollabParty.Application.Common.Dtos;
 using CollabParty.Application.Common.Dtos.Auth;
 using CollabParty.Application.Common.Models;
@@ -103,8 +104,8 @@ public class AuthController : ControllerBase
                 ApiResponse.Error("internal", ex.InnerException.Message, HttpStatusCode.InternalServerError);
         }
     }
-    
-        [HttpPost("change-password")]
+
+    [HttpPost("change-password")]
     public async Task<ActionResult<ApiResponse>> ChangePassword([FromBody] ChangePasswordDto dto)
     {
         try
@@ -112,7 +113,13 @@ public class AuthController : ControllerBase
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var result = await _authService.ChangePasswordAsync(dto.UserId, dto);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized(ApiResponse.Error("authorization", "Unauthorized access.",
+                    HttpStatusCode.Unauthorized));
+
+            var result = await _authService.ChangePasswordAsync(userId, dto);
 
             if (result.IsSuccess)
                 return Ok(ApiResponse.Success(result.Message));
