@@ -203,19 +203,19 @@ public class AuthService : IAuthService
 
     public async Task<Result> ChangePasswordAsync(string userId, ChangePasswordDto dto)
     {
-        var user = await _userManager.FindByIdAsync(dto.UserId);
+        var user = await _userManager.FindByIdAsync(userId);
         if (user == null)
         {
             return Result.Failure("user", new[] { "User not found" });
         }
 
-        var isCurrentPasswordValid = await _userManager.CheckPasswordAsync(user, dto.CurrentPassword);
+        var isCurrentPasswordValid = await _userManager.CheckPasswordAsync(user, dto.OldPassword);
         if (!isCurrentPasswordValid)
         {
             return Result.Failure("currentPassword", new[] { "Current password is incorrect" });
         }
 
-        var updateResult = await _userManager.ChangePasswordAsync(user, dto.CurrentPassword, dto.NewPassword);
+        var updateResult = await _userManager.ChangePasswordAsync(user, dto.OldPassword, dto.NewPassword);
         if (!updateResult.Succeeded)
         {
             var errors = updateResult.Errors
