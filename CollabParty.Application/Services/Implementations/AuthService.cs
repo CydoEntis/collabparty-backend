@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Diagnostics;
+using System.Text;
 using CollabParty.Application.Common.Dtos;
 using CollabParty.Application.Common.Dtos.Avatar;
 using CollabParty.Application.Common.Models;
@@ -235,13 +236,21 @@ public class AuthService : IAuthService
             return Result.Failure("email", new[] { "No user found with that email address." });
         }
 
-        var tokenIsValid = await _userManager.VerifyUserTokenAsync(user, _userManager.Options.Tokens.PasswordResetTokenProvider, "ResetPassword", dto.Token);
+        var decodedToken = Uri.UnescapeDataString(dto.Token);
+
+        var tokenIsValid = await _userManager.VerifyUserTokenAsync(
+            user,
+            _userManager.Options.Tokens.PasswordResetTokenProvider,
+            "ResetPassword",
+            decodedToken
+        );
+
         if (!tokenIsValid)
         {
             return Result.Failure("token", new[] { "Invalid or expired password reset token." });
         }
 
-        var resetPasswordResult = await _userManager.ResetPasswordAsync(user, dto.Token, dto.NewPassword);
+        var resetPasswordResult = await _userManager.ResetPasswordAsync(user, decodedToken, dto.NewPassword);
         if (!resetPasswordResult.Succeeded)
         {
             var errors = resetPasswordResult.Errors
@@ -252,18 +261,21 @@ public class AuthService : IAuthService
 
         return Result.Success("Password has been successfully reset.");
     }
+
     
     public async Task<Result> SendForgotPasswordEmail(ForgotPasswordDto dto)
     {
         var user = await _userManager.FindByEmailAsync(dto.Email);
 
-        // If user exists
         if (user != null)
         {
             var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
-            var resetUrl = $"http://localhost:5173/reset-password?token={resetToken}";
+            Debug.WriteLine(resetToken);
 
-            // Prepare placeholders for the template
+            var encodedToken = Uri.EscapeDataString(resetToken);
+
+            var resetUrl = $"http://localhost:5173/reset-password?token={encodedToken}";
+
             var placeholders = new Dictionary<string, string>
             {
                 { "Recipient's Email", dto.Email },
@@ -278,7 +290,7 @@ public class AuthService : IAuthService
         return Result.Success("If an account with that email exists, a password reset link will be sent.");
     }
 
-    
+
     
     private async Task UnlockStarterAvatars(ApplicationUser user)
     {

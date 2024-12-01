@@ -36,6 +36,13 @@ builder.Services.AddCors(options =>
 // Database Context Configuration
 var connectionString = builder.Configuration["DefaultConnectionString"];
 
+
+builder.Services.Configure<DataProtectionTokenProviderOptions>(options =>
+{
+    options.TokenLifespan = TimeSpan.FromMinutes(30); 
+});
+
+
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(connectionString));
 
@@ -44,8 +51,23 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
     .AddEntityFrameworkStores<AppDbContext>()
     .AddDefaultTokenProviders();
 
-// AutoMapper Configuration
-// builder.Services.AddAutoMapper(typeof(MappingConfig));
+
+// builder.Services.Configure<IdentityOptions>(options =>
+// {
+//     options.Tokens.PasswordResetTokenProvider = "ResetPassword";
+// });
+//
+// builder.Services.Configure<DataProtectionTokenProviderOptions>(options =>
+// {
+//     // Set the expiration time of the token to 15 minutes
+//     options.TokenLifespan = TimeSpan.FromMinutes(15);
+// });
+
+
+// builder.Services.Configure<DataProtectionTokenProviderOptions>(options =>
+// {
+//     options.TokenLifespan = TimeSpan.FromMinutes(15);
+// });
 
 // Dependency Injection for Repositories and Services
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
