@@ -7,10 +7,7 @@ public class ChangePasswordDtoValidator : AbstractValidator<ChangePasswordDto>
 {
     public ChangePasswordDtoValidator()
     {
-        RuleFor(x => x.UserId).NotEmpty().WithMessage("User id is required.");
-
-        RuleFor(x => x.CurrentPassword).NotEmpty().WithMessage("Current password is requred");
-
+        RuleFor(x => x.OldPassword).NotEmpty().WithMessage("Current password is requred");
         RuleFor(x => x.NewPassword)
             .NotEmpty().WithMessage("Password is required.")
             .MinimumLength(6).WithMessage("Password must be at least 6 characters long.")
