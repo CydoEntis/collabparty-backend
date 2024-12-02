@@ -139,6 +139,8 @@ public class UserPartyRepository : BaseRepository<UserParty>, IUserPartyReposito
     private IQueryable<UserParty> ApplyDateFilter(IQueryable<UserParty> query, string filterDate, DateTime date,
         string operatorSymbol)
     {
+        query = query.Include(up => up.Party);
+
         var dateField = filterDate switch
         {
             SortField.CreatedAt => "CreatedAt",
@@ -150,11 +152,11 @@ public class UserPartyRepository : BaseRepository<UserParty>, IUserPartyReposito
         {
             if (operatorSymbol == ">=")
             {
-                query = query.Where(c => EF.Property<DateTime>(c, dateField) >= date);
+                query = query.Where(up => EF.Property<DateTime>(up.Party, dateField) >= date);
             }
             else if (operatorSymbol == "<=")
             {
-                query = query.Where(c => EF.Property<DateTime>(c, dateField) <= date);
+                query = query.Where(up => EF.Property<DateTime>(up.Party, dateField) <= date);
             }
         }
 
