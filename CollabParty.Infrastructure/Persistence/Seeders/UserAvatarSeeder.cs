@@ -31,7 +31,8 @@ public class UserAvatarSeeder
                             UnlockedAt = DateTime.UtcNow,
                             IsActive = avatar.Id == activeAvatar.Id,
                             CreatedAt = DateTime.UtcNow,
-                            UpdatedAt = DateTime.UtcNow
+                            UpdatedAt = DateTime.UtcNow,
+                            IsUnlocked = true,
                         });
                     }
                 }
