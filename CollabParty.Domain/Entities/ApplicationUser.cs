@@ -21,6 +21,7 @@ namespace CollabParty.Domain.Entities
         public DateTime? UpdatedAt { get; set; }
 
         public ICollection<UserAvatar> UserAvatars { get; set; } = new List<UserAvatar>();
+        public ICollection<UserQuest> UserQuests { get; set; } = new List<UserQuest>();
 
         public int CalculateExpForLevel(int level)
         {

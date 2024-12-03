@@ -1,4 +1,5 @@
 ﻿using CollabParty.Domain.Entities;
+using CollabParty.Domain.Enums;
 using CollabParty.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,7 +9,7 @@ public class PartySeeder
 {
     public static void Seed(AppDbContext dbContext)
     {
-        if (!dbContext.Parties.Any()) 
+        if (!dbContext.Parties.Any())
         {
             var random = new Random();
             string[] partyNames = new string[]
@@ -43,18 +44,60 @@ public class PartySeeder
 
             var users = dbContext.ApplicationUsers.ToList();
 
-            foreach (var (partyName, description) in partyNames.Zip(partyDescriptions, (n, d) => (n, d)))
+            if (users.Any()) // Ensure there are users in the database
             {
-                var party = new Party
+                foreach (var (partyName, description) in partyNames.Zip(partyDescriptions, (n, d) => (n, d)))
                 {
-                    Name = partyName,
-                    Description = description,
-                    CreatedAt = DateTime.UtcNow.AddDays(-random.Next(0, 30)),
-                    UpdatedAt = DateTime.UtcNow.AddDays(-random.Next(0, 30)),
-                };
+                    var party = new Party
+                    {
+                        Name = partyName,
+                        Description = description,
+                        CreatedAt = DateTime.UtcNow.AddDays(-random.Next(0, 30)),
+                        UpdatedAt = DateTime.UtcNow.AddDays(-random.Next(0, 30)),
+                    };
 
-                dbContext.Parties.Add(party);
-                dbContext.SaveChanges();
+                    // Seed Party Members including the Leader
+                    var selectedUsers = users.OrderBy(u => random.Next()).Take(3).ToList(); // Select a few random users
+
+                    if (selectedUsers.Any()) // Check if there are users selected
+                    {
+                        var leader = selectedUsers.First(); // Assign the first user as the leader
+
+                        // Set the CreatedById to the leader of the party
+                        party.CreatedById = leader.Id;
+
+                        dbContext.Parties.Add(party);
+                        dbContext.SaveChanges(); // Save the Party first
+
+                        // Now, seed the PartyMembers
+                        foreach (var user in selectedUsers)
+                        {
+                            var role = user == leader ? UserRole.Leader : UserRole.Member;
+
+                            var partyMember = new PartyMember
+                            {
+                                UserId = user.Id,
+                                PartyId = party.Id,
+                                Role = role,
+                                JoinedAt = DateTime.UtcNow
+                            };
+
+                            dbContext.PartyMembers.Add(partyMember);
+                        }
+
+                        dbContext.SaveChanges();
+                    }
+                    else
+                    {
+                        // If no users were selected, log or handle this case (optional)
+                        Console.WriteLine("No users found for party: " + partyName);
+                    }
+                }
+            }
+            else
+            {
+                // If no users exist in the database, log or handle this case (optional)
+                Console.WriteLine("No users found in the database.");
             }
         }
     }

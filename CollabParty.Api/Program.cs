@@ -21,6 +21,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Questlog.Api.Mappings;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -39,7 +40,7 @@ var connectionString = builder.Configuration["DefaultConnectionString"];
 
 builder.Services.Configure<DataProtectionTokenProviderOptions>(options =>
 {
-    options.TokenLifespan = TimeSpan.FromMinutes(30); 
+    options.TokenLifespan = TimeSpan.FromMinutes(30);
 });
 
 
@@ -68,6 +69,9 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
 // {
 //     options.TokenLifespan = TimeSpan.FromMinutes(15);
 // });
+
+// AutoMapper setup
+builder.Services.AddAutoMapper(typeof(MappingConfig));
 
 // Dependency Injection for Repositories and Services
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -167,8 +171,8 @@ using (var scope = app.Services.CreateScope())
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
     AvatarSeeder.Seed(dbContext);
-    PartySeeder.Seed(dbContext);
     await UserSeeder.Seed(dbContext, userManager);
+    PartySeeder.Seed(dbContext);
     UserAvatarSeeder.Seed(dbContext);
     PartyMemberSeeder.Seed(dbContext);
 }

@@ -1,56 +1,54 @@
 ﻿using CollabParty.Domain.Entities;
 using CollabParty.Domain.Enums;
 using CollabParty.Infrastructure.Data;
-using System;
-using System.Linq;
 
-namespace CollabParty.Infrastructure.Persistence.Seeders
+
+namespace CollabParty.Infrastructure.Persistence.Seeders;
+
+public class PartyMemberSeeder
 {
-    public class PartyMemberSeeder
+    public static void Seed(AppDbContext dbContext)
     {
-        public static void Seed(AppDbContext dbContext)
+        if (!dbContext.PartyMembers.Any())
         {
-            if (!dbContext.PartyMembers.Any()) 
+            var random = new Random();
+            var users = dbContext.Users.ToList();
+            var parties = dbContext.Parties.ToList();
+
+            foreach (var party in parties)
             {
-                var random = new Random();
-                var users = dbContext.Users.ToList();
-                var parties = dbContext.Parties.ToList();
+                int numberOfMembers = random.Next(1, 11);
+                numberOfMembers = Math.Min(numberOfMembers, users.Count);
 
-                foreach (var party in parties)
+                var selectedUsers = users.OrderBy(u => random.Next()).Take(numberOfMembers).ToList();
+
+                int leaderIndex = 0;
+                int captainIndex = 1;
+
+                for (int i = 0; i < selectedUsers.Count; i++)
                 {
-                    int numberOfMembers = random.Next(1, 11);
-                    numberOfMembers = Math.Min(numberOfMembers, users.Count);
+                    var user = selectedUsers[i];
 
-                    var selectedUsers = users.OrderBy(u => random.Next()).Take(numberOfMembers).ToList();
+                    UserRole role;
+                    if (i == leaderIndex)
+                        role = UserRole.Leader;
+                    else if (i == captainIndex || i == captainIndex + 1)
+                        role = UserRole.Captain;
+                    else
+                        role = UserRole.Member;
 
-                    int leaderIndex = 0;
-                    int captainIndex = 1;
-
-                    for (int i = 0; i < selectedUsers.Count; i++)
+                    var partyMember = new PartyMember
                     {
-                        var user = selectedUsers[i];
+                        UserId = user.Id,
+                        PartyId = party.Id,
+                        Role = role,
+                        JoinedAt = DateTime.UtcNow
+                    };
 
-                        UserRole role;
-                        if (i == leaderIndex)
-                            role = UserRole.Leader;
-                        else if (i == captainIndex || i == captainIndex + 1)
-                            role = UserRole.Captain;
-                        else
-                            role = UserRole.Member;
-
-                        var partyMember = new PartyMember
-                        {
-                            UserId = user.Id,
-                            PartyId = party.Id,
-                            Role = role,
-                            JoinedAt = DateTime.UtcNow
-                        };
-
-                        dbContext.PartyMembers.Add(partyMember);
-                    }
-
-                    dbContext.SaveChanges();
+                    dbContext.PartyMembers.Add(partyMember);
                 }
+
+                dbContext.SaveChanges();
             }
         }
     }

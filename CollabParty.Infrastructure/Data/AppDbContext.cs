@@ -28,35 +28,113 @@ namespace CollabParty.Infrastructure.Data
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
-            
+
             builder.Entity<ApplicationUser>()
                 .HasIndex(u => u.Email)
                 .IsUnique();
-            
+
             builder.Entity<ApplicationUser>()
                 .HasIndex(u => u.UserName)
                 .IsUnique();
-            
+
             builder.Entity<UserAvatar>()
                 .HasKey(ua => new { ua.UserId, ua.AvatarId });
-            
+
             builder.Entity<UserAvatar>()
                 .HasOne(ua => ua.User)
-                .WithMany(u => u.UserAvatars) 
+                .WithMany(u => u.UserAvatars)
                 .HasForeignKey(ua => ua.UserId)
                 .OnDelete(DeleteBehavior.NoAction);
-            
+
             builder.Entity<UserAvatar>()
                 .HasOne(ua => ua.Avatar)
-                .WithMany(a => a.UserAvatars)  
+                .WithMany(a => a.UserAvatars)
                 .HasForeignKey(ua => ua.AvatarId)
-                .OnDelete(DeleteBehavior.NoAction);  
-            
+                .OnDelete(DeleteBehavior.NoAction);
+
             builder.Entity<PartyMember>()
                 .HasKey(up => new { up.UserId, up.PartyId });
-            
+
             builder.Entity<UserQuest>()
                 .HasKey(uq => new { uq.UserId, uq.QuestId });
+
+            builder.Entity<QuestAssignment>()
+                .HasKey(qa => new { qa.QuestId, qa.UserId });
+            
+            builder.Entity<PartyMember>()
+                .HasOne(pm => pm.Party)
+                .WithMany(p => p.PartyMembers)
+                .HasForeignKey(pm => pm.PartyId)
+                .OnDelete(DeleteBehavior.Cascade);  // Cascade delete when Party is deleted
+            
+            builder.Entity<PartyMember>()
+                .HasOne(pm => pm.User)
+                .WithMany() 
+                .HasForeignKey(pm => pm.UserId)
+                .OnDelete(DeleteBehavior.Restrict);  // No delete cascade for PartyMember -> Party
+            
+            builder.Entity<Quest>()
+                .HasOne(q => q.Party)
+                .WithMany(p => p.Quests)
+                .HasForeignKey(q => q.PartyId)
+                .OnDelete(DeleteBehavior.Cascade);  // Delete Quests when Party is deleted
+
+            builder.Entity<Quest>()
+                .HasOne(q => q.Party)
+                .WithMany(p => p.Quests)
+                .HasForeignKey(q => q.PartyId)
+                .OnDelete(DeleteBehavior.Restrict);  // Don't delete Party when Quest is deleted
+
+            builder.Entity<PartyMember>()
+                .HasOne(pm => pm.Party)
+                .WithMany(p => p.PartyMembers)
+                .HasForeignKey(pm => pm.PartyId)
+                .OnDelete(DeleteBehavior.Restrict);  // Don't delete PartyMembers when a Quest is deleted
+            
+            builder.Entity<Quest>()
+                .HasMany(q => q.QuestAssignments)
+                .WithOne(qa => qa.Quest)
+                .HasForeignKey(qa => qa.QuestId)
+                .OnDelete(DeleteBehavior.Cascade); // Cascade delete QuestAssignments when Quest is deleted
+
+            // Restrict delete when a QuestAssignment is deleted (Quest will not be deleted)
+            builder.Entity<QuestAssignment>()
+                .HasOne(qa => qa.Quest)
+                .WithMany(q => q.QuestAssignments)
+                .HasForeignKey(qa => qa.QuestId)
+                .OnDelete(DeleteBehavior.Restrict); // Prevent Quest deletion when a QuestAssignment is deleted
+
+            builder.Entity<QuestAssignment>()
+                .HasOne(qa => qa.User)
+                .WithMany()
+                .HasForeignKey(qa => qa.UserId)
+                .OnDelete(DeleteBehavior.Restrict); 
+            
+            builder.Entity<QuestComment>()
+                .HasOne(qc => qc.Quest)
+                .WithMany(q => q.QuestComments)
+                .HasForeignKey(qc => qc.QuestId)
+                .OnDelete(DeleteBehavior.Restrict); 
+            
+            builder.Entity<QuestFile>()
+                .HasOne(qc => qc.Quest)
+                .WithMany(q => q.QuestFiles)
+                .HasForeignKey(qc => qc.QuestId)
+                .OnDelete(DeleteBehavior.Restrict); 
+            
+            // Prevent delete of Quest when a User is removed from a Quest (i.e., when a UserQuest is deleted)
+            builder.Entity<UserQuest>()
+                .HasOne(uq => uq.Quest)
+                .WithMany(q => q.UserQuests)
+                .HasForeignKey(uq => uq.QuestId)
+                .OnDelete(DeleteBehavior.Restrict); // Ensures that the Quest is not deleted when a UserQuest is deleted
+
+            // Optional: If you have a similar relationship for User -> UserQuests, configure it similarly:
+            builder.Entity<UserQuest>()
+                .HasOne(uq => uq.User)
+                .WithMany(u => u.UserQuests)
+                .HasForeignKey(uq => uq.UserId)
+                .OnDelete(DeleteBehavior.Restrict); // Prevents the deletion of a User if a UserQuest is deleted
         }
     }
 }

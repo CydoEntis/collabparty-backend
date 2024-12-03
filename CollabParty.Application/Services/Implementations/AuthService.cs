@@ -8,6 +8,7 @@ using CollabParty.Domain.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using System.Security.Claims;
+using AutoMapper;
 using CollabParty.Application.Common.Dtos.Auth;
 using CollabParty.Application.Common.Interfaces;
 using CollabParty.Application.Common.Mappings;
@@ -23,17 +24,20 @@ public class AuthService : IAuthService
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IEmailService _emailService;
     private readonly IEmailTemplateService _emailTemplateService;
+    private readonly IMapper _mapper;
     private readonly string _jwtSecret;
     private readonly string _jwtAudience;
     private readonly string _jwtIssuer;
 
     public AuthService(IUnitOfWork unitOfWork, UserManager<ApplicationUser> userManager,
-        IConfiguration configuration, IEmailService emailService, IEmailTemplateService emailTemplateService)
+        IConfiguration configuration, IEmailService emailService, IEmailTemplateService emailTemplateService,
+        IMapper mapper)
     {
         _unitOfWork = unitOfWork;
         _userManager = userManager;
         _emailService = emailService;
         _emailTemplateService = emailTemplateService;
+        _mapper = mapper;
         _jwtSecret = configuration["JwtSecret"];
         _jwtAudience = configuration["JwtAudience"];
         _jwtIssuer = configuration["JwtIssuer"];
@@ -64,12 +68,13 @@ public class AuthService : IAuthService
         if (userAvatar == null)
             return Result<LoginDto>.Failure("avatar", new[] { "Active avatar not found for user" });
 
-        var tokens = new Tokens()
+        var tokenDto = new TokenDto()
         {
             AccessToken = accessToken,
             RefreshToken = refreshToken,
         };
-        var loginDto = AuthMapper.ToLoginDto(user, tokens);
+        var loginDto = _mapper.Map<LoginDto>(user);
+        loginDto.Tokens = tokenDto;
 
         return Result<LoginDto>.Success(loginDto);
     }
@@ -113,7 +118,7 @@ public class AuthService : IAuthService
         await UnlockStarterAvatars(user);
         await SetNewUsersAvatar(user.Id, dto.AvatarId);
 
-        var loginCredentialsDto = AuthMapper.ToLoginCredentialsDto(dto);
+        var loginCredentialsDto = _mapper.Map<LoginCredentialsDto>(dto);
 
         var loginResult = await Login(loginCredentialsDto);
         if (!loginResult.IsSuccess)
@@ -252,7 +257,8 @@ public class AuthService : IAuthService
 
         var currentPasswordHash = user.PasswordHash;
         var passwordHasher = new PasswordHasher<ApplicationUser>();
-        var passwordVerificationResult = passwordHasher.VerifyHashedPassword(user, currentPasswordHash, dto.NewPassword);
+        var passwordVerificationResult =
+            passwordHasher.VerifyHashedPassword(user, currentPasswordHash, dto.NewPassword);
 
         if (passwordVerificationResult == PasswordVerificationResult.Success)
         {
@@ -271,7 +277,7 @@ public class AuthService : IAuthService
         return Result.Success("Password has been successfully reset.");
     }
 
-    
+
     public async Task<Result> SendForgotPasswordEmail(ForgotPasswordDto dto)
     {
         var user = await _userManager.FindByEmailAsync(dto.Email);
@@ -300,7 +306,6 @@ public class AuthService : IAuthService
     }
 
 
-    
     private async Task UnlockStarterAvatars(ApplicationUser user)
     {
         var starterAvatars = await _unitOfWork.Avatar.GetAllAsync(a => a.Tier == 0);
