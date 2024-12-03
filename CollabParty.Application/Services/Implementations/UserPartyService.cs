@@ -66,13 +66,27 @@ public class UserPartyService : IUserPartyService
                 EndDate = dto.EndDate,
                 PageNumber = dto.PageNumber,
                 PageSize = dto.PageSize,
-                IncludeProperties = "Party,User.UserAvatars.Avatar",
-                Filter = up => up.UserId == userId,
+                // Include the UserParties collection and User details
+                IncludeProperties = "Party,User.UserAvatars.Avatar,Party.UserParties",  // Eager-load UserParties for Party
+                Filter = up => up.UserId == userId,  
             };
 
             var paginatedResult = await _unitOfWork.UserParty.GetPaginatedAsync(queryParams);
 
-            var partyDtos = paginatedResult.Items.Select(p => PartyMapper.ToPartyDto(p.Party)).ToList();
+            // Map the result to PartyDto and include member details
+            var partyDtos = paginatedResult.Items.Select(up =>
+            {
+                // Map Party to PartyDto
+                var partyDto = PartyMapper.ToPartyDto(up.Party);
+
+                // Pass the entire collection of UserParties (not just one user) to MemberMapper
+                var members = MemberMapper.ToMemberDtoList(up.Party.UserParties);
+
+                // Set the mapped members to the PartyDto
+                partyDto.Members = members;
+
+                return partyDto;
+            }).ToList();
 
             var result = new PaginatedResult<PartyDto>(partyDtos, paginatedResult.TotalItems,
                 paginatedResult.CurrentPage, queryParams.PageSize);
@@ -81,10 +95,13 @@ public class UserPartyService : IUserPartyService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to assign user to party.");
-            return Result<PaginatedResult<PartyDto>>.Failure("An error occurred while creating party.");
+            _logger.LogError(ex, "Failed to fetch user parties.");
+            return Result<PaginatedResult<PartyDto>>.Failure("An error occurred while fetching parties.");
         }
     }
+
+
+
 
     public async Task<Result<List<PartyDto>>> GetRecentParties(string userId)
     {

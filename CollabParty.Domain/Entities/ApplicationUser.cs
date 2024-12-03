@@ -11,7 +11,7 @@ namespace CollabParty.Domain.Entities
         [Required]
         public int CurrentExp { get; set; } = 0;
 
-        public int Currency { get; set; } = 0;
+        public int Gold { get; set; } = 0;
 
         [Required]
         public int ExpToNextLevel { get; set; } = 100;

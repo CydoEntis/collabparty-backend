@@ -13,6 +13,7 @@ namespace CollabParty.Domain.Entities
         public int AvatarId { get; set; }
         public Avatar Avatar { get; set; }
 
+        public bool IsUnlocked { get; set; }
         public DateTime UnlockedAt { get; set; }
 
         public bool IsActive { get; set; }
