@@ -44,7 +44,7 @@ public class PartySeeder
 
             var users = dbContext.ApplicationUsers.ToList();
 
-            if (users.Any()) // Ensure there are users in the database
+            if (users.Any()) 
             {
                 foreach (var (partyName, description) in partyNames.Zip(partyDescriptions, (n, d) => (n, d)))
                 {
@@ -56,18 +56,16 @@ public class PartySeeder
                         UpdatedAt = DateTime.UtcNow.AddDays(-random.Next(0, 30)),
                     };
 
-                    // Seed Party Members including the Leader
-                    var selectedUsers = users.OrderBy(u => random.Next()).Take(3).ToList(); // Select a few random users
+                    var selectedUsers = users.OrderBy(u => random.Next()).Take(3).ToList(); 
 
-                    if (selectedUsers.Any()) // Check if there are users selected
+                    if (selectedUsers.Any()) 
                     {
-                        var leader = selectedUsers.First(); // Assign the first user as the leader
+                        var leader = selectedUsers.First(); 
 
-                        // Set the CreatedById to the leader of the party
                         party.CreatedById = leader.Id;
 
                         dbContext.Parties.Add(party);
-                        dbContext.SaveChanges(); // Save the Party first
+                        dbContext.SaveChanges(); 
 
                         // Now, seed the PartyMembers
                         foreach (var user in selectedUsers)
@@ -89,14 +87,12 @@ public class PartySeeder
                     }
                     else
                     {
-                        // If no users were selected, log or handle this case (optional)
                         Console.WriteLine("No users found for party: " + partyName);
                     }
                 }
             }
             else
             {
-                // If no users exist in the database, log or handle this case (optional)
                 Console.WriteLine("No users found in the database.");
             }
         }

@@ -10,8 +10,7 @@ public class AuthMappingProfile : Profile
     public AuthMappingProfile()
     {
         CreateMap<ApplicationUser, LoginDto>()
-            .ForMember(dest => dest.User.Id, opt => opt.MapFrom(src => src.Id))
-            .ForMember(dest => dest.User.Username, opt => opt.MapFrom(src => src.UserName));
+            .ForMember(dest => dest.User, opt => opt.MapFrom(src => src));
 
         CreateMap<RegisterCredentialsDto, ApplicationUser>()
             .ForMember(dest => dest.UserName, opt => opt.MapFrom(src => src.Username))

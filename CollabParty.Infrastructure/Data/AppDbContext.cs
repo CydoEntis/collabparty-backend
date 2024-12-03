@@ -108,28 +108,26 @@ namespace CollabParty.Infrastructure.Data
                 .HasOne(qa => qa.User)
                 .WithMany()
                 .HasForeignKey(qa => qa.UserId)
-                .OnDelete(DeleteBehavior.Restrict); 
+                .OnDelete(DeleteBehavior.Restrict); // Prevents a User from being deleted when a Quest Assignment is deleted.
             
             builder.Entity<QuestComment>()
                 .HasOne(qc => qc.Quest)
                 .WithMany(q => q.QuestComments)
                 .HasForeignKey(qc => qc.QuestId)
-                .OnDelete(DeleteBehavior.Restrict); 
+                .OnDelete(DeleteBehavior.Restrict); // Prevents a Quest From being deleted when Quest Comment is deleted.
             
             builder.Entity<QuestFile>()
                 .HasOne(qc => qc.Quest)
                 .WithMany(q => q.QuestFiles)
                 .HasForeignKey(qc => qc.QuestId)
-                .OnDelete(DeleteBehavior.Restrict); 
+                .OnDelete(DeleteBehavior.Restrict);  // Prevents a Quest from being deleted when a Quest File is Deleted.
             
-            // Prevent delete of Quest when a User is removed from a Quest (i.e., when a UserQuest is deleted)
             builder.Entity<UserQuest>()
                 .HasOne(uq => uq.Quest)
                 .WithMany(q => q.UserQuests)
                 .HasForeignKey(uq => uq.QuestId)
-                .OnDelete(DeleteBehavior.Restrict); // Ensures that the Quest is not deleted when a UserQuest is deleted
+                .OnDelete(DeleteBehavior.Restrict); // Prevents a Quest is not deleted when a UserQuest is deleted
 
-            // Optional: If you have a similar relationship for User -> UserQuests, configure it similarly:
             builder.Entity<UserQuest>()
                 .HasOne(uq => uq.User)
                 .WithMany(u => u.UserQuests)
