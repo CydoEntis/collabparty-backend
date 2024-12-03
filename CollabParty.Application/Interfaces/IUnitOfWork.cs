@@ -6,11 +6,14 @@ public interface IUnitOfWork
 {
     IAvatarRepository Avatar { get; }
     IPartyRepository Party { get; }
+    IPartyMemberRepository PartyMember { get; }
     IQuestRepository Quest { get; }
+    IQuestAssignmentRepository QuestAssignment { get; }
+    IQuestCommentRepository QuestComment { get; }
+    IQuestFileRepository QuestFile { get; }
     IQuestStepRepository QuestStep { get; }
     ISessionRepository Session { get; }
     IUserAvatarRepository UserAvatar { get; }
-    IUserPartyRepository UserParty { get; }
     IUserQuestRepository UserQuest { get; }
     IUserRepository User { get; }
     Task SaveAsync();

@@ -47,7 +47,7 @@ public class PartySeeder
             {
                 var party = new Party
                 {
-                    PartyName = partyName,
+                    Name = partyName,
                     Description = description,
                     CreatedAt = DateTime.UtcNow.AddDays(-random.Next(0, 30)),
                     UpdatedAt = DateTime.UtcNow.AddDays(-random.Next(0, 30)),

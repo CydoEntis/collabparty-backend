@@ -30,7 +30,7 @@ namespace CollabParty.Infrastructure.Persistence.Seeders
                     {
                         UserName = name,
                         Email = $"{name.ToLower()}@test.com",
-                        Currency = currencyAmount,
+                        Gold = currencyAmount,
                         CurrentLevel = userLevel,
                         CurrentExp = currentExp,
                         ExpToNextLevel = expForNextLevel,

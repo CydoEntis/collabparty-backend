@@ -72,8 +72,6 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
 // Dependency Injection for Repositories and Services
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<IUserPartyService, UserPartyService>();
-builder.Services.AddScoped<IPartyService, PartyService>();
 builder.Services.AddScoped<IEmailTemplateService, EmailTemplateService>();
 
 // Suppress Model State Validation for Custom Filters
@@ -172,7 +170,7 @@ using (var scope = app.Services.CreateScope())
     PartySeeder.Seed(dbContext);
     await UserSeeder.Seed(dbContext, userManager);
     UserAvatarSeeder.Seed(dbContext);
-    UserPartySeeder.Seed(dbContext);
+    PartyMemberSeeder.Seed(dbContext);
 }
 
 app.UseHttpsRedirection();
