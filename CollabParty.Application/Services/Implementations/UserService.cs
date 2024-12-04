@@ -35,12 +35,12 @@ public class UserService : IUserService
 
             var emailTaken = await _unitOfWork.User.GetAsync(u => u.Email == dto.Email && u.Id != userId);
             if (emailTaken != null)
-                return Result<UpdateUserResponseDto>.Failure("Email is taken");
+                return Result<UpdateUserResponseDto>.Failure("email", new[] { "Email is already taken" });
 
             var usernameTaken =
                 await _unitOfWork.User.GetAsync(u => u.UserName == dto.Username && u.Id != userId);
             if (usernameTaken != null)
-                return Result<UpdateUserResponseDto>.Failure("Username is taken");
+                return Result<UpdateUserResponseDto>.Failure("username", new[] { "Username is already taken" });
 
             foundUser.Email = dto.Email;
             foundUser.UserName = dto.Username;
