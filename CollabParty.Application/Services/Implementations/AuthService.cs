@@ -74,7 +74,7 @@ public class AuthService : IAuthService
             RefreshToken = refreshToken,
         };
         var loginDto = _mapper.Map<LoginResponseDto>(user);
-        loginDto.TokensResponse = tokenDto;
+        loginDto.Tokens = tokenDto;
 
         return Result<LoginResponseDto>.Success(loginDto);
     }

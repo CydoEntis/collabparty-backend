@@ -10,5 +10,5 @@ public class UserDtoResponse
     public int CurrentLevel { get; set; }
     public int CurrentExp { get; set; }
     public int ExpToNextLevel { get; set; }
-    public AvatarResponseDto AvatarResponse { get; set; }
+    public AvatarResponseDto Avatar { get; set; }
 }

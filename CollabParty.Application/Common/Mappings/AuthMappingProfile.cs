@@ -20,7 +20,7 @@ public class AuthMappingProfile : Profile
             .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.Email));
 
         CreateMap<LoginResponseDto, TokenResponseDto>()
-            .ForMember(dest => dest.AccessToken, opt => opt.MapFrom(src => src.TokensResponse.AccessToken))
-            .ForMember(dest => dest.RefreshToken, opt => opt.MapFrom(src => src.TokensResponse.RefreshToken));
+            .ForMember(dest => dest.AccessToken, opt => opt.MapFrom(src => src.Tokens.AccessToken))
+            .ForMember(dest => dest.RefreshToken, opt => opt.MapFrom(src => src.Tokens.RefreshToken));
     }
 }

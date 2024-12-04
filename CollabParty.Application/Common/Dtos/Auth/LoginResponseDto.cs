@@ -6,6 +6,6 @@ namespace CollabParty.Application.Common.Dtos.Auth;
 public class LoginResponseDto
 {
     public UserDtoResponse User { get; set; }
-    public TokenResponseDto TokensResponse { get; set; }
+    public TokenResponseDto Tokens{ get; set; }
 
 }
