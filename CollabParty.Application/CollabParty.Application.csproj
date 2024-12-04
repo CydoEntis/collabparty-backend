@@ -17,9 +17,5 @@
     <ItemGroup>
         <ProjectReference Include="..\CollabParty.Domain\CollabParty.Domain.csproj" />
     </ItemGroup>
-
-    <ItemGroup>
-      <Folder Include="Common\Validators\User\" />
-    </ItemGroup>
     
 </Project>
