@@ -10,7 +10,7 @@ public class UserMappingProfile : Profile
 {
     public UserMappingProfile()
     {
-        CreateMap<ApplicationUser, UserDto>()
+        CreateMap<ApplicationUser, UserDtoResponse>()
             .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
             .ForMember(dest => dest.Username, opt => opt.MapFrom(src => src.UserName))
             .ForMember(dest => dest.CurrentLevel, opt => opt.MapFrom(src => src.CurrentLevel))

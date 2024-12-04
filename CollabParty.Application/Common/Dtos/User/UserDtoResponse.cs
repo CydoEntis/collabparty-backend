@@ -1,7 +1,7 @@
 using CollabParty.Application.Common.Dtos.Avatar;
 
 namespace CollabParty.Application.Common.Dtos.User;
-public class UserDto
+public class UserDtoResponse
 {
     public string Id { get; set; }
     public string Username { get; set; }
