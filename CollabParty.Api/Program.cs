@@ -101,13 +101,13 @@ builder.Services.AddFluentValidationAutoValidation()
     .AddFluentValidationClientsideAdapters();
 
 // Register Validators
-builder.Services.AddValidatorsFromAssemblyContaining<LoginCredentialsDtoValidator>();
-builder.Services.AddValidatorsFromAssemblyContaining<RegisterCredentialsDtoValidator>();
-builder.Services.AddValidatorsFromAssemblyContaining<TokenDtoValidator>();
-builder.Services.AddValidatorsFromAssemblyContaining<CreatePartyDtoValidator>();
-builder.Services.AddValidatorsFromAssemblyContaining<ChangePasswordDtoValidator>();
-builder.Services.AddValidatorsFromAssemblyContaining<ForgotPasswordDtoValidator>();
-builder.Services.AddValidatorsFromAssemblyContaining<ResetPasswordDtoValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<LoginCredentialsRequestDtoValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<RegisterCredentialsRequestDtoValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<TokenDtoRequestValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<CreatePartyRequestDtoValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<ChangePasswordRequestDtoValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<ForgotPasswordRequestDtoValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<ResetPasswordRequestDtoValidator>();
 
 // JWT Authentication Configuration
 var jwtKey = builder.Configuration["JwtSecret"];

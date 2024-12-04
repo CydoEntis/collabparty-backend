@@ -3,9 +3,9 @@ using FluentValidation;
 
 namespace CollabParty.Application.Common.Validators.Party;
 
-public class CreatePartyDtoValidator : AbstractValidator<CreatePartyDto>
+public class CreatePartyRequestDtoValidator : AbstractValidator<CreatePartyDto>
 {
-    public CreatePartyDtoValidator()
+    public CreatePartyRequestDtoValidator()
     {
         RuleFor(x => x.PartyName).NotEmpty().WithMessage("Party name is required").MinimumLength(5)
             .WithMessage("Party name must be at least 5 characters.").MaximumLength(25)
