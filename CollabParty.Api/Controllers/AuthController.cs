@@ -21,7 +21,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("register")]
-    public async Task<ActionResult<ApiResponse>> Register([FromBody] RegisterCredentialsDto dto)
+    public async Task<ActionResult<ApiResponse>> Register([FromBody] RegisterRequestDto dto)
     {
         try
         {
@@ -44,14 +44,14 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("login")]
-    public async Task<ActionResult<ApiResponse>> Login([FromBody] LoginCredentialsDto dto)
+    public async Task<ActionResult<ApiResponse>> Login([FromBody] LoginRequestDto requestDto)
     {
         try
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var result = await _authService.Login(dto);
+            var result = await _authService.Login(requestDto);
             if (result.IsSuccess)
                 return Ok(ApiResponse.Success(result.Data));
 
@@ -66,14 +66,14 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("logout")]
-    public async Task<ActionResult<ApiResponse>> Logout([FromBody] TokenDto dto)
+    public async Task<ActionResult<ApiResponse>> Logout([FromBody] TokenResponseDto responseDto)
     {
         try
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            await _authService.Logout(dto);
+            await _authService.Logout(responseDto);
             return Ok(ApiResponse.Success());
         }
         catch (Exception ex)
@@ -84,14 +84,14 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("refresh")]
-    public async Task<ActionResult<ApiResponse>> RefreshTokens([FromBody] TokenDto dto)
+    public async Task<ActionResult<ApiResponse>> RefreshTokens([FromBody] TokenResponseDto responseDto)
     {
         try
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var result = await _authService.RefreshTokens(dto);
+            var result = await _authService.RefreshTokens(responseDto);
             if (result.IsSuccess)
                 return Ok(ApiResponse.Success(result.Data));
 
@@ -106,7 +106,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("change-password")]
-    public async Task<ActionResult<ApiResponse>> ChangePassword([FromBody] ChangePasswordDto dto)
+    public async Task<ActionResult<ApiResponse>> ChangePassword([FromBody] ChangePasswordRequestDto requestDto)
     {
         try
         {
@@ -119,7 +119,7 @@ public class AuthController : ControllerBase
                 return Unauthorized(ApiResponse.Error("authorization", "Unauthorized access.",
                     HttpStatusCode.Unauthorized));
 
-            var result = await _authService.ChangePasswordAsync(userId, dto);
+            var result = await _authService.ChangePasswordAsync(userId, requestDto);
 
             if (result.IsSuccess)
                 return Ok(ApiResponse.Success(result.Message));
@@ -134,14 +134,14 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("forgot-password")]
-    public async Task<ActionResult<ApiResponse>> ForgotPassword([FromBody] ForgotPasswordDto dto)
+    public async Task<ActionResult<ApiResponse>> ForgotPassword([FromBody] ForgotPasswordRequestDto requestDto)
     {
         try
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var result = await _authService.SendForgotPasswordEmail(dto);
+            var result = await _authService.SendForgotPasswordEmail(requestDto);
 
             if (result.IsSuccess)
                 return Ok(ApiResponse.Success(result.Message));
@@ -156,14 +156,14 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("reset-password")]
-    public async Task<ActionResult<ApiResponse>> ResetPassword([FromBody] ResetPasswordDto dto)
+    public async Task<ActionResult<ApiResponse>> ResetPassword([FromBody] ResetPasswordRequestDto requestDto)
     {
         try
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var result = await _authService.ResetPasswordAsync(dto);
+            var result = await _authService.ResetPasswordAsync(requestDto);
 
             if (result.IsSuccess)
                 return Ok(ApiResponse.Success(result.Message));

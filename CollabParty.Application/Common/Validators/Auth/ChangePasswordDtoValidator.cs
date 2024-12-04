@@ -3,7 +3,7 @@ using FluentValidation;
 
 namespace CollabParty.Application.Common.Validators.Auth;
 
-public class ChangePasswordDtoValidator : AbstractValidator<ChangePasswordDto>
+public class ChangePasswordDtoValidator : AbstractValidator<ChangePasswordRequestDto>
 {
     public ChangePasswordDtoValidator()
     {

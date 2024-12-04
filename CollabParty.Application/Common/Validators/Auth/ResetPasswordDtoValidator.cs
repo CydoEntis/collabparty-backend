@@ -3,7 +3,7 @@ using FluentValidation;
 
 namespace CollabParty.Application.Common.Validators.Auth;
 
-public class ResetPasswordDtoValidator : AbstractValidator<ResetPasswordDto>
+public class ResetPasswordDtoValidator : AbstractValidator<ResetPasswordRequestDto>
 {
     public ResetPasswordDtoValidator()
     {

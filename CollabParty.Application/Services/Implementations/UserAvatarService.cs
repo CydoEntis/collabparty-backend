@@ -21,7 +21,7 @@ public class UserAvatarService : IUserAvatarService
         _logger = logger;
     }
 
-    public async Task<Result<List<AvatarDto>>> GetAllUnlockedAvatars(string userId)
+    public async Task<Result<List<AvatarResponseDto>>> GetAllUnlockedAvatars(string userId)
     {
         try
         {
@@ -29,16 +29,16 @@ public class UserAvatarService : IUserAvatarService
                 await _unitOfWork.UserAvatar.GetAllAsync(ua => ua.UserId == userId, includeProperties: "Avatar");
 
             if (!unlockedAvatars.Any())
-                return Result<List<AvatarDto>>.Failure("No avatars found");
+                return Result<List<AvatarResponseDto>>.Failure("No avatars found");
 
-            var avatars = _mapper.Map<List<AvatarDto>>(unlockedAvatars);
+            var avatars = _mapper.Map<List<AvatarResponseDto>>(unlockedAvatars);
 
-            return Result<List<AvatarDto>>.Success(avatars);
+            return Result<List<AvatarResponseDto>>.Success(avatars);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to update party member roles");
-            return Result<List<AvatarDto>>.Failure("An error occured while getting all unlocked avatars");
+            return Result<List<AvatarResponseDto>>.Failure("An error occured while getting all unlocked avatars");
         }
     }
 }

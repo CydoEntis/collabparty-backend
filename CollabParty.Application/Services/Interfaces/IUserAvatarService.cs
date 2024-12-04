@@ -5,5 +5,5 @@ namespace CollabParty.Application.Services.Interfaces;
 
 public interface IUserAvatarService
 {
-    Task<Result<List<AvatarDto>>> GetAllUnlockedAvatars(string userId);
+    Task<Result<List<AvatarResponseDto>>> GetAllUnlockedAvatars(string userId);
 }

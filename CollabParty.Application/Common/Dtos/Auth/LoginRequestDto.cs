@@ -2,7 +2,7 @@
 
 namespace CollabParty.Application.Common.Dtos;
 
-public class LoginCredentialsDto
+public class LoginRequestDto
 {
     [Required]
     public string Email { get; set; }

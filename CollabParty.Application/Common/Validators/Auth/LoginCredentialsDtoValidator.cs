@@ -3,7 +3,7 @@ using FluentValidation;
 
 namespace CollabParty.Application.Common.Validators.Auth;
 
-public class LoginCredentialsDtoValidator : AbstractValidator<LoginCredentialsDto>
+public class LoginCredentialsDtoValidator : AbstractValidator<LoginRequestDto>
 {
     public LoginCredentialsDtoValidator()
     {

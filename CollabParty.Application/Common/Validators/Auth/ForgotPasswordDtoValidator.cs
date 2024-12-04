@@ -3,7 +3,7 @@ using FluentValidation;
 
 namespace CollabParty.Application.Common.Validators.Auth;
 
-public class ForgotPasswordDtoValidator : AbstractValidator<ForgotPasswordDto>
+public class ForgotPasswordDtoValidator : AbstractValidator<ForgotPasswordRequestDto>
 {
     public ForgotPasswordDtoValidator()
     {

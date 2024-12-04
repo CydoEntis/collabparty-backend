@@ -3,7 +3,7 @@ using CollabParty.Application.Common.Dtos;
 
 namespace CollabParty.Application.Common.Validators.Auth;
 
-public class TokenDtoValidator : AbstractValidator<TokenDto>
+public class TokenDtoValidator : AbstractValidator<TokenResponseDto>
 {
     public TokenDtoValidator()
     {

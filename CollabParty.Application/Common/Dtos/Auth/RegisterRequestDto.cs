@@ -2,7 +2,7 @@
 
 namespace CollabParty.Application.Common.Dtos;
 
-public class RegisterCredentialsDto
+public class RegisterRequestDto
 {
     [Required(ErrorMessage = "Email is required.")]
     [EmailAddress(ErrorMessage = "Invalid email address.")]

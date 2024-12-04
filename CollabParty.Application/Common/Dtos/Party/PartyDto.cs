@@ -10,7 +10,7 @@ public class PartyDto
     public string  PartyName { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
-    public List<MemberDto> Members { get; set; }
+    public List<MemberResponseDto> Members { get; set; }
     // public int TotalMembers { get; set; }
     // public int TotalQuests { get; set; }
     // public int CompletedQuests { get; set; }

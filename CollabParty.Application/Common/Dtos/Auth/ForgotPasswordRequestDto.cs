@@ -1,6 +1,6 @@
 namespace CollabParty.Application.Common.Dtos.Auth;
 
-public class ForgotPasswordDto
+public class ForgotPasswordRequestDto
 {
     public string Email { get; set; }
 }
