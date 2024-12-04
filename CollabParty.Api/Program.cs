@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json;
 using CollabParty.Application.Common.Interfaces;
 using CollabParty.Application.Common.Models;
+using CollabParty.Application.Common.Validators;
 using CollabParty.Application.Common.Validators.Auth;
 using CollabParty.Application.Common.Validators.Party;
 using CollabParty.Application.Services.Implementations;
@@ -83,22 +84,12 @@ builder.Services.AddScoped<IEmailTemplateService, EmailTemplateService>();
 builder.Services.Configure<ApiBehaviorOptions>(options =>
     options.SuppressModelStateInvalidFilter = true);
 
-// JSON and FluentValidation Configuration
-builder.Services.AddControllers(options =>
-    {
-        // Uncomment to add custom filters if needed
-        // options.Filters.Add<TokenValidationFilter>();
-        // options.Filters.Add<CamelCaseValidationFilter>();
-    })
-    .AddJsonOptions(options =>
-        options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase);
-
-// Use the DependencyInjection method for adding EmailService
-builder.Services.AddInfrastructureServices(builder.Configuration); // Add this
-
 // FluentValidation Setup
 builder.Services.AddFluentValidationAutoValidation()
     .AddFluentValidationClientsideAdapters();
+
+// Register the CamelCaseValidationInterceptor manually
+builder.Services.AddScoped<IValidatorInterceptor, CamelCaseValidationInterceptor>();
 
 // Register Validators
 builder.Services.AddValidatorsFromAssemblyContaining<LoginCredentialsRequestDtoValidator>();
@@ -108,6 +99,16 @@ builder.Services.AddValidatorsFromAssemblyContaining<CreatePartyRequestDtoValida
 builder.Services.AddValidatorsFromAssemblyContaining<ChangePasswordRequestDtoValidator>();
 builder.Services.AddValidatorsFromAssemblyContaining<ForgotPasswordRequestDtoValidator>();
 builder.Services.AddValidatorsFromAssemblyContaining<ResetPasswordRequestDtoValidator>();
+
+
+
+// JSON and FluentValidation Configuration
+builder.Services.AddControllers()
+    .AddJsonOptions(options => { options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase; });
+
+// Use the DependencyInjection method for adding EmailService
+builder.Services.AddInfrastructureServices(builder.Configuration);
+
 
 // JWT Authentication Configuration
 var jwtKey = builder.Configuration["JwtSecret"];
