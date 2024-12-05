@@ -59,6 +59,45 @@ public class UserService : IUserService
         }
     }
 
+
+    public async Task<Result<AvatarResponseDto>> UpdateUserAvatar(string userId, UpdateUserAvatarRequestDto dto)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(userId))
+                return Result<AvatarResponseDto>.Failure("User ID is required");
+
+            var foundUserAvatar =
+                await _unitOfWork.UserAvatar.GetAsync(ua => ua.UserId == userId && ua.AvatarId == dto.AvatarId);
+
+            var currentActiveAvatar = await _unitOfWork.UserAvatar.GetAsync(ua => ua.UserId == userId && ua.IsActive);
+
+            if (currentActiveAvatar != null)
+            {
+                currentActiveAvatar.IsActive = false;
+                await _unitOfWork.UserAvatar.UpdateAsync(currentActiveAvatar);
+            }
+
+            if (foundUserAvatar == null)
+                return Result<AvatarResponseDto>.Failure("User avatar does not exist");
+
+            foundUserAvatar.IsActive = true;
+
+            await _unitOfWork.UserAvatar
+                .UpdateAsync(foundUserAvatar);
+
+
+            var updatedUserAvatarDto = _mapper.Map<AvatarResponseDto>(foundUserAvatar);
+
+            return Result<AvatarResponseDto>.Success(updatedUserAvatarDto);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update user details");
+            return Result<AvatarResponseDto>.Failure("An error occurred while updating the user");
+        }
+    }
+
     public async Task<Result<List<AvatarResponseDto>>> GetUnlockedAvatars(string userId)
     {
         try
@@ -66,7 +105,8 @@ public class UserService : IUserService
             if (string.IsNullOrWhiteSpace(userId))
                 return Result<List<AvatarResponseDto>>.Failure("User ID is required");
 
-            var unlockedAvatars = await _unitOfWork.UserAvatar.GetAllAsync(ua => ua.UserId == userId, includeProperties: "Avatar");
+            var unlockedAvatars =
+                await _unitOfWork.UserAvatar.GetAllAsync(ua => ua.UserId == userId, includeProperties: "Avatar");
 
             if (!unlockedAvatars.Any())
                 return Result<List<AvatarResponseDto>>.Failure("User does not have any unlocked avatars");

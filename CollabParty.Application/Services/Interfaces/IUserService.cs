@@ -8,4 +8,5 @@ public interface IUserService
 {
     Task<Result<UpdateUserResponseDto>> UpdateUserDetails(string userId, UpdateUserRequestDto dto);
     Task<Result<List<AvatarResponseDto>>> GetUnlockedAvatars(string userId);
+    Task<Result<AvatarResponseDto>> UpdateUserAvatar(string userId, UpdateUserAvatarRequestDto dto);
 }
