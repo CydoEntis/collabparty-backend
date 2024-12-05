@@ -78,6 +78,7 @@ builder.Services.AddAutoMapper(typeof(MappingConfig));
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserAvatarService, UserAvatarService>();
+builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IEmailTemplateService, EmailTemplateService>();
 
 // Suppress Model State Validation for Custom Filters
@@ -99,7 +100,6 @@ builder.Services.AddValidatorsFromAssemblyContaining<CreatePartyRequestDtoValida
 builder.Services.AddValidatorsFromAssemblyContaining<ChangePasswordRequestDtoValidator>();
 builder.Services.AddValidatorsFromAssemblyContaining<ForgotPasswordRequestDtoValidator>();
 builder.Services.AddValidatorsFromAssemblyContaining<ResetPasswordRequestDtoValidator>();
-
 
 
 // JSON and FluentValidation Configuration

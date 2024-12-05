@@ -22,5 +22,6 @@ public class AvatarMappingProfile : Profile
             .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Avatar.Name))
             .ForMember(dest => dest.DisplayName, opt => opt.MapFrom(src => src.Avatar.DisplayName))
             .ForMember(dest => dest.ImageUrl, opt => opt.MapFrom(src => src.Avatar.ImageUrl));
+        
     }
 }

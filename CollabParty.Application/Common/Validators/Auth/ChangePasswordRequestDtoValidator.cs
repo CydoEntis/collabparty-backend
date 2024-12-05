@@ -7,11 +7,11 @@ public class ChangePasswordRequestDtoValidator : AbstractValidator<ChangePasswor
 {
     public ChangePasswordRequestDtoValidator()
     {
-        RuleFor(x => x.OldPassword).NotEmpty().WithMessage("Current password is requred");
+        RuleFor(x => x.CurrentPassword).NotEmpty().WithMessage("Current password is required");
         RuleFor(x => x.NewPassword)
-            .NotEmpty().WithMessage("Password is required.")
-            .MinimumLength(6).WithMessage("Password must be at least 6 characters long.")
-            .Matches(@"[A-Z]").WithMessage("Password must contain at least one uppercase letter.")
-            .Matches(@"[\W_]").WithMessage("Password must contain at least one special character.");
+            .NotEmpty().WithMessage("New password is required.")
+            .MinimumLength(6).WithMessage("New password must be at least 6 characters long.")
+            .Matches(@"[A-Z]").WithMessage("New password must contain at least one uppercase letter.")
+            .Matches(@"[\W_]").WithMessage("New password must contain at least one special character.");
     }
 }

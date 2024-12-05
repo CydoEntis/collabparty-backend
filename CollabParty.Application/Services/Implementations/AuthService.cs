@@ -215,13 +215,13 @@ public class AuthService : IAuthService
             return Result.Failure("user", new[] { "User not found" });
         }
 
-        var isCurrentPasswordValid = await _userManager.CheckPasswordAsync(user, requestDto.OldPassword);
+        var isCurrentPasswordValid = await _userManager.CheckPasswordAsync(user, requestDto.CurrentPassword);
         if (!isCurrentPasswordValid)
         {
             return Result.Failure("currentPassword", new[] { "Current password is incorrect" });
         }
 
-        var updateResult = await _userManager.ChangePasswordAsync(user, requestDto.OldPassword, requestDto.NewPassword);
+        var updateResult = await _userManager.ChangePasswordAsync(user, requestDto.CurrentPassword, requestDto.NewPassword);
         if (!updateResult.Succeeded)
         {
             var errors = updateResult.Errors
