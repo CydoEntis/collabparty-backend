@@ -49,4 +49,30 @@ public class UserController : ControllerBase
                 ApiResponse.Error("internal", ex.InnerException.Message, HttpStatusCode.InternalServerError);
         }
     }
+
+    [HttpGet("unlocked-avatars")]
+    public async Task<ActionResult<ApiResponse>> GetUnlockedAvatars()
+    {
+        try
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized(ApiResponse.Error("authorization", "Unauthorized access.",
+                    HttpStatusCode.Unauthorized));
+
+            var result = await _userService.GetUnlockedAvatars(userId);
+
+            if (result.IsSuccess)
+                return Ok(ApiResponse.Success(result.Data));
+
+            var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
+            return BadRequest(ApiResponse.ValidationError(formattedErrors));
+        }
+        catch (Exception ex)
+        {
+            return
+                ApiResponse.Error("internal", ex.InnerException.Message, HttpStatusCode.InternalServerError);
+        }
+    }
 }

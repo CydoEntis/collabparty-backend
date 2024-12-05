@@ -1,4 +1,5 @@
 using AutoMapper;
+using CollabParty.Application.Common.Dtos.Avatar;
 using CollabParty.Application.Common.Dtos.User;
 using CollabParty.Application.Common.Models;
 using CollabParty.Application.Interfaces;
@@ -55,6 +56,30 @@ public class UserService : IUserService
         {
             _logger.LogError(ex, "Failed to update user details");
             return Result<UpdateUserResponseDto>.Failure("An error occurred while updating the user");
+        }
+    }
+
+    public async Task<Result<List<AvatarResponseDto>>> GetUnlockedAvatars(string userId)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(userId))
+                return Result<List<AvatarResponseDto>>.Failure("User ID is required");
+
+            var unlockedAvatars = await _unitOfWork.UserAvatar.GetAllAsync(ua => ua.UserId == userId);
+
+            if (!unlockedAvatars.Any())
+                return Result<List<AvatarResponseDto>>.Failure("User does not have any unlocked avatars");
+
+
+            var avatarDtoList = _mapper.Map<List<AvatarResponseDto>>(unlockedAvatars);
+
+            return Result<List<AvatarResponseDto>>.Success(avatarDtoList);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update user details");
+            return Result<List<AvatarResponseDto>>.Failure("An error occurred while updating the user");
         }
     }
 }
