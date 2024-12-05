@@ -22,7 +22,7 @@ public class UserController : ControllerBase
         _userService = userService;
     }
 
-    [HttpPut("user-details")]
+    [HttpPut]
     public async Task<ActionResult<ApiResponse>> UpdateUserDetails([FromBody] UpdateUserRequestDto dto)
     {
         try

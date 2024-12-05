@@ -68,7 +68,7 @@ public class UserService : IUserService
                 return Result<AvatarResponseDto>.Failure("User ID is required");
 
             var foundUserAvatar =
-                await _unitOfWork.UserAvatar.GetAsync(ua => ua.UserId == userId && ua.AvatarId == dto.AvatarId);
+                await _unitOfWork.UserAvatar.GetAsync(ua => ua.UserId == userId && ua.AvatarId == dto.AvatarId, includeProperties: "Avatar");
 
             var currentActiveAvatar = await _unitOfWork.UserAvatar.GetAsync(ua => ua.UserId == userId && ua.IsActive);
 

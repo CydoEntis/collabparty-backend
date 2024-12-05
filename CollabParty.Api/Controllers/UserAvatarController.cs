@@ -14,10 +14,12 @@ namespace CollabParty.Api.Controllers;
 public class UserAvatarController : ControllerBase
 {
     private readonly IUserAvatarService _userAvatarService;
+    private readonly IAvatarService _avatarService;
 
-    public UserAvatarController(IUserAvatarService userAvatarService)
+    public UserAvatarController(IUserAvatarService userAvatarService, IAvatarService avatarService)
     {
         _userAvatarService = userAvatarService;
+        _avatarService = avatarService;
     }
 
     [HttpGet("unlocked")]
@@ -30,6 +32,24 @@ public class UserAvatarController : ControllerBase
                 HttpStatusCode.Unauthorized));
 
         var result = await _userAvatarService.GetAllUnlockedAvatars(userId);
+
+        if (result.IsSuccess)
+            return Ok(ApiResponse.Success(result.Data));
+
+        var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
+        return BadRequest(ApiResponse.ValidationError(formattedErrors));
+    }
+
+    [HttpGet("locked")]
+    public async Task<ActionResult<ApiResponse>> GetAllLockedAvatars()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized(ApiResponse.Error("authorization", "Unauthorized access.",
+                HttpStatusCode.Unauthorized));
+
+        var result = await _avatarService.GetLockedAvatars(userId);
 
         if (result.IsSuccess)
             return Ok(ApiResponse.Success(result.Data));

@@ -14,7 +14,6 @@ namespace CollabParty.Infrastructure.DependencyInjection
 
             // services.AddTransient<IEmailService, SendGridEmailService>();
             services.AddTransient<IEmailService, MailKitService>();
-            // services.AddSingleton<IEmailTemplateService, EmailTemplateService>();
 
             return services;
         }
