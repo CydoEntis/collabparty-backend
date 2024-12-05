@@ -66,7 +66,7 @@ public class UserService : IUserService
             if (string.IsNullOrWhiteSpace(userId))
                 return Result<List<AvatarResponseDto>>.Failure("User ID is required");
 
-            var unlockedAvatars = await _unitOfWork.UserAvatar.GetAllAsync(ua => ua.UserId == userId);
+            var unlockedAvatars = await _unitOfWork.UserAvatar.GetAllAsync(ua => ua.UserId == userId, includeProperties: "Avatar");
 
             if (!unlockedAvatars.Any())
                 return Result<List<AvatarResponseDto>>.Failure("User does not have any unlocked avatars");

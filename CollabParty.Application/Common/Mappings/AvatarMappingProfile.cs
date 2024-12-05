@@ -16,12 +16,10 @@ public class AvatarMappingProfile : Profile
             .ForMember(dest => dest.DisplayName, opt => opt.MapFrom(src => src.DisplayName))
             .ForMember(dest => dest.ImageUrl, opt => opt.MapFrom(src => src.ImageUrl));
 
-
         CreateMap<UserAvatar, AvatarResponseDto>()
             .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Avatar.Id))
             .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Avatar.Name))
             .ForMember(dest => dest.DisplayName, opt => opt.MapFrom(src => src.Avatar.DisplayName))
             .ForMember(dest => dest.ImageUrl, opt => opt.MapFrom(src => src.Avatar.ImageUrl));
-        
     }
 }

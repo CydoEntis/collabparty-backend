@@ -114,7 +114,7 @@ namespace CollabParty.Infrastructure.Persistence.Seeders
                     new Avatar
                     {
                         Name = "squidman", DisplayName = "Squidman", UnlockLevel = 16, Tier = 6, UnlockCost = 1500,
-                        ImageUrl = "/Avatars/squidman.png"
+                        ImageUrl = "/Avatars/squid_man.png"
                     },
                     new Avatar
                     {
