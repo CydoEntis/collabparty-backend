@@ -7,7 +7,7 @@ public class UnlockedAvatarSeeder
 {
     public static void Seed(AppDbContext dbContext)
     {
-        if (!dbContext.UserAvatars.Any()) 
+        if (!dbContext.UnlockedAvatars.Any()) 
         {
             var userAvatars = new List<UnlockedAvatar>();
             var random = new Random();
@@ -38,7 +38,7 @@ public class UnlockedAvatarSeeder
                 }
             }
 
-            dbContext.UserAvatars.AddRange(userAvatars);
+            dbContext.UnlockedAvatars.AddRange(userAvatars);
             dbContext.SaveChanges();
         }
     }
