@@ -3,7 +3,7 @@ using CollabParty.Infrastructure.Data;
 
 namespace CollabParty.Infrastructure.Persistence.Seeders;
 
-public class UserAvatarSeeder
+public class UnlockedAvatarSeeder
 {
     public static void Seed(AppDbContext dbContext)
     {

@@ -17,14 +17,9 @@ namespace CollabParty.Api.Controllers;
 public class UserController : ControllerBase
 {
     private readonly IUserService _userService;
-    private readonly IUnlockedAvatarService _iUnlockedAvatarService;
-    private readonly IAvatarService _avatarService;
-
-    public UserController(IUserService userService, IUnlockedAvatarService iUnlockedAvatarService, IAvatarService avatarService)
+    public UserController(IUserService userService)
     {
         _userService = userService;
-        _iUnlockedAvatarService = iUnlockedAvatarService;
-        _avatarService = avatarService;
     }
 
     [HttpPut]
@@ -56,114 +51,5 @@ public class UserController : ControllerBase
         }
     }
 
-    [HttpPut("avatars")]
-    public async Task<ActionResult<ApiResponse>> UpdateUserAvatar([FromBody] ActiveAvatarRequestDto dto)
-    {
-        try
-        {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
 
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            if (string.IsNullOrEmpty(userId))
-                return Unauthorized(ApiResponse.Error("authorization", "Unauthorized access.",
-                    HttpStatusCode.Unauthorized));
-
-            var result = await _userService.UpdateUserAvatar(userId, dto);
-
-            if (result.IsSuccess)
-                return Ok(ApiResponse.Success(result.Data));
-
-            var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
-            return BadRequest(ApiResponse.ValidationError(formattedErrors));
-        }
-        catch (Exception ex)
-        {
-            return
-                ApiResponse.Error("internal", ex.InnerException.Message, HttpStatusCode.InternalServerError);
-        }
-    }
-
-    [HttpGet("avatars/unlocked")]
-    public async Task<ActionResult<ApiResponse>> GetAllUnlockedAvatars()
-    {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-        if (string.IsNullOrEmpty(userId))
-            return Unauthorized(ApiResponse.Error("authorization", "Unauthorized access.",
-                HttpStatusCode.Unauthorized));
-
-        var result = await _iUnlockedAvatarService.GetAllUnlockedAvatars(userId);
-
-        if (result.IsSuccess)
-            return Ok(ApiResponse.Success(result.Data));
-
-        var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
-        return BadRequest(ApiResponse.ValidationError(formattedErrors));
-    }
-    
-    [HttpGet("avatars")]
-    public async Task<ActionResult<ApiResponse>> GetAllAvatars()
-    {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-        if (string.IsNullOrEmpty(userId))
-            return Unauthorized(ApiResponse.Error("authorization", "Unauthorized access.",
-                HttpStatusCode.Unauthorized));
-
-        var result = await _iUnlockedAvatarService.GetAllAvatars(userId);
-
-        if (result.IsSuccess)
-            return Ok(ApiResponse.Success(result.Data));
-
-        var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
-        return BadRequest(ApiResponse.ValidationError(formattedErrors));
-    }
-
-    [HttpGet("avatars/locked")]
-    public async Task<ActionResult<ApiResponse>> GetAllLockedAvatars()
-    {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-        if (string.IsNullOrEmpty(userId))
-            return Unauthorized(ApiResponse.Error("authorization", "Unauthorized access.",
-                HttpStatusCode.Unauthorized));
-
-        var result = await _avatarService.GetLockedAvatars(userId);
-
-        if (result.IsSuccess)
-            return Ok(ApiResponse.Success(result.Data));
-
-        var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
-        return BadRequest(ApiResponse.ValidationError(formattedErrors));
-    }
-    
-    [HttpPost("change-password")]
-    public async Task<ActionResult<ApiResponse>> ChangePassword([FromBody] ChangePasswordRequestDto requestDto)
-    {
-        try
-        {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            if (string.IsNullOrEmpty(userId))
-                return Unauthorized(ApiResponse.Error("authorization", "Unauthorized access.",
-                    HttpStatusCode.Unauthorized));
-
-            var result = await _userService.ChangePasswordAsync(userId, requestDto);
-
-            if (result.IsSuccess)
-                return Ok(ApiResponse.Success(result.Message));
-
-            var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
-            return BadRequest(ApiResponse.ValidationError(formattedErrors));
-        }
-        catch (Exception ex)
-        {
-            return ApiResponse.Error("internal", ex.InnerException.Message, HttpStatusCode.InternalServerError);
-        }
-    }
 }

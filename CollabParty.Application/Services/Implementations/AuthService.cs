@@ -21,7 +21,7 @@ namespace CollabParty.Application.Services.Implementations;
 public class AuthService : IAuthService
 {
     private readonly IUnitOfWork _unitOfWork;
-    private readonly UnlockedAvatarService _unlockedAvatarService;
+    private readonly IUnlockedAvatarService _unlockedAvatarService;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IEmailService _emailService;
     private readonly IEmailTemplateService _emailTemplateService;
@@ -32,7 +32,7 @@ public class AuthService : IAuthService
 
     public AuthService(IUnitOfWork unitOfWork, UserManager<ApplicationUser> userManager,
         IConfiguration configuration, IEmailService emailService, IEmailTemplateService emailTemplateService,
-        IMapper mapper, UnlockedAvatarService unlockedAvatarService)
+        IMapper mapper, IUnlockedAvatarService unlockedAvatarService)
     {
         _unitOfWork = unitOfWork;
         _userManager = userManager;

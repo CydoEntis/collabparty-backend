@@ -21,7 +21,7 @@ public class UnlockedAvatarService : IUnlockedAvatarService
         _logger = logger;
     }
 
-    public async Task<Result<Dictionary<string, List<LockedAvatarDto>>>> GetAllAvatars(string userId)
+    public async Task<Result<Dictionary<string, List<LockedAvatarDto>>>> GetUnlockableAvatars(string userId)
     {
         try
         {
@@ -93,7 +93,7 @@ public class UnlockedAvatarService : IUnlockedAvatarService
         }
     }
 
-    public async Task<Result<List<AvatarResponseDto>>> GetUnlockableAvatars(string userId)
+    public async Task<Result<List<AvatarResponseDto>>> GetUnlockedAvatars(string userId)
     {
         try
         {

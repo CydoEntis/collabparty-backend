@@ -77,7 +77,7 @@ builder.Services.AddAutoMapper(typeof(MappingConfig));
 // Dependency Injection for Repositories and Services
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<UnlockedAvatarService, UnlockedAvatarService>();
+builder.Services.AddScoped<IUnlockedAvatarService, UnlockedAvatarService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IAvatarService, AvatarService>();
 builder.Services.AddScoped<IEmailTemplateService, EmailTemplateService>();
@@ -176,7 +176,7 @@ using (var scope = app.Services.CreateScope())
     AvatarSeeder.Seed(dbContext);
     await UserSeeder.Seed(dbContext, userManager);
     PartySeeder.Seed(dbContext);
-    UserAvatarSeeder.Seed(dbContext);
+    UnlockedAvatarSeeder.Seed(dbContext);
     PartyMemberSeeder.Seed(dbContext);
 }
 
