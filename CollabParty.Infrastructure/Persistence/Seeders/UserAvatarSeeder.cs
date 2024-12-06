@@ -9,7 +9,7 @@ public class UserAvatarSeeder
     {
         if (!dbContext.UserAvatars.Any()) 
         {
-            var userAvatars = new List<UserAvatar>();
+            var userAvatars = new List<UnlockedAvatar>();
             var random = new Random();
 
             var users = dbContext.ApplicationUsers.ToList();
@@ -24,7 +24,7 @@ public class UserAvatarSeeder
 
                     foreach (var avatar in unlockedAvatars)
                     {
-                        userAvatars.Add(new UserAvatar
+                        userAvatars.Add(new UnlockedAvatar
                         {
                             UserId = user.Id,
                             AvatarId = avatar.Id,

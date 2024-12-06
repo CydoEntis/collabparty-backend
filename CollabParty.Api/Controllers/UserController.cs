@@ -17,13 +17,13 @@ namespace CollabParty.Api.Controllers;
 public class UserController : ControllerBase
 {
     private readonly IUserService _userService;
-    private readonly IUserAvatarService _userAvatarService;
+    private readonly IUnlockedAvatarService _iUnlockedAvatarService;
     private readonly IAvatarService _avatarService;
 
-    public UserController(IUserService userService, IUserAvatarService userAvatarService, IAvatarService avatarService)
+    public UserController(IUserService userService, IUnlockedAvatarService iUnlockedAvatarService, IAvatarService avatarService)
     {
         _userService = userService;
-        _userAvatarService = userAvatarService;
+        _iUnlockedAvatarService = iUnlockedAvatarService;
         _avatarService = avatarService;
     }
 
@@ -57,7 +57,7 @@ public class UserController : ControllerBase
     }
 
     [HttpPut("avatars")]
-    public async Task<ActionResult<ApiResponse>> UpdateUserAvatar([FromBody] UpdateUserAvatarRequestDto dto)
+    public async Task<ActionResult<ApiResponse>> UpdateUserAvatar([FromBody] ActiveAvatarRequestDto dto)
     {
         try
         {
@@ -94,7 +94,7 @@ public class UserController : ControllerBase
             return Unauthorized(ApiResponse.Error("authorization", "Unauthorized access.",
                 HttpStatusCode.Unauthorized));
 
-        var result = await _userAvatarService.GetAllUnlockedAvatars(userId);
+        var result = await _iUnlockedAvatarService.GetAllUnlockedAvatars(userId);
 
         if (result.IsSuccess)
             return Ok(ApiResponse.Success(result.Data));
@@ -112,7 +112,7 @@ public class UserController : ControllerBase
             return Unauthorized(ApiResponse.Error("authorization", "Unauthorized access.",
                 HttpStatusCode.Unauthorized));
 
-        var result = await _userAvatarService.GetAllAvatars(userId);
+        var result = await _iUnlockedAvatarService.GetAllAvatars(userId);
 
         if (result.IsSuccess)
             return Ok(ApiResponse.Success(result.Data));

@@ -19,7 +19,8 @@ public class UserService : IUserService
     private readonly ILogger<UserService> _logger;
     private readonly UserManager<ApplicationUser> _userManager;
 
-    public UserService(IUnitOfWork unitOfWork, IMapper mapper, ILogger<UserService> logger, UserManager<ApplicationUser> userManager)
+    public UserService(IUnitOfWork unitOfWork, IMapper mapper, ILogger<UserService> logger,
+        UserManager<ApplicationUser> userManager)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
@@ -63,94 +64,9 @@ public class UserService : IUserService
             return Result<UpdateUserResponseDto>.Failure("An error occurred while updating the user");
         }
     }
-
-
-    public async Task<Result> ChangePasswordAsync(string userId, ChangePasswordRequestDto requestDto)
-    {
-        var user = await _userManager.FindByIdAsync(userId);
-        if (user == null)
-        {
-            return Result.Failure("user", new[] { "User not found" });
-        }
-
-        var isCurrentPasswordValid = await _userManager.CheckPasswordAsync(user, requestDto.CurrentPassword);
-        if (!isCurrentPasswordValid)
-        {
-            return Result.Failure("currentPassword", new[] { "Current password is incorrect" });
-        }
-
-        var updateResult = await _userManager.ChangePasswordAsync(user, requestDto.CurrentPassword, requestDto.NewPassword);
-        if (!updateResult.Succeeded)
-        {
-            var errors = updateResult.Errors
-                .Select(e => new ValidationError("password", new[] { e.Description }))
-                .ToList();
-            return Result.Failure(errors);
-        }
-
-        return Result.Success("Password changed successfully");
-    }
     
-    public async Task<Result<AvatarResponseDto>> UpdateUserAvatar(string userId, UpdateUserAvatarRequestDto dto)
-    {
-        try
-        {
-            if (string.IsNullOrWhiteSpace(userId))
-                return Result<AvatarResponseDto>.Failure("User ID is required");
 
-            var foundUserAvatar =
-                await _unitOfWork.UserAvatar.GetAsync(ua => ua.UserId == userId && ua.AvatarId == dto.AvatarId, includeProperties: "Avatar");
-
-            var currentActiveAvatar = await _unitOfWork.UserAvatar.GetAsync(ua => ua.UserId == userId && ua.IsActive);
-
-            if (currentActiveAvatar != null)
-            {
-                currentActiveAvatar.IsActive = false;
-                await _unitOfWork.UserAvatar.UpdateAsync(currentActiveAvatar);
-            }
-
-            if (foundUserAvatar == null)
-                return Result<AvatarResponseDto>.Failure("User avatar does not exist");
-
-            foundUserAvatar.IsActive = true;
-
-            await _unitOfWork.UserAvatar
-                .UpdateAsync(foundUserAvatar);
+    
 
 
-            var updatedUserAvatarDto = _mapper.Map<AvatarResponseDto>(foundUserAvatar);
-
-            return Result<AvatarResponseDto>.Success(updatedUserAvatarDto);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to update user details");
-            return Result<AvatarResponseDto>.Failure("An error occurred while updating the user");
-        }
-    }
-
-    public async Task<Result<List<AvatarResponseDto>>> GetUnlockedAvatars(string userId)
-    {
-        try
-        {
-            if (string.IsNullOrWhiteSpace(userId))
-                return Result<List<AvatarResponseDto>>.Failure("User ID is required");
-
-            var unlockedAvatars =
-                await _unitOfWork.UserAvatar.GetAllAsync(ua => ua.UserId == userId, includeProperties: "Avatar");
-
-            if (!unlockedAvatars.Any())
-                return Result<List<AvatarResponseDto>>.Failure("User does not have any unlocked avatars");
-
-
-            var avatarDtoList = _mapper.Map<List<AvatarResponseDto>>(unlockedAvatars);
-
-            return Result<List<AvatarResponseDto>>.Success(avatarDtoList);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to update user details");
-            return Result<List<AvatarResponseDto>>.Failure("An error occurred while updating the user");
-        }
-    }
 }

@@ -18,8 +18,7 @@ namespace CollabParty.Infrastructure.Data
         public DbSet<QuestFile> QuestFiles { get; set; }
         public DbSet<QuestStep> QuestSteps { get; set; }
         public DbSet<Session> Sessions { get; set; }
-        public DbSet<UserAvatar> UserAvatars { get; set; }
-        public DbSet<UserQuest> UserQuests { get; set; }
+        public DbSet<UnlockedAvatar> UserAvatars { get; set; }
 
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
@@ -37,16 +36,16 @@ namespace CollabParty.Infrastructure.Data
                 .HasIndex(u => u.UserName)
                 .IsUnique();
 
-            builder.Entity<UserAvatar>()
+            builder.Entity<UnlockedAvatar>()
                 .HasKey(ua => new { ua.UserId, ua.AvatarId });
 
-            builder.Entity<UserAvatar>()
+            builder.Entity<UnlockedAvatar>()
                 .HasOne(ua => ua.User)
                 .WithMany(u => u.UserAvatars)
                 .HasForeignKey(ua => ua.UserId)
                 .OnDelete(DeleteBehavior.NoAction);
 
-            builder.Entity<UserAvatar>()
+            builder.Entity<UnlockedAvatar>()
                 .HasOne(ua => ua.Avatar)
                 .WithMany(a => a.UserAvatars)
                 .HasForeignKey(ua => ua.AvatarId)
@@ -55,8 +54,7 @@ namespace CollabParty.Infrastructure.Data
             builder.Entity<PartyMember>()
                 .HasKey(up => new { up.UserId, up.PartyId });
 
-            builder.Entity<UserQuest>()
-                .HasKey(uq => new { uq.UserId, uq.QuestId });
+ 
 
             builder.Entity<QuestAssignment>()
                 .HasKey(qa => new { qa.QuestId, qa.UserId });
@@ -121,18 +119,6 @@ namespace CollabParty.Infrastructure.Data
                 .WithMany(q => q.QuestFiles)
                 .HasForeignKey(qc => qc.QuestId)
                 .OnDelete(DeleteBehavior.Restrict);  // Prevents a Quest from being deleted when a Quest File is Deleted.
-            
-            builder.Entity<UserQuest>()
-                .HasOne(uq => uq.Quest)
-                .WithMany(q => q.UserQuests)
-                .HasForeignKey(uq => uq.QuestId)
-                .OnDelete(DeleteBehavior.Restrict); // Prevents a Quest is not deleted when a UserQuest is deleted
-
-            builder.Entity<UserQuest>()
-                .HasOne(uq => uq.User)
-                .WithMany(u => u.UserQuests)
-                .HasForeignKey(uq => uq.UserId)
-                .OnDelete(DeleteBehavior.Restrict); // Prevents the deletion of a User if a UserQuest is deleted
         }
     }
 }

@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace CollabParty.Domain.Entities
 {
-    public class UserAvatar
+    public class UnlockedAvatar
     {
         [ForeignKey("User")]
         public string UserId { get; set; }

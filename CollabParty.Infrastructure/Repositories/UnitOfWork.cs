@@ -19,9 +19,9 @@ public class UnitOfWork : IUnitOfWork
 
     public IQuestStepRepository QuestStep { get; private set; }
     public ISessionRepository Session { get; private set; }
-    public IUserAvatarRepository UserAvatar { get; private set; }
+
+    public IUnlockedAvatarRepository UnlockedAvatar { get; private set; }
     // public IUserPartyRepository UserParty { get; private set; }
-    public IUserQuestRepository UserQuest { get; private set; }
     public IUserRepository User { get; private set; }
 
     public UnitOfWork(AppDbContext db)
@@ -37,9 +37,8 @@ public class UnitOfWork : IUnitOfWork
         QuestFile = new QuestFileRepository(db);
         QuestStep = new QuestStepRepository(db);
         Session = new SessionRepository(db);
-        UserAvatar = new UserAvatarRepository(db);
+        UnlockedAvatar = new UnlockedAvatarRepository(db);
         // UserParty = new UserPartyRepository(db);
-        UserQuest = new UserQuestRepository(db);
         User = new UserRepository(db);
     }
 

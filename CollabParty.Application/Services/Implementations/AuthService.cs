@@ -21,6 +21,7 @@ namespace CollabParty.Application.Services.Implementations;
 public class AuthService : IAuthService
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly UnlockedAvatarService _unlockedAvatarService;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IEmailService _emailService;
     private readonly IEmailTemplateService _emailTemplateService;
@@ -31,13 +32,14 @@ public class AuthService : IAuthService
 
     public AuthService(IUnitOfWork unitOfWork, UserManager<ApplicationUser> userManager,
         IConfiguration configuration, IEmailService emailService, IEmailTemplateService emailTemplateService,
-        IMapper mapper)
+        IMapper mapper, UnlockedAvatarService unlockedAvatarService)
     {
         _unitOfWork = unitOfWork;
         _userManager = userManager;
         _emailService = emailService;
         _emailTemplateService = emailTemplateService;
         _mapper = mapper;
+        _unlockedAvatarService = unlockedAvatarService;
         _jwtSecret = configuration["JwtSecret"];
         _jwtAudience = configuration["JwtAudience"];
         _jwtIssuer = configuration["JwtIssuer"];
@@ -60,7 +62,7 @@ public class AuthService : IAuthService
         var sessionId = $"SESS{Guid.NewGuid()}";
         var accessToken = CreateAccessToken(user, sessionId);
         var refreshToken = await CreateRefreshToken(user.Id, sessionId);
-        var userAvatar = await _unitOfWork.UserAvatar.GetAsync(
+        var userAvatar = await _unitOfWork.UnlockedAvatar.GetAsync(
             ua => ua.UserId == user.Id && ua.IsActive,
             includeProperties: "Avatar");
 
@@ -115,8 +117,8 @@ public class AuthService : IAuthService
             return Result<LoginResponseDto>.Failure(errors);
         }
 
-        await UnlockStarterAvatars(user);
-        await SetNewUsersAvatar(user.Id, dto.AvatarId);
+        await _unlockedAvatarService.UnlockStarterAvatars(user);
+        await _unlockedAvatarService.SetNewUserAvatar(user.Id, dto.AvatarId);
 
         var loginCredentialsDto = _mapper.Map<LoginRequestDto>(dto);
 
@@ -208,7 +210,6 @@ public class AuthService : IAuthService
     }
 
 
-
     public async Task<Result> ResetPasswordAsync(ResetPasswordRequestDto requestDto)
     {
         var user = await _userManager.FindByEmailAsync(requestDto.Email);
@@ -282,34 +283,31 @@ public class AuthService : IAuthService
     }
 
 
-    private async Task UnlockStarterAvatars(ApplicationUser user)
+    public async Task<Result> ChangePasswordAsync(string userId, ChangePasswordRequestDto requestDto)
     {
-        var starterAvatars = await _unitOfWork.Avatar.GetAllAsync(a => a.Tier == 0);
-
-        var unlockedAvatars = starterAvatars.Select(avatar => new UserAvatar
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null)
         {
-            UserId = user.Id,
-            AvatarId = avatar.Id,
-            UnlockedAt = DateTime.UtcNow,
-            IsActive = false,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
-        }).ToList();
-
-        await _unitOfWork.UserAvatar.AddRangeAsync(unlockedAvatars);
-        await _unitOfWork.SaveAsync();
-    }
-
-    private async Task SetNewUsersAvatar(string userId, int selectedAvatarId)
-    {
-        var activeAvatar =
-            await _unitOfWork.UserAvatar.GetAsync(ua => ua.UserId == userId && ua.AvatarId == selectedAvatarId);
-        if (activeAvatar != null)
-        {
-            activeAvatar.IsActive = true;
-            await _unitOfWork.UserAvatar.UpdateAsync(activeAvatar);
-            await _unitOfWork.SaveAsync();
+            return Result.Failure("user", new[] { "User not found" });
         }
+
+        var isCurrentPasswordValid = await _userManager.CheckPasswordAsync(user, requestDto.CurrentPassword);
+        if (!isCurrentPasswordValid)
+        {
+            return Result.Failure("currentPassword", new[] { "Current password is incorrect" });
+        }
+
+        var updateResult =
+            await _userManager.ChangePasswordAsync(user, requestDto.CurrentPassword, requestDto.NewPassword);
+        if (!updateResult.Succeeded)
+        {
+            var errors = updateResult.Errors
+                .Select(e => new ValidationError("password", new[] { e.Description }))
+                .ToList();
+            return Result.Failure(errors);
+        }
+
+        return Result.Success("Password changed successfully");
     }
 
     private string CreateAccessToken(ApplicationUser user, string sessionId)

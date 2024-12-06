@@ -37,7 +37,6 @@ public class Quest
 
     public ICollection<QuestComment> QuestComments { get; set; }
     public ICollection<QuestFile> QuestFiles { get; set; }
-    public ICollection<UserQuest> UserQuests { get; set; }
 }
 
 

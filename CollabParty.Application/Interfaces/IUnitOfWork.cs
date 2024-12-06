@@ -13,8 +13,7 @@ public interface IUnitOfWork
     IQuestFileRepository QuestFile { get; }
     IQuestStepRepository QuestStep { get; }
     ISessionRepository Session { get; }
-    IUserAvatarRepository UserAvatar { get; }
-    IUserQuestRepository UserQuest { get; }
+    IUnlockedAvatarRepository UnlockedAvatar { get; }
     IUserRepository User { get; }
     Task SaveAsync();
 }

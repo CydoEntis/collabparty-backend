@@ -77,7 +77,7 @@ builder.Services.AddAutoMapper(typeof(MappingConfig));
 // Dependency Injection for Repositories and Services
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<IUserAvatarService, UserAvatarService>();
+builder.Services.AddScoped<UnlockedAvatarService, UnlockedAvatarService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IAvatarService, AvatarService>();
 builder.Services.AddScoped<IEmailTemplateService, EmailTemplateService>();
