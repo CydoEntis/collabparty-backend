@@ -21,34 +21,38 @@ public class UnlockedAvatarService : IUnlockedAvatarService
         _logger = logger;
     }
 
-    public async Task<Result<Dictionary<string, List<LockedAvatarDto>>>> GetUnlockableAvatars(string userId)
+    public async Task<Result<List<LockedAvatarDto>>> GetUnlockableAvatars(string userId)
     {
         try
         {
-            // Fetch unlocked avatars for the user
-            var unlockedAvatars =
-                await _unitOfWork.UnlockedAvatar.GetAllAsync(ua => ua.UserId == userId, includeProperties: "Avatar");
+            // Fetch all avatars, whether unlocked or not
+            var avatars = await _unitOfWork.Avatar.GetAllAsync();
 
-            if (!unlockedAvatars.Any())
-                return Result<Dictionary<string, List<LockedAvatarDto>>>.Failure("No avatars found");
+            if (!avatars.Any())
+                return Result<List<LockedAvatarDto>>.Failure("No avatars found");
 
-            // Map entities to DTOs
-            var avatarDtos = _mapper.Map<List<LockedAvatarDto>>(unlockedAvatars);
+            var unlockedAvatars = await _unitOfWork.UnlockedAvatar.GetAllAsync(ua => ua.UserId == userId, includeProperties: "Avatar");
 
-            // Group avatars by Tier and rename keys
-            var groupedByTier = avatarDtos
-                .GroupBy(a => a.Tier) // Group by Tier
-                .ToDictionary(
-                    group => $"tier-{group.Key}", // Convert numerical key to string "tier-{number}"
-                    group => group.ToList()
-                );
+            var unlockedAvatarsLookup = unlockedAvatars.ToDictionary(ua => ua.AvatarId, ua => ua.IsUnlocked);
 
-            return Result<Dictionary<string, List<LockedAvatarDto>>>.Success(groupedByTier);
+            var avatarDtos = avatars.Select(avatar => new LockedAvatarDto
+            {
+                Id = avatar.Id,
+                Name = avatar.Name,
+                DisplayName = avatar.DisplayName,
+                ImageUrl = avatar.ImageUrl,
+                Tier = avatar.Tier,
+                UnlockLevel = avatar.UnlockLevel,
+                UnlockCost = avatar.UnlockCost,
+                IsUnlocked = unlockedAvatarsLookup.ContainsKey(avatar.Id) && unlockedAvatarsLookup[avatar.Id],
+            }).ToList();
+
+            return Result<List<LockedAvatarDto>>.Success(avatarDtos);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An error occurred while grouping avatars by tier");
-            return Result<Dictionary<string, List<LockedAvatarDto>>>.Failure(
+            _logger.LogError(ex, "An error occurred while retrieving avatars");
+            return Result<List<LockedAvatarDto>>.Failure(
                 "An error occurred while retrieving avatars");
         }
     }

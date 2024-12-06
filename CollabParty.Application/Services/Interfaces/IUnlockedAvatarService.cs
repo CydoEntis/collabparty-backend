@@ -7,7 +7,7 @@ namespace CollabParty.Application.Services.Interfaces;
 public interface IUnlockedAvatarService
 {
     Task<Result<List<AvatarResponseDto>>> GetUnlockedAvatars(string userId);
-    Task<Result<Dictionary<string, List<LockedAvatarDto>>>> GetUnlockableAvatars(string userId);
+    Task<Result<List<LockedAvatarDto>>> GetUnlockableAvatars(string userId);
     Task<Result<AvatarResponseDto>> SetActiveAvatar(string userId, ActiveAvatarRequestDto dto);
 
     Task UnlockStarterAvatars(ApplicationUser user);
