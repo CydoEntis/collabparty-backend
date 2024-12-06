@@ -105,33 +105,7 @@ public class AuthController : ControllerBase
         }
     }
 
-    [HttpPost("change-password")]
-    public async Task<ActionResult<ApiResponse>> ChangePassword([FromBody] ChangePasswordRequestDto requestDto)
-    {
-        try
-        {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
 
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            if (string.IsNullOrEmpty(userId))
-                return Unauthorized(ApiResponse.Error("authorization", "Unauthorized access.",
-                    HttpStatusCode.Unauthorized));
-
-            var result = await _authService.ChangePasswordAsync(userId, requestDto);
-
-            if (result.IsSuccess)
-                return Ok(ApiResponse.Success(result.Message));
-
-            var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
-            return BadRequest(ApiResponse.ValidationError(formattedErrors));
-        }
-        catch (Exception ex)
-        {
-            return ApiResponse.Error("internal", ex.InnerException.Message, HttpStatusCode.InternalServerError);
-        }
-    }
 
     [HttpPost("forgot-password")]
     public async Task<ActionResult<ApiResponse>> ForgotPassword([FromBody] ForgotPasswordRequestDto requestDto)

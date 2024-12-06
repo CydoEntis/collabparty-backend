@@ -41,4 +41,36 @@ public class UserAvatarService : IUserAvatarService
             return Result<List<AvatarResponseDto>>.Failure("An error occured while getting all unlocked avatars");
         }
     }
+
+    public async Task<Result<Dictionary<string, List<LockedAvatarDto>>>> GetAllAvatars(string userId)
+    {
+        try
+        {
+            // Fetch unlocked avatars for the user
+            var unlockedAvatars =
+                await _unitOfWork.UserAvatar.GetAllAsync(ua => ua.UserId == userId, includeProperties: "Avatar");
+
+            if (!unlockedAvatars.Any())
+                return Result<Dictionary<string, List<LockedAvatarDto>>>.Failure("No avatars found");
+
+            // Map entities to DTOs
+            var avatarDtos = _mapper.Map<List<LockedAvatarDto>>(unlockedAvatars);
+
+            // Group avatars by Tier and rename keys
+            var groupedByTier = avatarDtos
+                .GroupBy(a => a.Tier) // Group by Tier
+                .ToDictionary(
+                    group => $"tier-{group.Key}", // Convert numerical key to string "tier-{number}"
+                    group => group.ToList()
+                );
+
+            return Result<Dictionary<string, List<LockedAvatarDto>>>.Success(groupedByTier);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "An error occurred while grouping avatars by tier");
+            return Result<Dictionary<string, List<LockedAvatarDto>>>.Failure(
+                "An error occurred while retrieving avatars");
+        }
+    }
 }

@@ -1,3 +1,4 @@
+using CollabParty.Application.Common.Dtos.Auth;
 using CollabParty.Application.Common.Dtos.Avatar;
 using CollabParty.Application.Common.Dtos.User;
 using CollabParty.Application.Common.Models;
@@ -8,5 +9,6 @@ public interface IUserService
 {
     Task<Result<UpdateUserResponseDto>> UpdateUserDetails(string userId, UpdateUserRequestDto dto);
     Task<Result<List<AvatarResponseDto>>> GetUnlockedAvatars(string userId);
+    Task<Result> ChangePasswordAsync(string userId, ChangePasswordRequestDto requestDto);
     Task<Result<AvatarResponseDto>> UpdateUserAvatar(string userId, UpdateUserAvatarRequestDto dto);
 }

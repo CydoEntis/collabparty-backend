@@ -1,10 +1,13 @@
 using AutoMapper;
+using CollabParty.Application.Common.Dtos.Auth;
 using CollabParty.Application.Common.Dtos.Avatar;
 using CollabParty.Application.Common.Dtos.User;
 using CollabParty.Application.Common.Models;
 using CollabParty.Application.Interfaces;
 using CollabParty.Application.Services.Interfaces;
+using CollabParty.Domain.Entities;
 using CollabParty.Domain.Interfaces;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 
 namespace CollabParty.Application.Services.Implementations;
@@ -14,12 +17,14 @@ public class UserService : IUserService
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
     private readonly ILogger<UserService> _logger;
+    private readonly UserManager<ApplicationUser> _userManager;
 
-    public UserService(IUnitOfWork unitOfWork, IMapper mapper, ILogger<UserService> logger)
+    public UserService(IUnitOfWork unitOfWork, IMapper mapper, ILogger<UserService> logger, UserManager<ApplicationUser> userManager)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
         _logger = logger;
+        _userManager = userManager;
     }
 
     public async Task<Result<UpdateUserResponseDto>> UpdateUserDetails(string userId, UpdateUserRequestDto dto)
@@ -60,6 +65,32 @@ public class UserService : IUserService
     }
 
 
+    public async Task<Result> ChangePasswordAsync(string userId, ChangePasswordRequestDto requestDto)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null)
+        {
+            return Result.Failure("user", new[] { "User not found" });
+        }
+
+        var isCurrentPasswordValid = await _userManager.CheckPasswordAsync(user, requestDto.CurrentPassword);
+        if (!isCurrentPasswordValid)
+        {
+            return Result.Failure("currentPassword", new[] { "Current password is incorrect" });
+        }
+
+        var updateResult = await _userManager.ChangePasswordAsync(user, requestDto.CurrentPassword, requestDto.NewPassword);
+        if (!updateResult.Succeeded)
+        {
+            var errors = updateResult.Errors
+                .Select(e => new ValidationError("password", new[] { e.Description }))
+                .ToList();
+            return Result.Failure(errors);
+        }
+
+        return Result.Success("Password changed successfully");
+    }
+    
     public async Task<Result<AvatarResponseDto>> UpdateUserAvatar(string userId, UpdateUserAvatarRequestDto dto)
     {
         try

@@ -207,31 +207,7 @@ public class AuthService : IAuthService
         return Result<TokenResponseDto>.Success(tokenDto);
     }
 
-    public async Task<Result> ChangePasswordAsync(string userId, ChangePasswordRequestDto requestDto)
-    {
-        var user = await _userManager.FindByIdAsync(userId);
-        if (user == null)
-        {
-            return Result.Failure("user", new[] { "User not found" });
-        }
 
-        var isCurrentPasswordValid = await _userManager.CheckPasswordAsync(user, requestDto.CurrentPassword);
-        if (!isCurrentPasswordValid)
-        {
-            return Result.Failure("currentPassword", new[] { "Current password is incorrect" });
-        }
-
-        var updateResult = await _userManager.ChangePasswordAsync(user, requestDto.CurrentPassword, requestDto.NewPassword);
-        if (!updateResult.Succeeded)
-        {
-            var errors = updateResult.Errors
-                .Select(e => new ValidationError("password", new[] { e.Description }))
-                .ToList();
-            return Result.Failure(errors);
-        }
-
-        return Result.Success("Password changed successfully");
-    }
 
     public async Task<Result> ResetPasswordAsync(ResetPasswordRequestDto requestDto)
     {
