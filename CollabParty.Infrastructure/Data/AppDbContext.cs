@@ -18,7 +18,7 @@ namespace CollabParty.Infrastructure.Data
         public DbSet<QuestFile> QuestFiles { get; set; }
         public DbSet<QuestStep> QuestSteps { get; set; }
         public DbSet<Session> Sessions { get; set; }
-        public DbSet<UnlockedAvatar> UserAvatars { get; set; }
+        public DbSet<UnlockedAvatar> UnlockedAvatars { get; set; }
 
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
