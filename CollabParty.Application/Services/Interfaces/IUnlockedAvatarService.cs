@@ -13,4 +13,6 @@ public interface IUnlockedAvatarService
     Task UnlockStarterAvatars(ApplicationUser user);
 
     Task SetNewUserAvatar(string userId, int selectedAvatarId);
+
+    Task<Result<AvatarResponseDto>> UnlockAvatar(string userId, int avatarId);
 }
