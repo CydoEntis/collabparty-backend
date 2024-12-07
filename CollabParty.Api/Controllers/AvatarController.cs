@@ -78,7 +78,7 @@ public class AvatarController : ControllerBase
     }
     
     [HttpPut("active")]
-    public async Task<ActionResult<ApiResponse>> SetActiveAvatar([FromBody] ActiveAvatarRequestDto dto)
+    public async Task<ActionResult<ApiResponse>> SetActiveAvatar([FromBody] SelectedAvatarRequestDto dto)
     {
         try
         {
@@ -92,6 +92,35 @@ public class AvatarController : ControllerBase
                     HttpStatusCode.Unauthorized));
 
             var result = await _unlockedAvatarService.SetActiveAvatar(userId, dto);
+
+            if (result.IsSuccess)
+                return Ok(ApiResponse.Success(result.Data));
+
+            var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
+            return BadRequest(ApiResponse.ValidationError(formattedErrors));
+        }
+        catch (Exception ex)
+        {
+            return
+                ApiResponse.Error("internal", ex.InnerException.Message, HttpStatusCode.InternalServerError);
+        }
+    }
+    
+    [HttpPost("unlock")]
+    public async Task<ActionResult<ApiResponse>> UnlockAvatar([FromBody] SelectedAvatarRequestDto dto)
+    {
+        try
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized(ApiResponse.Error("authorization", "Unauthorized access.",
+                    HttpStatusCode.Unauthorized));
+
+            var result = await _unlockedAvatarService.UnlockAvatar(userId, dto);
 
             if (result.IsSuccess)
                 return Ok(ApiResponse.Success(result.Data));

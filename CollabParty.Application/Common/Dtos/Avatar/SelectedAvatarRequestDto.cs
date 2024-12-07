@@ -1,6 +1,6 @@
 namespace CollabParty.Application.Common.Dtos.Avatar;
 
-public class ActiveAvatarRequestDto
+public class SelectedAvatarRequestDto
 {
     public int AvatarId { get; set; }
 }

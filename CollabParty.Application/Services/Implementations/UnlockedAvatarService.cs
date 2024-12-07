@@ -58,7 +58,7 @@ public class UnlockedAvatarService : IUnlockedAvatarService
         }
     }
 
-    public async Task<Result<AvatarResponseDto>> SetActiveAvatar(string userId, ActiveAvatarRequestDto dto)
+    public async Task<Result<AvatarResponseDto>> SetActiveAvatar(string userId, SelectedAvatarRequestDto dto)
     {
         try
         {
@@ -153,7 +153,7 @@ public class UnlockedAvatarService : IUnlockedAvatarService
         }
     }
 
-    public async Task<Result<AvatarResponseDto>> UnlockAvatar(string userId, int avatarId)
+    public async Task<Result<AvatarResponseDto>> UnlockAvatar(string userId, SelectedAvatarRequestDto requestDto)
     {
         try
         {
@@ -167,7 +167,7 @@ public class UnlockedAvatarService : IUnlockedAvatarService
             var userLevel = user.CurrentLevel;
             var userGold = user.Gold;
 
-            var avatar = await _unitOfWork.Avatar.GetAsync(a => a.Id == avatarId);
+            var avatar = await _unitOfWork.Avatar.GetAsync(a => a.Id == requestDto.AvatarId);
             if (avatar == null)
                 return Result<AvatarResponseDto>.Failure("Avatar not found.");
 
@@ -178,7 +178,7 @@ public class UnlockedAvatarService : IUnlockedAvatarService
                 return Result<AvatarResponseDto>.Failure("You dont have enough gold.");
 
             var existingUnlockedAvatar = await _unitOfWork.UnlockedAvatar.GetAsync(
-                ua => ua.AvatarId == avatarId && ua.UserId == userId);
+                ua => ua.AvatarId == requestDto.AvatarId && ua.UserId == userId);
 
             if (existingUnlockedAvatar != null)
                 return Result<AvatarResponseDto>.Failure("Avatar already unlocked.");
