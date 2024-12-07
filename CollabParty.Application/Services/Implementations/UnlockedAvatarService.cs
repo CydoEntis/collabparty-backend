@@ -171,23 +171,30 @@ public class UnlockedAvatarService : IUnlockedAvatarService
             if (avatar == null)
                 return Result<AvatarResponseDto>.Failure("Avatar not found.");
 
+
             if (userLevel < avatar.UnlockLevel)
                 return Result<AvatarResponseDto>.Failure("Level requirement not met.");
 
             if (userGold < avatar.UnlockCost)
                 return Result<AvatarResponseDto>.Failure("You dont have enough gold.");
 
-            var existingUnlockedAvatar = await _unitOfWork.UnlockedAvatar.GetAsync(
+            var isAvatarAlreadyUnlocked = await _unitOfWork.UnlockedAvatar.GetAsync(
                 ua => ua.AvatarId == requestDto.AvatarId && ua.UserId == userId);
 
-            if (existingUnlockedAvatar != null)
+            if (isAvatarAlreadyUnlocked != null)
                 return Result<AvatarResponseDto>.Failure("Avatar already unlocked.");
+
+            var currentAvatar = await _unitOfWork.UnlockedAvatar.GetAsync(ua => ua.UserId == userId && ua.IsActive);
+            currentAvatar.IsActive = false;
+
+            await _unitOfWork.UnlockedAvatar.UpdateAsync(currentAvatar);
 
             var newUnlockedAvatar = new UnlockedAvatar
             {
                 UserId = user.Id,
                 AvatarId = avatar.Id,
                 UnlockedAt = DateTime.UtcNow,
+                IsUnlocked = true,
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
