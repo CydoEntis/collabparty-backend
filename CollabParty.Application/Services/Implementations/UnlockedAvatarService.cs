@@ -31,7 +31,8 @@ public class UnlockedAvatarService : IUnlockedAvatarService
             if (!avatars.Any())
                 return Result<List<LockedAvatarDto>>.Failure("No avatars found");
 
-            var unlockedAvatars = await _unitOfWork.UnlockedAvatar.GetAllAsync(ua => ua.UserId == userId, includeProperties: "Avatar");
+            var unlockedAvatars =
+                await _unitOfWork.UnlockedAvatar.GetAllAsync(ua => ua.UserId == userId, includeProperties: "Avatar");
 
             var unlockedAvatarsLookup = unlockedAvatars.ToDictionary(ua => ua.AvatarId, ua => ua.IsUnlocked);
 
@@ -149,6 +150,64 @@ public class UnlockedAvatarService : IUnlockedAvatarService
             activeAvatar.IsActive = true;
             await _unitOfWork.UnlockedAvatar.UpdateAsync(activeAvatar);
             await _unitOfWork.SaveAsync();
+        }
+    }
+
+    public async Task<Result<AvatarResponseDto>> UnlockAvatar(string userId, int avatarId)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(userId))
+                return Result<AvatarResponseDto>.Failure("User ID is required");
+
+            var user = await _unitOfWork.User.GetAsync(u => u.Id == userId);
+            if (user == null)
+                return Result<AvatarResponseDto>.Failure("User not found.");
+
+            var userLevel = user.CurrentLevel;
+            var userGold = user.Gold;
+
+            var avatar = await _unitOfWork.Avatar.GetAsync(a => a.Id == avatarId);
+            if (avatar == null)
+                return Result<AvatarResponseDto>.Failure("Avatar not found.");
+
+            if (userLevel < avatar.UnlockLevel)
+                return Result<AvatarResponseDto>.Failure("Level requirement not met.");
+
+            if (userGold < avatar.UnlockCost)
+                return Result<AvatarResponseDto>.Failure("You dont have enough gold.");
+
+            var existingUnlockedAvatar = await _unitOfWork.UnlockedAvatar.GetAsync(
+                ua => ua.AvatarId == avatarId && ua.UserId == userId);
+
+            if (existingUnlockedAvatar != null)
+                return Result<AvatarResponseDto>.Failure("Avatar already unlocked.");
+
+            var newUnlockedAvatar = new UnlockedAvatar
+            {
+                UserId = user.Id,
+                AvatarId = avatar.Id,
+                UnlockedAt = DateTime.UtcNow,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            await _unitOfWork.UnlockedAvatar.CreateAsync(newUnlockedAvatar);
+
+            user.Gold -= avatar.UnlockCost;
+
+            if (user.Gold < 0) user.Gold = 0;
+
+            await _unitOfWork.SaveAsync();
+
+            var dto = _mapper.Map<AvatarResponseDto>(newUnlockedAvatar);
+
+            return Result<AvatarResponseDto>.Success(dto);
+        }
+        catch (Exception ex)
+        {
+            return Result<AvatarResponseDto>.Failure(ex.InnerException?.Message ?? ex.Message);
         }
     }
 }
