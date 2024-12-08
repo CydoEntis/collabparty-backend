@@ -28,6 +28,29 @@ public class UserService : IUserService
         _userManager = userManager;
     }
 
+    public async Task<Result<UserDtoResponse>> GetUserDetails(string userId)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(userId))
+                return Result<UserDtoResponse>.Failure("User ID is required");
+
+            var foundUser = await _unitOfWork.User.GetAsync(u => u.Id == userId, includeProperties: "UserAvatars,UserAvatars.Avatar");
+
+            if (foundUser == null)
+                return Result<UserDtoResponse>.Failure("User does not exist");
+
+            var updatedUserDto = _mapper.Map<UserDtoResponse>(foundUser);
+
+            return Result<UserDtoResponse>.Success(updatedUserDto);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update user details");
+            return Result<UserDtoResponse>.Failure("An error occurred while updating the user");
+        }
+    }
+    
     public async Task<Result<UpdateUserResponseDto>> UpdateUserDetails(string userId, UpdateUserRequestDto dto)
     {
         try

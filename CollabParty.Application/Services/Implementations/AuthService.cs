@@ -13,6 +13,7 @@ using CollabParty.Application.Common.Dtos.Auth;
 using CollabParty.Application.Common.Interfaces;
 using CollabParty.Application.Common.Mappings;
 using CollabParty.Domain.Entities;
+using Microsoft.AspNetCore.Http;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 
@@ -29,10 +30,11 @@ public class AuthService : IAuthService
     private readonly string _jwtSecret;
     private readonly string _jwtAudience;
     private readonly string _jwtIssuer;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
     public AuthService(IUnitOfWork unitOfWork, UserManager<ApplicationUser> userManager,
         IConfiguration configuration, IEmailService emailService, IEmailTemplateService emailTemplateService,
-        IMapper mapper, IUnlockedAvatarService unlockedAvatarService)
+        IMapper mapper, IUnlockedAvatarService unlockedAvatarService, IHttpContextAccessor httpContextAccessor)
     {
         _unitOfWork = unitOfWork;
         _userManager = userManager;
@@ -40,175 +42,279 @@ public class AuthService : IAuthService
         _emailTemplateService = emailTemplateService;
         _mapper = mapper;
         _unlockedAvatarService = unlockedAvatarService;
+        _httpContextAccessor = httpContextAccessor;
         _jwtSecret = configuration["JwtSecret"];
         _jwtAudience = configuration["JwtAudience"];
         _jwtIssuer = configuration["JwtIssuer"];
     }
 
-    public async Task<Result<LoginResponseDto>> Login(LoginRequestDto requestDto)
+
+    public async Task<Result<TokenResponseDto>> Login(LoginRequestDto requestDto)
     {
         var user = await _unitOfWork.User.GetAsync(
             u => u.Email == requestDto.Email,
             includeProperties: "UserAvatars,UserAvatars.Avatar");
 
         if (user == null)
-            return Result<LoginResponseDto>.Failure("email", new[] { "Invalid username or password" });
+            return Result<TokenResponseDto>.Failure("email", new[] { "Invalid username or password" });
 
         bool isPasswordValid = await _userManager.CheckPasswordAsync(user, requestDto.Password);
-
         if (!isPasswordValid)
-            return Result<LoginResponseDto>.Failure("email", new[] { "Invalid username or password" });
+            return Result<TokenResponseDto>.Failure("email", new[] { "Invalid username or password" });
 
         var sessionId = $"SESS{Guid.NewGuid()}";
         var accessToken = CreateAccessToken(user, sessionId);
         var refreshToken = await CreateRefreshToken(user.Id, sessionId);
-        var userAvatar = await _unitOfWork.UnlockedAvatar.GetAsync(
-            ua => ua.UserId == user.Id && ua.IsActive,
-            includeProperties: "Avatar");
 
+        // Set the tokens in HTTP-only cookies
+        var httpContext = _httpContextAccessor.HttpContext;
+        if (httpContext == null)
+            return Result<TokenResponseDto>.Failure("server", new[] { "Unable to set cookies." });
 
-        if (userAvatar == null)
-            return Result<LoginResponseDto>.Failure("avatar", new[] { "Active avatar not found for user" });
-
-        var tokenDto = new TokenResponseDto()
+        httpContext.Response.Cookies.Append("AccessToken", accessToken, new CookieOptions
         {
-            AccessToken = accessToken,
-            RefreshToken = refreshToken,
-        };
-        var loginDto = _mapper.Map<LoginResponseDto>(user);
-        loginDto.Tokens = tokenDto;
+            HttpOnly = true,
+            Secure = true, // Use HTTPS
+            SameSite = SameSiteMode.Strict,
+            Expires = DateTimeOffset.UtcNow.AddMinutes(30)
+        });
 
-        return Result<LoginResponseDto>.Success(loginDto);
-    }
-
-
-    public async Task<Result<LoginResponseDto>> Register(RegisterRequestDto dto)
-    {
-        var existingUser = await _userManager.FindByEmailAsync(dto.Email);
-        if (existingUser != null)
+        httpContext.Response.Cookies.Append("RefreshToken", refreshToken, new CookieOptions
         {
-            return Result<LoginResponseDto>.Failure("email", new[] { "A user with this email already exists" });
-        }
-
-        var existingUserByUsername = await _userManager.FindByNameAsync(dto.Username);
-        if (existingUserByUsername != null)
-        {
-            return Result<LoginResponseDto>.Failure("username", new[] { "A user with this username already exists" });
-        }
-
-        ApplicationUser user = new()
-        {
-            UserName = dto.Username,
-            Email = dto.Email,
-            NormalizedEmail = dto.Email.ToUpper(),
-            NormalizedUserName = dto.Username.ToUpper(),
-            CurrentExp = 0,
-            CurrentLevel = 1,
-            ExpToNextLevel = 100,
-            CreatedAt = DateTime.UtcNow
-        };
-
-        var creationResult = await _userManager.CreateAsync(user, dto.Password);
-        if (!creationResult.Succeeded)
-        {
-            var errors = creationResult.Errors
-                .Select(e => new ValidationError("user", new[] { e.Description }))
-                .ToList();
-            return Result<LoginResponseDto>.Failure(errors);
-        }
-
-        await _unlockedAvatarService.UnlockStarterAvatars(user);
-        await _unlockedAvatarService.SetNewUserAvatar(user.Id, dto.AvatarId);
-
-        var loginCredentialsDto = _mapper.Map<LoginRequestDto>(dto);
-
-        var loginResult = await Login(loginCredentialsDto);
-        if (!loginResult.IsSuccess)
-        {
-            return loginResult;
-        }
-
-        return loginResult;
-    }
-
-
-    public async Task<Result> Logout(TokenResponseDto responseDto)
-    {
-        var foundSession = await _unitOfWork.Session.GetAsync(s => s.RefreshToken == responseDto.RefreshToken);
-
-        if (foundSession == null)
-        {
-            return Result.Failure(new List<ValidationError>
-            {
-                new ValidationError("refreshToken", new[] { "Session not found or already invalidated." })
-            });
-        }
-
-        var isRefreshTokenValid = CheckIfRefreshTokenIsValid(responseDto.RefreshToken, foundSession);
-        if (!isRefreshTokenValid)
-        {
-            return Result.Failure(new List<ValidationError>
-            {
-                new ValidationError("refreshToken", new[] { "Invalid refresh token." })
-            });
-        }
-
-        var isAccessTokenValid = await
-            CheckIfAccessTokenIsValid(responseDto.AccessToken, foundSession.UserId, foundSession.SessionId);
-        if (!isAccessTokenValid)
-        {
-            return Result.Failure(new List<ValidationError>
-            {
-                new ValidationError("accessToken", new[] { "Invalid access token." })
-            });
-        }
-
-        await _unitOfWork.Session.InvalidateAllUsersTokens(foundSession.UserId, foundSession.SessionId);
-
-        return Result.Success();
-    }
-
-
-    public async Task<Result<TokenResponseDto>> RefreshTokens(TokenResponseDto responseDto)
-    {
-        var foundSession = await _unitOfWork.Session.GetAsync(s => s.RefreshToken == responseDto.RefreshToken);
-        if (foundSession == null)
-            return Result<TokenResponseDto>.Failure("refreshToken", new[] { "Refresh token not found." });
-
-        if (!CheckIfRefreshTokenIsValid(responseDto.RefreshToken, foundSession))
-        {
-            await InvalidateSession(foundSession);
-            return Result<TokenResponseDto>.Failure("refreshToken", new[] { "Invalid refresh token." });
-        }
-
-        var isAccessTokenValid =
-            await CheckIfAccessTokenIsValid(responseDto.AccessToken, foundSession.UserId, foundSession.SessionId);
-
-
-        if (foundSession.RefreshTokenExpiry < DateTime.UtcNow && !isAccessTokenValid)
-        {
-            await InvalidateSession(foundSession);
-            return Result<TokenResponseDto>.Failure("refreshToken", new[] { "Refresh token expired." });
-        }
-
-        var newRefreshToken = await CreateRefreshToken(foundSession.UserId, foundSession.SessionId);
-        await InvalidateSession(foundSession);
-
-        var applicationUser = await _unitOfWork.User.GetAsync(u => u.Id == foundSession.UserId);
-        if (applicationUser == null)
-            return Result<TokenResponseDto>.Failure("user", new[] { "User not found." });
-
-        var newAccessToken = CreateAccessToken(applicationUser, foundSession.SessionId);
+            HttpOnly = true,
+            Secure = true, // Use HTTPS
+            SameSite = SameSiteMode.Strict,
+            Expires = DateTimeOffset.UtcNow.AddHours(12)
+        });
 
         var tokenDto = new TokenResponseDto
         {
-            AccessToken = newAccessToken,
-            RefreshToken = newRefreshToken
+            AccessToken = accessToken,
+            RefreshToken = refreshToken
         };
 
         return Result<TokenResponseDto>.Success(tokenDto);
     }
 
+// public async Task<Result<TokenResponseDto>> Login(LoginRequestDto requestDto)
+// {
+//     var user = await _unitOfWork.User.GetAsync(
+//         u => u.Email == requestDto.Email,
+//         includeProperties: "UserAvatars,UserAvatars.Avatar");
+//
+//     if (user == null)
+//         return Result<TokenResponseDto>.Failure("email", new[] { "Invalid username or password" });
+//
+//     bool isPasswordValid = await _userManager.CheckPasswordAsync(user, requestDto.Password);
+//
+//     if (!isPasswordValid)
+//         return Result<TokenResponseDto>.Failure("email", new[] { "Invalid username or password" });
+//
+//     var sessionId = $"SESS{Guid.NewGuid()}";
+// var accessToken = CreateAccessToken(user, sessionId);
+// var refreshToken = await CreateRefreshToken(user.Id, sessionId);
+//     // var userAvatar = await _unitOfWork.UnlockedAvatar.GetAsync(
+//     //     ua => ua.UserId == user.Id && ua.IsActive,
+//     //     includeProperties: "Avatar");
+//     //
+//     //
+//     // if (userAvatar == null)
+//     //     return Result<TokenResponseDto>.Failure("avatar", new[] { "Active avatar not found for user" });
+//
+//     var tokenDto = new TokenResponseDto()
+//     {
+//         AccessToken = accessToken,
+//         RefreshToken = refreshToken,
+//     };
+//     // var loginDto = _mapper.Map<TokenResponseDto>(user);
+//     // loginDto.Tokens = tokenDto;
+//
+//     return Result<TokenResponseDto>.Success(tokenDto);
+// }
+
+// public async Task<Result<LoginResponseDto>> Register(RegisterRequestDto dto)
+// {
+//     var existingUser = await _userManager.FindByEmailAsync(dto.Email);
+//     if (existingUser != null)
+//     {
+//         return Result<LoginResponseDto>.Failure("email", new[] { "A user with this email already exists" });
+//     }
+//
+//     var existingUserByUsername = await _userManager.FindByNameAsync(dto.Username);
+//     if (existingUserByUsername != null)
+//     {
+//         return Result<LoginResponseDto>.Failure("username", new[] { "A user with this username already exists" });
+//     }
+//
+//     ApplicationUser user = new()
+//     {
+//         UserName = dto.Username,
+//         Email = dto.Email,
+//         NormalizedEmail = dto.Email.ToUpper(),
+//         NormalizedUserName = dto.Username.ToUpper(),
+//         CurrentExp = 0,
+//         CurrentLevel = 1,
+//         ExpToNextLevel = 100,
+//         CreatedAt = DateTime.UtcNow
+//     };
+//
+//     var creationResult = await _userManager.CreateAsync(user, dto.Password);
+//     if (!creationResult.Succeeded)
+//     {
+//         var errors = creationResult.Errors
+//             .Select(e => new ValidationError("user", new[] { e.Description }))
+//             .ToList();
+//         return Result<LoginResponseDto>.Failure(errors);
+//     }
+//
+//     await _unlockedAvatarService.UnlockStarterAvatars(user);
+//     await _unlockedAvatarService.SetNewUserAvatar(user.Id, dto.AvatarId);
+//
+//     var loginCredentialsDto = _mapper.Map<LoginRequestDto>(dto);
+//
+//     var loginResult = await Login(loginCredentialsDto);
+//     if (!loginResult.IsSuccess)
+//     {
+//         return loginResult;
+//     }
+//
+//     return loginResult;
+// }
+
+    public async Task<Result> Logout()
+    {
+        var httpContext = _httpContextAccessor.HttpContext;
+        var refreshToken = httpContext.Request.Cookies["RefreshToken"];
+
+        if (string.IsNullOrEmpty(refreshToken))
+            return Result.Failure("refreshToken", new[] { "Refresh token not found." });
+
+        var foundSession = await _unitOfWork.Session.GetAsync(s => s.RefreshToken == refreshToken);
+        if (foundSession == null)
+            return Result.Failure("session", new[] { "Session not found or already invalidated." });
+
+        // Invalidate the session
+        await InvalidateSession(foundSession);
+
+        // Clear cookies
+        httpContext.Response.Cookies.Delete("RefreshToken");
+
+        return Result.Success("Logged out successfully.");
+    }
+
+
+    // public async Task<Result> Logout(TokenResponseDto responseDto)
+    // {
+    //     var foundSession = await _unitOfWork.Session.GetAsync(s => s.RefreshToken == responseDto.RefreshToken);
+    //
+    //     if (foundSession == null)
+    //     {
+    //         return Result.Failure(new List<ValidationError>
+    //         {
+    //             new ValidationError("refreshToken", new[] { "Session not found or already invalidated." })
+    //         });
+    //     }
+    //
+    //     var isRefreshTokenValid = CheckIfRefreshTokenIsValid(responseDto.RefreshToken, foundSession);
+    //     if (!isRefreshTokenValid)
+    //     {
+    //         return Result.Failure(new List<ValidationError>
+    //         {
+    //             new ValidationError("refreshToken", new[] { "Invalid refresh token." })
+    //         });
+    //     }
+    //
+    //     var isAccessTokenValid = await
+    //         CheckIfAccessTokenIsValid(responseDto.AccessToken, foundSession.UserId, foundSession.SessionId);
+    //     if (!isAccessTokenValid)
+    //     {
+    //         return Result.Failure(new List<ValidationError>
+    //         {
+    //             new ValidationError("accessToken", new[] { "Invalid access token." })
+    //         });
+    //     }
+    //
+    //     await _unitOfWork.Session.InvalidateAllUsersTokens(foundSession.UserId, foundSession.SessionId);
+    //
+    //     return Result.Success();
+    // }
+
+
+    // public async Task<Result<TokenResponseDto>> RefreshTokens(TokenResponseDto responseDto)
+    // {
+    //     var foundSession = await _unitOfWork.Session.GetAsync(s => s.RefreshToken == responseDto.RefreshToken);
+    //     if (foundSession == null)
+    //         return Result<TokenResponseDto>.Failure("refreshToken", new[] { "Refresh token not found." });
+    //
+    //     if (!CheckIfRefreshTokenIsValid(responseDto.RefreshToken, foundSession))
+    //     {
+    //         await InvalidateSession(foundSession);
+    //         return Result<TokenResponseDto>.Failure("refreshToken", new[] { "Invalid refresh token." });
+    //     }
+    //
+    //     var isAccessTokenValid =
+    //         await CheckIfAccessTokenIsValid(responseDto.AccessToken, foundSession.UserId, foundSession.SessionId);
+    //
+    //
+    //     if (foundSession.RefreshTokenExpiry < DateTime.UtcNow && !isAccessTokenValid)
+    //     {
+    //         await InvalidateSession(foundSession);
+    //         return Result<TokenResponseDto>.Failure("refreshToken", new[] { "Refresh token expired." });
+    //     }
+    //
+    //     var newRefreshToken = await CreateRefreshToken(foundSession.UserId, foundSession.SessionId);
+    //     await InvalidateSession(foundSession);
+    //
+    //     var applicationUser = await _unitOfWork.User.GetAsync(u => u.Id == foundSession.UserId);
+    //     if (applicationUser == null)
+    //         return Result<TokenResponseDto>.Failure("user", new[] { "User not found." });
+    //
+    //     var newAccessToken = CreateAccessToken(applicationUser, foundSession.SessionId);
+    //
+    //     var tokenDto = new TokenResponseDto
+    //     {
+    //         AccessToken = newAccessToken,
+    //         RefreshToken = newRefreshToken
+    //     };
+    //
+    //     return Result<TokenResponseDto>.Success(tokenDto);
+    // }
+
+
+    public async Task<Result<TokenResponseDto>> RefreshTokens()
+    {
+        var refreshToken = _httpContextAccessor.HttpContext.Request.Cookies["RefreshToken"];
+        if (string.IsNullOrEmpty(refreshToken))
+            return Result<TokenResponseDto>.Failure("refreshToken", new[] { "Refresh token not found." });
+
+        var foundSession = await _unitOfWork.Session.GetAsync(s => s.RefreshToken == refreshToken);
+        if (foundSession == null || !CheckIfRefreshTokenIsValid(refreshToken, foundSession))
+        {
+            return Result<TokenResponseDto>.Failure("refreshToken", new[] { "Invalid or expired refresh token." });
+        }
+
+        var user = await _unitOfWork.User.GetAsync(u => u.Id == foundSession.UserId);
+        if (user == null)
+            return Result<TokenResponseDto>.Failure("user", new[] { "User not found." });
+
+        // Create new tokens
+        var newAccessToken = CreateAccessToken(user, foundSession.SessionId);
+        var newRefreshToken = await CreateRefreshToken(user.Id, foundSession.SessionId);
+
+        // Invalidate old refresh token
+        await InvalidateSession(foundSession);
+
+        // Set new refresh token in cookie
+        _httpContextAccessor.HttpContext.Response.Cookies.Append("RefreshToken", newRefreshToken, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.Strict,
+            Expires = DateTime.UtcNow.AddHours(12)
+        });
+
+        return Result<TokenResponseDto>.Success(new TokenResponseDto { AccessToken = newAccessToken });
+    }
 
     public async Task<Result> ResetPasswordAsync(ResetPasswordRequestDto requestDto)
     {

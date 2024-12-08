@@ -21,28 +21,27 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("register")]
-    public async Task<ActionResult<ApiResponse>> Register([FromBody] RegisterRequestDto dto)
-    {
-        try
-        {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
-            var result = await _authService.Register(dto);
-
-            if (result.IsSuccess)
-                return Ok(ApiResponse.Success(result.Data));
-
-            var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
-            return BadRequest(ApiResponse.ValidationError(formattedErrors));
-        }
-        catch (Exception ex)
-        {
-            return
-                ApiResponse.Error("internal", ex.InnerException.Message, HttpStatusCode.InternalServerError);
-        }
-    }
-
+    // public async Task<ActionResult<ApiResponse>> Register([FromBody] RegisterRequestDto dto)
+    // {
+    //     try
+    //     {
+    //         if (!ModelState.IsValid)
+    //             return BadRequest(ModelState);
+    //
+    //         var result = await _authService.Register(dto);
+    //
+    //         if (result.IsSuccess)
+    //             return Ok(ApiResponse.Success(result.Data));
+    //
+    //         var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
+    //         return BadRequest(ApiResponse.ValidationError(formattedErrors));
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         return
+    //             ApiResponse.Error("internal", ex.InnerException.Message, HttpStatusCode.InternalServerError);
+    //     }
+    // }
     [HttpPost("login")]
     public async Task<ActionResult<ApiResponse>> Login([FromBody] LoginRequestDto requestDto)
     {
@@ -65,45 +64,94 @@ public class AuthController : ControllerBase
         }
     }
 
+    // [HttpPost("logout")]
+    // public async Task<ActionResult<ApiResponse>> Logout([FromBody] TokenResponseDto responseDto)
+    // {
+    //     try
+    //     {
+    //         if (!ModelState.IsValid)
+    //             return BadRequest(ModelState);
+    //
+    //         // await _authService.Logout(responseDto);
+    //         await _authService.Logout();
+    //         return Ok(ApiResponse.Success());
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         return
+    //             ApiResponse.Error("internal", ex.InnerException.Message, HttpStatusCode.InternalServerError);
+    //     }
+    // }
+
     [HttpPost("logout")]
-    public async Task<ActionResult<ApiResponse>> Logout([FromBody] TokenResponseDto responseDto)
+    public async Task<ActionResult<ApiResponse>> Logout()
     {
         try
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+            var result = await _authService.Logout();
 
-            await _authService.Logout(responseDto);
-            return Ok(ApiResponse.Success());
-        }
-        catch (Exception ex)
-        {
-            return
-                ApiResponse.Error("internal", ex.InnerException.Message, HttpStatusCode.InternalServerError);
-        }
-    }
-
-    [HttpPost("refresh")]
-    public async Task<ActionResult<ApiResponse>> RefreshTokens([FromBody] TokenResponseDto responseDto)
-    {
-        try
-        {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
-            var result = await _authService.RefreshTokens(responseDto);
             if (result.IsSuccess)
-                return Ok(ApiResponse.Success(result.Data));
+            {
+                return Ok(ApiResponse.Success("Logged out successfully."));
+            }
 
             var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
             return BadRequest(ApiResponse.ValidationError(formattedErrors));
         }
         catch (Exception ex)
         {
-            return
-                ApiResponse.Error("internal", ex.InnerException.Message, HttpStatusCode.InternalServerError);
+            return ApiResponse.Error("internal", ex.InnerException?.Message ?? ex.Message,
+                HttpStatusCode.InternalServerError);
         }
     }
+
+
+    [HttpPost("refresh")]
+    public async Task<ActionResult<ApiResponse>> RefreshTokens()
+    {
+        try
+        {
+            var result = await _authService.RefreshTokens();
+
+            if (result.IsSuccess)
+            {
+                // The service already handles setting the new refresh token cookie
+                return Ok(ApiResponse.Success(new { result.Data.AccessToken }));
+            }
+
+            var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
+            return BadRequest(ApiResponse.ValidationError(formattedErrors));
+        }
+        catch (Exception ex)
+        {
+            return ApiResponse.Error("internal", ex.InnerException?.Message ?? ex.Message,
+                HttpStatusCode.InternalServerError);
+        }
+    }
+
+
+    // [HttpPost("refresh")]
+    // public async Task<ActionResult<ApiResponse>> RefreshTokens([FromBody] TokenResponseDto responseDto)
+    // {
+    //     try
+    //     {
+    //         if (!ModelState.IsValid)
+    //             return BadRequest(ModelState);
+    //
+    //         // var result = await _authService.RefreshTokens(responseDto);
+    //         var result = await _authService.RefreshTokens();
+    //         if (result.IsSuccess)
+    //             return Ok(ApiResponse.Success(result.Data));
+    //
+    //         var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
+    //         return BadRequest(ApiResponse.ValidationError(formattedErrors));
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         return
+    //             ApiResponse.Error("internal", ex.InnerException.Message, HttpStatusCode.InternalServerError);
+    //     }
+    // }
 
     [HttpPost("forgot-password")]
     public async Task<ActionResult<ApiResponse>> ForgotPassword([FromBody] ForgotPasswordRequestDto requestDto)

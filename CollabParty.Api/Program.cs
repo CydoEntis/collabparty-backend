@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 using CollabParty.Application.Common.Interfaces;
@@ -29,10 +30,13 @@ var builder = WebApplication.CreateBuilder(args);
 // CORS Policy
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
-        policy.AllowAnyOrigin()
-            .AllowAnyMethod()
-            .AllowAnyHeader());
+    options.AddPolicy("AllowSpecificOrigin", policy =>
+    {
+        policy.WithOrigins("https://localhost:5173")
+            .AllowCredentials()
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
 });
 
 // Database Context Configuration
@@ -116,6 +120,58 @@ var jwtKey = builder.Configuration["JwtSecret"];
 var jwtIssuer = builder.Configuration["JwtIssuer"];
 var jwtAudience = builder.Configuration["JwtAudience"];
 
+// builder.Services.AddAuthentication(options =>
+//     {
+//         options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+//         options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+//     })
+//     .AddJwtBearer(options =>
+//     {
+//         options.RequireHttpsMetadata = false; // Set to true in production if using HTTPS
+//         options.SaveToken = true;
+//         options.TokenValidationParameters = new TokenValidationParameters
+//         {
+//             ValidateIssuerSigningKey = true,
+//             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+//             ValidateIssuer = true,
+//             ValidIssuer = jwtIssuer,
+//             ValidateAudience = true,
+//             ValidAudience = jwtAudience,
+//             ClockSkew = TimeSpan.Zero, // Optional, to eliminate tolerance on expiration
+//         };
+//
+//         // Add custom logging for validation failures
+//         options.Events = new JwtBearerEvents
+//         {
+//             OnAuthenticationFailed = context =>
+//             {
+//                 Console.WriteLine("Authentication failed: " + context.Exception.Message);
+//                 return Task.CompletedTask;
+//             },
+//             OnTokenValidated = context =>
+//             {
+//                 Console.WriteLine("Token validated successfully.");
+//                 return Task.CompletedTask;
+//             },
+//             OnMessageReceived = context =>
+//             {
+//                 // Retrieve the token from the Authorization header
+//                 var authorizationHeader = context.Request.Headers["Authorization"].FirstOrDefault();
+//                 if (!string.IsNullOrEmpty(authorizationHeader) && authorizationHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+//                 {
+//                     var token = authorizationHeader.Substring("Bearer ".Length).Trim();
+//                     context.Token = token; // Set the token from the Authorization header
+//                 }
+//                 else
+//                 {
+//                     Console.WriteLine("Authorization header is missing or does not contain a Bearer token.");
+//                 }
+//                 return Task.CompletedTask;
+//             }
+//         };
+//     });
+
+
 builder.Services.AddAuthentication(options =>
     {
         options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -123,7 +179,7 @@ builder.Services.AddAuthentication(options =>
     })
     .AddJwtBearer(options =>
     {
-        options.RequireHttpsMetadata = false;
+        options.RequireHttpsMetadata = false; // Set to true in production if using HTTPS
         options.SaveToken = true;
         options.TokenValidationParameters = new TokenValidationParameters
         {
@@ -149,6 +205,26 @@ builder.Services.AddAuthentication(options =>
             {
                 // Optionally log token validation success here
                 Console.WriteLine("Token validated successfully.");
+                return Task.CompletedTask;
+            },
+            OnMessageReceived = context =>
+            {
+                // Look for the token in cookies
+                var token = context.Request.Cookies["AccessToken"]; // Replace with your cookie name
+                Console.WriteLine("THE FUCKING TOKEN: " + token);
+                Console.WriteLine("THE FUCKING TOKEN: " + token);
+                Console.WriteLine("THE FUCKING TOKEN: " + token);
+                Console.WriteLine("THE FUCKING TOKEN: " + token);
+                Console.WriteLine("THE FUCKING TOKEN: " + token);
+                Console.WriteLine("THE FUCKING TOKEN: " + token);
+                Console.WriteLine("THE FUCKING TOKEN: " + token);
+                Console.WriteLine("THE FUCKING TOKEN: " + token);
+                Console.WriteLine("THE FUCKING TOKEN: " + token);
+                Console.WriteLine(token);
+                if (!string.IsNullOrEmpty(token))
+                {
+                    context.Token = token; // Set the token if present in the cookie
+                }
                 return Task.CompletedTask;
             }
         };
@@ -181,7 +257,7 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.UseHttpsRedirection();
-app.UseCors("AllowAll");
+app.UseCors("AllowSpecificOrigin");
 app.UseAuthentication();
 app.UseAuthorization();
 

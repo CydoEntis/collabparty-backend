@@ -9,8 +9,8 @@ public class AuthMappingProfile : Profile
 {
     public AuthMappingProfile()
     {
-        CreateMap<ApplicationUser, LoginResponseDto>()
-            .ForMember(dest => dest.User, opt => opt.MapFrom(src => src));
+        // CreateMap<ApplicationUser, LoginResponseDto>()
+        //     .ForMember(dest => dest.User, opt => opt.MapFrom(src => src));
 
         CreateMap<RegisterRequestDto, ApplicationUser>()
             .ForMember(dest => dest.UserName, opt => opt.MapFrom(src => src.Username))

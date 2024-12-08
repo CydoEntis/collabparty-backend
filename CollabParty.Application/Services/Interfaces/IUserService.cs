@@ -7,5 +7,6 @@ namespace CollabParty.Application.Services.Interfaces;
 
 public interface IUserService
 {
+    Task<Result<UserDtoResponse>> GetUserDetails(string userId);
     Task<Result<UpdateUserResponseDto>> UpdateUserDetails(string userId, UpdateUserRequestDto dto);
 }
