@@ -135,11 +135,11 @@ public class AuthService : IAuthService
         if (foundSession == null)
             return Result.Failure("session", new[] { "Session not found or already invalidated." });
 
-        // Invalidate the session
         await InvalidateSession(foundSession);
 
-        // Clear cookies
-        httpContext.Response.Cookies.Delete("RefreshToken");
+        httpContext.Response.Cookies.Delete("QB-REFRESH-TOKEN");
+        httpContext.Response.Cookies.Delete("QB-ACCESS-TOKEN");
+        httpContext.Response.Cookies.Delete("QB-CSRF-TOKEN");
 
         return Result.Success("Logged out successfully.");
     }
