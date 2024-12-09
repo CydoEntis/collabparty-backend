@@ -1,86 +1,126 @@
-﻿// using CollabParty.Application.Common.Dtos.Avatar;
-// using CollabParty.Application.Common.Dtos.Party;
-// using CollabParty.Application.Common.Mappings;
-// using CollabParty.Application.Common.Models;
-// using CollabParty.Application.Services.Interfaces;
-// using CollabParty.Domain.Entities;
-// using CollabParty.Domain.Enums;
-// using CollabParty.Domain.Interfaces;
-// using Microsoft.Extensions.Logging;
-//
-// namespace CollabParty.Application.Services.Implementations;
-//
-// public class PartyService : IPartyService
-// {
-//     private readonly IUnitOfWork _unitOfWork;
-//     private readonly ILogger _logger;
-//     private readonly IUserPartyService _userPartyService;
-//
-//
-//     public PartyService(IUnitOfWork unitOfWork, IUserPartyService userPartyService, ILogger<Party> logger)
-//     {
-//         _unitOfWork = unitOfWork;
-//         _userPartyService = userPartyService;
-//         _logger = logger;
-//     }
-//
-//     public async Task<Result<PartyDto>> CreateParty(string userId, CreatePartyDto dto)
-//     {
-//         try
-//         {
-//             var newParty = PartyMapper.FromCreatePartyDto(dto);
-//             Party createdParty = await _unitOfWork.Party.CreateAsync(newParty);
-//
-//             await _userPartyService.AssignUserAndRole(userId, createdParty.Id, UserRole.Leader);
-//
-//             var foundParty = await _unitOfWork.Party.GetAsync(p => p.Id == newParty.Id,
-//                 includeProperties: "User.UserAvatars.Avatar");
-//
-//             var partyDto = PartyMapper.ToPartyDto(foundParty);
-//             return Result<PartyDto>.Success(partyDto);
-//         }
-//         catch (Exception ex)
-//         {
-//             _logger.LogError(ex, "Failed to assign user to party.");
-//             return Result<PartyDto>.Failure("An error occurred while creating the party.");
-//         }
-//     }
-//     
-//     // Todo: Add a method to Update A Party
-//     
-//     public async Task<Result<PartyDto>> UpdateParty(string userId, UpdatePartyDto dto)
-//     {
-//         try
-//         {
-//             var foundParty = await _unitOfWork.Party.GetAsync(
-//                 p => p.Id == dto.PartyId,
-//                 includeProperties: "UserParties.User.UserAvatars.Avatar");
-//
-//             if (foundParty == null)
-//                 return Result<PartyDto>.Failure($"No party found with ID {dto.PartyId}");
-//
-//             var userParty = foundParty.UserParties
-//                 .FirstOrDefault(up => up.UserId == userId && up.Role == UserRole.Leader);
-//
-//             if (userParty == null)
-//                 return Result<PartyDto>.Failure("Only a party leader can update the party");
-//
-//             foundParty.PartyName = dto.PartyName;
-//             foundParty.Description = dto.Description;
-//             foundParty.UpdatedAt = DateTime.UtcNow;
-//
-//             var updatedParty = await _unitOfWork.Party.UpdateAsync(foundParty);
-//
-//             var partyDto = PartyMapper.ToPartyDto(updatedParty);
-//             return Result<PartyDto>.Success(partyDto);
-//         }
-//         catch (Exception ex)
-//         {
-//             _logger.LogError(ex, "Failed to update party.");
-//             return Result<PartyDto>.Failure("An error occurred while updating the party.");
-//         }
-//     }
-//
-//     
-//     // Todo Add a method to Delete a party. - Deleting should also delete all the records in the UserParty table for that Party.
-// }
+﻿using AutoMapper;
+using CollabParty.Application.Common.Dtos;
+using CollabParty.Application.Common.Dtos.Party;
+using CollabParty.Application.Common.Models;
+using CollabParty.Application.Services.Interfaces;
+using CollabParty.Domain.Entities;
+using CollabParty.Domain.Enums;
+using CollabParty.Domain.Interfaces;
+using Microsoft.Extensions.Logging;
+using Questlog.Application.Common.Models;
+
+namespace CollabParty.Application.Services.Implementations;
+
+public class PartyService : IPartyService
+{
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly ILogger _logger;
+    private readonly IMapper _mapper;
+    private readonly IPartyMemberService _partyMemberService;
+
+
+    public PartyService(IUnitOfWork unitOfWork, ILogger<Party> logger, IMapper mapper,
+        IPartyMemberService partyMemberService)
+    {
+        _unitOfWork = unitOfWork;
+        _logger = logger;
+        _mapper = mapper;
+        _partyMemberService = partyMemberService;
+    }
+
+    public async Task<Result<PartyDto>> CreateParty(string userId, CreatePartyDto dto)
+    {
+        try
+        {
+            var newParty = _mapper.Map<Party>(dto);
+            Party createdParty = await _unitOfWork.Party.CreateAsync(newParty);
+
+            await _partyMemberService.AddPartyLeader(userId, createdParty.Id);
+
+            var foundParty = await _unitOfWork.Party.GetAsync(p => p.Id == newParty.Id,
+                includeProperties: "User.UserAvatars.Avatar");
+
+            var partyDto = _mapper.Map<PartyDto>(foundParty);
+            return Result<PartyDto>.Success(partyDto);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to assign user to party.");
+            return Result<PartyDto>.Failure("An error occurred while creating the party.");
+        }
+    }
+
+
+    public async Task<Result<PaginatedResult<PartyDto>>> GetAllPartiesForUser(string userId, QueryParamsDto dto)
+    {
+        try
+        {
+            var queryParams = new QueryParams<Party>
+            {
+                SearchTerm = dto.SearchTerm,
+                SortDirection = dto.SortDirection,
+                SortField = dto.SortField,
+                DateFilterField = dto.DateFilterField,
+                StartDate = dto.StartDate,
+                EndDate = dto.EndDate,
+                PageNumber = dto.PageNumber,
+                PageSize = dto.PageSize,
+                IncludeProperties = "PartyMembers",
+                Filter = p => p.PartyMembers.Any(pm => pm.UserId == userId),
+            };
+
+            var paginatedResult = await _unitOfWork.Party.GetPaginatedAsync(queryParams);
+
+            var partyDtos = _mapper.Map<List<PartyDto>>(paginatedResult);
+
+            var result = new PaginatedResult<PartyDto>(partyDtos, paginatedResult.TotalItems,
+                paginatedResult.CurrentPage, queryParams.PageSize);
+
+            return Result<PaginatedResult<PartyDto>>.Success(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to fetch user parties.");
+            return Result<PaginatedResult<PartyDto>>.Failure("An error occurred while fetching parties.");
+        }
+    }
+
+    public async Task<Result<List<PartyDto>>> GetRecentParties(string userId)
+    {
+        try
+        {
+            var recentParties = await _unitOfWork.Party.GetMostRecentPartiesForUserAsync(userId,
+                includeProperties: "PartyMembers");
+
+
+            var partyDto = _mapper.Map<List<PartyDto>>(recentParties);
+            return Result<List<PartyDto>>.Success(partyDto);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to assign user to party.");
+            return Result<List<PartyDto>>.Failure("An error occurred while creating party.");
+        }
+    }
+
+    public async Task<Result<PartyDto>> GetParty(string userId, int partyId)
+    {
+        try
+        {
+            var foundParty = await _unitOfWork.Party.GetAsync(
+                p => p.Id == partyId && p.PartyMembers.Any(pm => pm.UserId == userId),
+                includeProperties: "PartyMembers");
+
+            if (foundParty == null)
+                return Result<PartyDto>.Failure($"No party with the {partyId} exists");
+
+            var partyDto = _mapper.Map<PartyDto>(foundParty);
+            return Result<PartyDto>.Success(partyDto);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get party with id");
+            return Result<PartyDto>.Failure("An error occurred while fetching party.");
+        }
+    }
+}

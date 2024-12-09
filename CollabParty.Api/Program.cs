@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 using CollabParty.Api.Middleware;
+using CollabParty.Application.Common.Constants;
 using CollabParty.Application.Common.Interfaces;
 using CollabParty.Application.Common.Models;
 using CollabParty.Application.Common.Validators;
@@ -86,6 +87,9 @@ builder.Services.AddScoped<IUnlockedAvatarService, UnlockedAvatarService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IAvatarService, AvatarService>();
 builder.Services.AddScoped<IEmailTemplateService, EmailTemplateService>();
+builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<ISessionService, SessionService>();
+builder.Services.AddScoped<ICookieService, CookieService>();
 
 // Suppress Model State Validation for Custom Filters
 builder.Services.Configure<ApiBehaviorOptions>(options =>
@@ -117,60 +121,9 @@ builder.Services.AddInfrastructureServices(builder.Configuration);
 
 
 // JWT Authentication Configuration
-var jwtKey = builder.Configuration["JwtSecret"];
-var jwtIssuer = builder.Configuration["JwtIssuer"];
-var jwtAudience = builder.Configuration["JwtAudience"];
-
-// builder.Services.AddAuthentication(options =>
-//     {
-//         options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-//         options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-//     })
-//     .AddJwtBearer(options =>
-//     {
-//         options.RequireHttpsMetadata = false; // Set to true in production if using HTTPS
-//         options.SaveToken = true;
-//         options.TokenValidationParameters = new TokenValidationParameters
-//         {
-//             ValidateIssuerSigningKey = true,
-//             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
-//             ValidateIssuer = true,
-//             ValidIssuer = jwtIssuer,
-//             ValidateAudience = true,
-//             ValidAudience = jwtAudience,
-//             ClockSkew = TimeSpan.Zero, // Optional, to eliminate tolerance on expiration
-//         };
-//
-//         // Add custom logging for validation failures
-//         options.Events = new JwtBearerEvents
-//         {
-//             OnAuthenticationFailed = context =>
-//             {
-//                 Console.WriteLine("Authentication failed: " + context.Exception.Message);
-//                 return Task.CompletedTask;
-//             },
-//             OnTokenValidated = context =>
-//             {
-//                 Console.WriteLine("Token validated successfully.");
-//                 return Task.CompletedTask;
-//             },
-//             OnMessageReceived = context =>
-//             {
-//                 // Retrieve the token from the Authorization header
-//                 var authorizationHeader = context.Request.Headers["Authorization"].FirstOrDefault();
-//                 if (!string.IsNullOrEmpty(authorizationHeader) && authorizationHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
-//                 {
-//                     var token = authorizationHeader.Substring("Bearer ".Length).Trim();
-//                     context.Token = token; // Set the token from the Authorization header
-//                 }
-//                 else
-//                 {
-//                     Console.WriteLine("Authorization header is missing or does not contain a Bearer token.");
-//                 }
-//                 return Task.CompletedTask;
-//             }
-//         };
-//     });
+var jwtKey = builder.Configuration[JwtNames.JwtSecret];
+var jwtIssuer = builder.Configuration[JwtNames.JwtIssuer];
+var jwtAudience = builder.Configuration[JwtNames.JwtAudience];
 
 
 builder.Services.AddAuthentication(options =>
@@ -211,7 +164,7 @@ builder.Services.AddAuthentication(options =>
             OnMessageReceived = context =>
             {
            
-                var token = context.Request.Cookies["QB-ACCESS-TOKEN"]; 
+                var token = context.Request.Cookies[CookieNames.AccessToken]; 
 
                 Console.WriteLine(token);
                 if (!string.IsNullOrEmpty(token))
