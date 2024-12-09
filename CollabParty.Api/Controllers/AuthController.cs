@@ -116,7 +116,7 @@ public class AuthController : ControllerBase
             if (result.IsSuccess)
             {
                 // The service already handles setting the new refresh token cookie
-                return Ok(ApiResponse.Success(new { result.Data.AccessToken }));
+                return Ok(ApiResponse.Success("Tokens refreshed successfully."));
             }
 
             var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);

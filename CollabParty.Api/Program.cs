@@ -211,7 +211,7 @@ builder.Services.AddAuthentication(options =>
             OnMessageReceived = context =>
             {
            
-                var token = context.Request.Cookies["AccessToken"]; 
+                var token = context.Request.Cookies["QB-ACCESS-TOKEN"]; 
 
                 Console.WriteLine(token);
                 if (!string.IsNullOrEmpty(token))

@@ -14,8 +14,8 @@ public interface IAuthService
     // Task<Result<TokenResponseDto>> RefreshTokens(TokenResponseDto responseDto);
 
     Task<Result> Logout();
-    
-    Task<Result<TokenResponseDto>> RefreshTokens();
+
+    Task<Result> RefreshTokens();
     
     Task<Result> ResetPasswordAsync(ResetPasswordRequestDto requestDto);
     Task<Result> SendForgotPasswordEmail(ForgotPasswordRequestDto requestDto);

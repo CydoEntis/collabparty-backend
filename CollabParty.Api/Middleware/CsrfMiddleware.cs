@@ -35,8 +35,8 @@ public class CsrfMiddleware
             return;
         }
 
-        var csrfTokenFromHeader = context.Request.Headers["X-CSRF-TOKEN"];
-        var csrfTokenFromCookie = context.Request.Cookies["CSRF-TOKEN"];
+        var csrfTokenFromHeader = context.Request.Headers["QB-CSRF-TOKEN"];
+        var csrfTokenFromCookie = context.Request.Cookies["QB-CSRF-TOKEN"];
 
         if (string.IsNullOrEmpty(csrfTokenFromHeader) || string.IsNullOrEmpty(csrfTokenFromCookie))
         {
@@ -57,7 +57,7 @@ public class CsrfMiddleware
         {
             var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
 
-            var refreshToken = context.Request.Cookies["RefreshToken"];
+            var refreshToken = context.Request.Cookies["QB-REFRESH-TOKEN"];
             if (string.IsNullOrEmpty(refreshToken))
             {
                 context.Response.StatusCode = StatusCodes.Status403Forbidden;
@@ -82,7 +82,7 @@ public class CsrfMiddleware
                 await unitOfWork.SaveAsync();
 
                 // Set new CSRF token in response cookies
-                context.Response.Cookies.Append("CSRF-TOKEN", newCsrfToken.Token, new CookieOptions
+                context.Response.Cookies.Append("QB-CSRF-TOKEN", newCsrfToken.Token, new CookieOptions
                 {
                     HttpOnly = false,
                     Secure = true,
@@ -91,7 +91,7 @@ public class CsrfMiddleware
                 });
 
                 // Optionally, add a custom header to indicate that the CSRF token has been refreshed
-                context.Response.Headers["X-CSRF-REFRESHED"] = "true";
+                context.Response.Headers["QB-CSRF-REFRESHED"] = "true";
             }
         }
 

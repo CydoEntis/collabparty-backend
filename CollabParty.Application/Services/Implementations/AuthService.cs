@@ -63,41 +63,12 @@ public class AuthService : IAuthService
             return Result.Failure("email", new[] { "Invalid username or password" });
 
         var sessionId = $"SESS{Guid.NewGuid()}";
-        var accessToken = CreateAccessToken(user, sessionId);
-        var refreshToken = CreateRefreshToken();
-        var csrfToken = CreateCsrfToken();
-        var session = await CreateSession(user.Id, sessionId, refreshToken, csrfToken);
-
+        CreateAccessToken(user, sessionId);
+        await CreateSession(user.Id, sessionId);
 
         var httpContext = _httpContextAccessor.HttpContext;
         if (httpContext == null)
             return Result.Failure("server", new[] { "Unable to set cookies." });
-
-        httpContext.Response.Cookies.Append("CSRF-TOKEN", csrfToken.Token, new CookieOptions
-        {
-            HttpOnly = false,
-            Secure = true,
-            SameSite = SameSiteMode.Strict,
-            Expires = DateTime.UtcNow.AddHours(1)
-        });
-
-
-        httpContext.Response.Cookies.Append("AccessToken", accessToken, new CookieOptions
-        {
-            HttpOnly = true,
-            Secure = true,
-            SameSite = SameSiteMode.Strict,
-            Expires = DateTimeOffset.UtcNow.AddMinutes(30)
-        });
-
-        httpContext.Response.Cookies.Append("RefreshToken", refreshToken.Token, new CookieOptions
-        {
-            HttpOnly = true,
-            Secure = true,
-            SameSite = SameSiteMode.Strict,
-            Expires = DateTimeOffset.UtcNow.AddHours(12)
-        });
-
 
         return Result.Success("Login successful");
     }
@@ -155,7 +126,7 @@ public class AuthService : IAuthService
     public async Task<Result> Logout()
     {
         var httpContext = _httpContextAccessor.HttpContext;
-        var refreshToken = httpContext.Request.Cookies["RefreshToken"];
+        var refreshToken = httpContext.Request.Cookies["QB-REFRESH-TOKEN"];
 
         if (string.IsNullOrEmpty(refreshToken))
             return Result.Failure("refreshToken", new[] { "Refresh token not found." });
@@ -174,16 +145,16 @@ public class AuthService : IAuthService
     }
 
 
-    public async Task<Result<TokenResponseDto>> RefreshTokens()
+    public async Task<Result> RefreshTokens()
     {
-        var refreshToken = _httpContextAccessor.HttpContext.Request.Cookies["RefreshToken"];
-        var accessToken = _httpContextAccessor.HttpContext.Request.Cookies["AccessToken"];
+        var refreshToken = _httpContextAccessor.HttpContext.Request.Cookies["QB-REFRESH-TOKEN"];
+        var accessToken = _httpContextAccessor.HttpContext.Request.Cookies["QB-ACCESS-TOKEN"];
         if (string.IsNullOrEmpty(refreshToken))
-            return Result<TokenResponseDto>.Failure("refreshToken", new[] { "Refresh token not found." });
+            return Result.Failure("refreshToken", new[] { "Refresh token not found." });
 
         var foundSession = await _unitOfWork.Session.GetAsync(s => s.RefreshToken == refreshToken);
         if (foundSession == null || !CheckIfRefreshTokenIsValid(refreshToken, foundSession))
-            return Result<TokenResponseDto>.Failure("refreshToken", new[] { "Invalid or expired refresh token." });
+            return Result.Failure("refreshToken", new[] { "Invalid or expired refresh token." });
 
 
         var isAccessTokenValid =
@@ -194,45 +165,16 @@ public class AuthService : IAuthService
 
         var user = await _unitOfWork.User.GetAsync(u => u.Id == foundSession.UserId);
         if (user == null)
-            return Result<TokenResponseDto>.Failure("user", new[] { "User not found." });
+            return Result.Failure("user", new[] { "User not found." });
 
         // Create new tokens
-        var newAccessToken = CreateAccessToken(user, foundSession.SessionId);
-        var newRefreshToken = CreateRefreshToken();
-        var newCsrfToken = CreateCsrfToken();
-
-        var newSession = await CreateSession(user.Id, foundSession.SessionId, newRefreshToken, newCsrfToken);
+        CreateAccessToken(user, foundSession.SessionId);
+        await CreateSession(user.Id, foundSession.SessionId);
 
         // Invalidate old refresh token
         await InvalidateSession(foundSession);
 
-        _httpContextAccessor.HttpContext.Response.Cookies.Append("CSRF-TOKEN", newCsrfToken.Token, new CookieOptions
-        {
-            HttpOnly = false,
-            Secure = true,
-            SameSite = SameSiteMode.Strict,
-            Expires = DateTime.UtcNow.AddHours(1)
-        });
-
-
-        _httpContextAccessor.HttpContext.Response.Cookies.Append("AccessToken", newAccessToken, new CookieOptions
-        {
-            HttpOnly = true,
-            Secure = true,
-            SameSite = SameSiteMode.Strict,
-            Expires = DateTimeOffset.UtcNow.AddMinutes(30)
-        });
-
-        _httpContextAccessor.HttpContext.Response.Cookies.Append("RefreshToken", newRefreshToken.Token,
-            new CookieOptions
-            {
-                HttpOnly = true,
-                Secure = true,
-                SameSite = SameSiteMode.Strict,
-                Expires = DateTimeOffset.UtcNow.AddHours(12)
-            });
-
-        return Result<TokenResponseDto>.Success(new TokenResponseDto { AccessToken = newAccessToken });
+        return Result.Success();
     }
 
     public async Task<Result> ResetPasswordAsync(ResetPasswordRequestDto requestDto)
@@ -335,11 +277,12 @@ public class AuthService : IAuthService
         return Result.Success("Password changed successfully");
     }
 
-    private string CreateAccessToken(ApplicationUser user, string sessionId)
+    private void CreateAccessToken(ApplicationUser user, string sessionId)
     {
         var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSecret));
         var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
+        var expires = DateTime.UtcNow.AddMinutes(30);
 
         var tokenDescriptor = new SecurityTokenDescriptor()
         {
@@ -349,7 +292,7 @@ public class AuthService : IAuthService
                     new Claim(JwtRegisteredClaimNames.Jti, sessionId),
                 }
             ),
-            Expires = DateTime.UtcNow.AddMinutes(30),
+            Expires = expires,
             SigningCredentials = credentials,
             Audience = _jwtAudience,
             Issuer = _jwtIssuer
@@ -357,12 +300,22 @@ public class AuthService : IAuthService
 
         var tokenHandler = new JsonWebTokenHandler();
         var token = tokenHandler.CreateToken(tokenDescriptor);
-        return token;
+
+
+        _httpContextAccessor.HttpContext.Response.Cookies.Append("QB-ACCESS-TOKEN", token, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.Strict,
+            Expires = expires
+        });
     }
 
-    private async Task<string> CreateSession(string userId, string sessionId, RefreshToken refreshToken,
-        CsrfToken csrfToken)
+    private async Task CreateSession(string userId, string sessionId)
     {
+        var refreshToken = CreateRefreshToken();
+        var csrfToken = CreateCsrfToken();
+
         Session session = new()
         {
             IsValid = true,
@@ -375,26 +328,51 @@ public class AuthService : IAuthService
         };
 
         await _unitOfWork.Session.CreateAsync(session);
-
-        return session.RefreshToken;
     }
 
     private CsrfToken CreateCsrfToken()
     {
-        return new CsrfToken()
+        var expires = DateTime.UtcNow.AddMinutes(30);
+
+        var csrf = new CsrfToken()
         {
             Token = Guid.NewGuid().ToString() + "-" + Guid.NewGuid().ToString(),
-            Expiry = DateTime.UtcNow.AddMinutes(30)
+            Expiry = expires
         };
+
+
+        _httpContextAccessor.HttpContext.Response.Cookies.Append("QB-CSRF-TOKEN", csrf.Token, new CookieOptions
+        {
+            HttpOnly = false,
+            Secure = true,
+            SameSite = SameSiteMode.Strict,
+            Expires = expires
+        });
+
+        return csrf;
     }
 
     private RefreshToken CreateRefreshToken()
     {
-        return new RefreshToken()
+        var expires = DateTime.UtcNow.AddHours(12);
+
+        var refresh = new RefreshToken()
         {
             Token = Guid.NewGuid().ToString() + "-" + Guid.NewGuid().ToString(),
-            Expiry = DateTime.UtcNow.AddHours(12)
+            Expiry = expires
         };
+
+
+        _httpContextAccessor.HttpContext.Response.Cookies.Append("QB-REFRESH-TOKEN", refresh.Token,
+            new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.Strict,
+                Expires = expires
+            });
+        
+        return refresh;
     }
 
     private async Task InvalidateSession(Session session)
