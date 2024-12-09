@@ -49,32 +49,42 @@ public class AuthService : IAuthService
     }
 
 
-    public async Task<Result<TokenResponseDto>> Login(LoginRequestDto requestDto)
+    public async Task<Result> Login(LoginRequestDto requestDto)
     {
         var user = await _unitOfWork.User.GetAsync(
             u => u.Email == requestDto.Email,
             includeProperties: "UserAvatars,UserAvatars.Avatar");
 
         if (user == null)
-            return Result<TokenResponseDto>.Failure("email", new[] { "Invalid username or password" });
+            return Result.Failure("email", new[] { "Invalid username or password" });
 
         bool isPasswordValid = await _userManager.CheckPasswordAsync(user, requestDto.Password);
         if (!isPasswordValid)
-            return Result<TokenResponseDto>.Failure("email", new[] { "Invalid username or password" });
+            return Result.Failure("email", new[] { "Invalid username or password" });
 
         var sessionId = $"SESS{Guid.NewGuid()}";
         var accessToken = CreateAccessToken(user, sessionId);
         var refreshToken = await CreateRefreshToken(user.Id, sessionId);
 
-        // Set the tokens in HTTP-only cookies
+        var csrfToken = Guid.NewGuid().ToString();
+        
         var httpContext = _httpContextAccessor.HttpContext;
         if (httpContext == null)
-            return Result<TokenResponseDto>.Failure("server", new[] { "Unable to set cookies." });
+            return Result.Failure("server", new[] { "Unable to set cookies." });
 
+        httpContext.Response.Cookies.Append("CSRF-TOKEN", csrfToken, new CookieOptions
+        {
+            HttpOnly = false,   
+            Secure = true,      
+            SameSite = SameSiteMode.Strict,
+            Expires = DateTime.UtcNow.AddHours(1)
+        });
+        
+        
         httpContext.Response.Cookies.Append("AccessToken", accessToken, new CookieOptions
         {
             HttpOnly = true,
-            Secure = true, // Use HTTPS
+            Secure = true, 
             SameSite = SameSiteMode.Strict,
             Expires = DateTimeOffset.UtcNow.AddMinutes(30)
         });
@@ -82,18 +92,14 @@ public class AuthService : IAuthService
         httpContext.Response.Cookies.Append("RefreshToken", refreshToken, new CookieOptions
         {
             HttpOnly = true,
-            Secure = true, // Use HTTPS
+            Secure = true, 
             SameSite = SameSiteMode.Strict,
             Expires = DateTimeOffset.UtcNow.AddHours(12)
         });
 
-        var tokenDto = new TokenResponseDto
-        {
-            AccessToken = accessToken,
-            RefreshToken = refreshToken
-        };
+ 
 
-        return Result<TokenResponseDto>.Success(tokenDto);
+        return Result.Success("Login successful");
     }
 
 // public async Task<Result<TokenResponseDto>> Login(LoginRequestDto requestDto)

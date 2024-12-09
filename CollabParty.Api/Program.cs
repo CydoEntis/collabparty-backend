@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
+using CollabParty.Api.Middleware;
 using CollabParty.Application.Common.Interfaces;
 using CollabParty.Application.Common.Models;
 using CollabParty.Application.Common.Validators;
@@ -179,7 +180,7 @@ builder.Services.AddAuthentication(options =>
     })
     .AddJwtBearer(options =>
     {
-        options.RequireHttpsMetadata = false; // Set to true in production if using HTTPS
+        options.RequireHttpsMetadata = false; 
         options.SaveToken = true;
         options.TokenValidationParameters = new TokenValidationParameters
         {
@@ -192,38 +193,30 @@ builder.Services.AddAuthentication(options =>
             ClockSkew = TimeSpan.Zero,
         };
 
-        // Add custom logging for validation failures
+   
         options.Events = new JwtBearerEvents
         {
             OnAuthenticationFailed = context =>
             {
-                // Log the error or handle it in some way
+                
                 Console.WriteLine("Authentication failed: " + context.Exception.Message);
                 return Task.CompletedTask;
             },
             OnTokenValidated = context =>
             {
-                // Optionally log token validation success here
+              
                 Console.WriteLine("Token validated successfully.");
                 return Task.CompletedTask;
             },
             OnMessageReceived = context =>
             {
-                // Look for the token in cookies
-                var token = context.Request.Cookies["AccessToken"]; // Replace with your cookie name
-                Console.WriteLine("THE FUCKING TOKEN: " + token);
-                Console.WriteLine("THE FUCKING TOKEN: " + token);
-                Console.WriteLine("THE FUCKING TOKEN: " + token);
-                Console.WriteLine("THE FUCKING TOKEN: " + token);
-                Console.WriteLine("THE FUCKING TOKEN: " + token);
-                Console.WriteLine("THE FUCKING TOKEN: " + token);
-                Console.WriteLine("THE FUCKING TOKEN: " + token);
-                Console.WriteLine("THE FUCKING TOKEN: " + token);
-                Console.WriteLine("THE FUCKING TOKEN: " + token);
+           
+                var token = context.Request.Cookies["AccessToken"]; 
+
                 Console.WriteLine(token);
                 if (!string.IsNullOrEmpty(token))
                 {
-                    context.Token = token; // Set the token if present in the cookie
+                    context.Token = token; 
                 }
                 return Task.CompletedTask;
             }
@@ -255,6 +248,8 @@ using (var scope = app.Services.CreateScope())
     UnlockedAvatarSeeder.Seed(dbContext);
     PartyMemberSeeder.Seed(dbContext);
 }
+
+app.UseMiddleware<CsrfMiddleware>();
 
 app.UseHttpsRedirection();
 app.UseCors("AllowSpecificOrigin");

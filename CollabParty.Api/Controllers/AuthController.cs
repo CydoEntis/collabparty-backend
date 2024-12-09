@@ -52,7 +52,7 @@ public class AuthController : ControllerBase
 
             var result = await _authService.Login(requestDto);
             if (result.IsSuccess)
-                return Ok(ApiResponse.Success(result.Data));
+                return Ok(ApiResponse.Success(result.Message));
 
             var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
             return BadRequest(ApiResponse.ValidationError(formattedErrors));
