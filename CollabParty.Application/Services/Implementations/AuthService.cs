@@ -64,128 +64,93 @@ public class AuthService : IAuthService
 
         var sessionId = $"SESS{Guid.NewGuid()}";
         var accessToken = CreateAccessToken(user, sessionId);
-        var refreshToken = await CreateRefreshToken(user.Id, sessionId);
+        var refreshToken = CreateRefreshToken();
+        var csrfToken = CreateCsrfToken();
+        var session = await CreateSession(user.Id, sessionId, refreshToken, csrfToken);
 
-        var csrfToken = Guid.NewGuid().ToString();
-        
+
         var httpContext = _httpContextAccessor.HttpContext;
         if (httpContext == null)
             return Result.Failure("server", new[] { "Unable to set cookies." });
 
-        httpContext.Response.Cookies.Append("CSRF-TOKEN", csrfToken, new CookieOptions
+        httpContext.Response.Cookies.Append("CSRF-TOKEN", csrfToken.Token, new CookieOptions
         {
-            HttpOnly = false,   
-            Secure = true,      
+            HttpOnly = false,
+            Secure = true,
             SameSite = SameSiteMode.Strict,
             Expires = DateTime.UtcNow.AddHours(1)
         });
-        
-        
+
+
         httpContext.Response.Cookies.Append("AccessToken", accessToken, new CookieOptions
         {
             HttpOnly = true,
-            Secure = true, 
+            Secure = true,
             SameSite = SameSiteMode.Strict,
             Expires = DateTimeOffset.UtcNow.AddMinutes(30)
         });
 
-        httpContext.Response.Cookies.Append("RefreshToken", refreshToken, new CookieOptions
+        httpContext.Response.Cookies.Append("RefreshToken", refreshToken.Token, new CookieOptions
         {
             HttpOnly = true,
-            Secure = true, 
+            Secure = true,
             SameSite = SameSiteMode.Strict,
             Expires = DateTimeOffset.UtcNow.AddHours(12)
         });
 
- 
 
         return Result.Success("Login successful");
     }
 
-// public async Task<Result<TokenResponseDto>> Login(LoginRequestDto requestDto)
-// {
-//     var user = await _unitOfWork.User.GetAsync(
-//         u => u.Email == requestDto.Email,
-//         includeProperties: "UserAvatars,UserAvatars.Avatar");
-//
-//     if (user == null)
-//         return Result<TokenResponseDto>.Failure("email", new[] { "Invalid username or password" });
-//
-//     bool isPasswordValid = await _userManager.CheckPasswordAsync(user, requestDto.Password);
-//
-//     if (!isPasswordValid)
-//         return Result<TokenResponseDto>.Failure("email", new[] { "Invalid username or password" });
-//
-//     var sessionId = $"SESS{Guid.NewGuid()}";
-// var accessToken = CreateAccessToken(user, sessionId);
-// var refreshToken = await CreateRefreshToken(user.Id, sessionId);
-//     // var userAvatar = await _unitOfWork.UnlockedAvatar.GetAsync(
-//     //     ua => ua.UserId == user.Id && ua.IsActive,
-//     //     includeProperties: "Avatar");
-//     //
-//     //
-//     // if (userAvatar == null)
-//     //     return Result<TokenResponseDto>.Failure("avatar", new[] { "Active avatar not found for user" });
-//
-//     var tokenDto = new TokenResponseDto()
-//     {
-//         AccessToken = accessToken,
-//         RefreshToken = refreshToken,
-//     };
-//     // var loginDto = _mapper.Map<TokenResponseDto>(user);
-//     // loginDto.Tokens = tokenDto;
-//
-//     return Result<TokenResponseDto>.Success(tokenDto);
-// }
 
-// public async Task<Result<LoginResponseDto>> Register(RegisterRequestDto dto)
-// {
-//     var existingUser = await _userManager.FindByEmailAsync(dto.Email);
-//     if (existingUser != null)
-//     {
-//         return Result<LoginResponseDto>.Failure("email", new[] { "A user with this email already exists" });
-//     }
-//
-//     var existingUserByUsername = await _userManager.FindByNameAsync(dto.Username);
-//     if (existingUserByUsername != null)
-//     {
-//         return Result<LoginResponseDto>.Failure("username", new[] { "A user with this username already exists" });
-//     }
-//
-//     ApplicationUser user = new()
-//     {
-//         UserName = dto.Username,
-//         Email = dto.Email,
-//         NormalizedEmail = dto.Email.ToUpper(),
-//         NormalizedUserName = dto.Username.ToUpper(),
-//         CurrentExp = 0,
-//         CurrentLevel = 1,
-//         ExpToNextLevel = 100,
-//         CreatedAt = DateTime.UtcNow
-//     };
-//
-//     var creationResult = await _userManager.CreateAsync(user, dto.Password);
-//     if (!creationResult.Succeeded)
-//     {
-//         var errors = creationResult.Errors
-//             .Select(e => new ValidationError("user", new[] { e.Description }))
-//             .ToList();
-//         return Result<LoginResponseDto>.Failure(errors);
-//     }
-//
-//     await _unlockedAvatarService.UnlockStarterAvatars(user);
-//     await _unlockedAvatarService.SetNewUserAvatar(user.Id, dto.AvatarId);
-//
-//     var loginCredentialsDto = _mapper.Map<LoginRequestDto>(dto);
-//
-//     var loginResult = await Login(loginCredentialsDto);
-//     if (!loginResult.IsSuccess)
-//     {
-//         return loginResult;
-//     }
-//
-//     return loginResult;
-// }
+    public async Task<Result> Register(RegisterRequestDto dto)
+    {
+        var existingUser = await _userManager.FindByEmailAsync(dto.Email);
+        if (existingUser != null)
+        {
+            return Result.Failure("email", new[] { "A user with this email already exists" });
+        }
+
+        var existingUserByUsername = await _userManager.FindByNameAsync(dto.Username);
+        if (existingUserByUsername != null)
+        {
+            return Result.Failure("username", new[] { "A user with this username already exists" });
+        }
+
+        ApplicationUser user = new()
+        {
+            UserName = dto.Username,
+            Email = dto.Email,
+            NormalizedEmail = dto.Email.ToUpper(),
+            NormalizedUserName = dto.Username.ToUpper(),
+            CurrentExp = 0,
+            CurrentLevel = 1,
+            ExpToNextLevel = 100,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        var creationResult = await _userManager.CreateAsync(user, dto.Password);
+        if (!creationResult.Succeeded)
+        {
+            var errors = creationResult.Errors
+                .Select(e => new ValidationError("user", new[] { e.Description }))
+                .ToList();
+            return Result.Failure(errors);
+        }
+
+        await _unlockedAvatarService.UnlockStarterAvatars(user);
+        await _unlockedAvatarService.SetNewUserAvatar(user.Id, dto.AvatarId);
+
+        var loginCredentialsDto = _mapper.Map<LoginRequestDto>(dto);
+
+        var loginResult = await Login(loginCredentialsDto);
+        if (!loginResult.IsSuccess)
+        {
+            return Result.Failure("Failed to login");
+        }
+
+        return Result.Success("Login successful");
+    }
 
     public async Task<Result> Logout()
     {
@@ -209,95 +174,23 @@ public class AuthService : IAuthService
     }
 
 
-    // public async Task<Result> Logout(TokenResponseDto responseDto)
-    // {
-    //     var foundSession = await _unitOfWork.Session.GetAsync(s => s.RefreshToken == responseDto.RefreshToken);
-    //
-    //     if (foundSession == null)
-    //     {
-    //         return Result.Failure(new List<ValidationError>
-    //         {
-    //             new ValidationError("refreshToken", new[] { "Session not found or already invalidated." })
-    //         });
-    //     }
-    //
-    //     var isRefreshTokenValid = CheckIfRefreshTokenIsValid(responseDto.RefreshToken, foundSession);
-    //     if (!isRefreshTokenValid)
-    //     {
-    //         return Result.Failure(new List<ValidationError>
-    //         {
-    //             new ValidationError("refreshToken", new[] { "Invalid refresh token." })
-    //         });
-    //     }
-    //
-    //     var isAccessTokenValid = await
-    //         CheckIfAccessTokenIsValid(responseDto.AccessToken, foundSession.UserId, foundSession.SessionId);
-    //     if (!isAccessTokenValid)
-    //     {
-    //         return Result.Failure(new List<ValidationError>
-    //         {
-    //             new ValidationError("accessToken", new[] { "Invalid access token." })
-    //         });
-    //     }
-    //
-    //     await _unitOfWork.Session.InvalidateAllUsersTokens(foundSession.UserId, foundSession.SessionId);
-    //
-    //     return Result.Success();
-    // }
-
-
-    // public async Task<Result<TokenResponseDto>> RefreshTokens(TokenResponseDto responseDto)
-    // {
-    //     var foundSession = await _unitOfWork.Session.GetAsync(s => s.RefreshToken == responseDto.RefreshToken);
-    //     if (foundSession == null)
-    //         return Result<TokenResponseDto>.Failure("refreshToken", new[] { "Refresh token not found." });
-    //
-    //     if (!CheckIfRefreshTokenIsValid(responseDto.RefreshToken, foundSession))
-    //     {
-    //         await InvalidateSession(foundSession);
-    //         return Result<TokenResponseDto>.Failure("refreshToken", new[] { "Invalid refresh token." });
-    //     }
-    //
-    //     var isAccessTokenValid =
-    //         await CheckIfAccessTokenIsValid(responseDto.AccessToken, foundSession.UserId, foundSession.SessionId);
-    //
-    //
-    //     if (foundSession.RefreshTokenExpiry < DateTime.UtcNow && !isAccessTokenValid)
-    //     {
-    //         await InvalidateSession(foundSession);
-    //         return Result<TokenResponseDto>.Failure("refreshToken", new[] { "Refresh token expired." });
-    //     }
-    //
-    //     var newRefreshToken = await CreateRefreshToken(foundSession.UserId, foundSession.SessionId);
-    //     await InvalidateSession(foundSession);
-    //
-    //     var applicationUser = await _unitOfWork.User.GetAsync(u => u.Id == foundSession.UserId);
-    //     if (applicationUser == null)
-    //         return Result<TokenResponseDto>.Failure("user", new[] { "User not found." });
-    //
-    //     var newAccessToken = CreateAccessToken(applicationUser, foundSession.SessionId);
-    //
-    //     var tokenDto = new TokenResponseDto
-    //     {
-    //         AccessToken = newAccessToken,
-    //         RefreshToken = newRefreshToken
-    //     };
-    //
-    //     return Result<TokenResponseDto>.Success(tokenDto);
-    // }
-
-
     public async Task<Result<TokenResponseDto>> RefreshTokens()
     {
         var refreshToken = _httpContextAccessor.HttpContext.Request.Cookies["RefreshToken"];
+        var accessToken = _httpContextAccessor.HttpContext.Request.Cookies["AccessToken"];
         if (string.IsNullOrEmpty(refreshToken))
             return Result<TokenResponseDto>.Failure("refreshToken", new[] { "Refresh token not found." });
 
         var foundSession = await _unitOfWork.Session.GetAsync(s => s.RefreshToken == refreshToken);
         if (foundSession == null || !CheckIfRefreshTokenIsValid(refreshToken, foundSession))
-        {
             return Result<TokenResponseDto>.Failure("refreshToken", new[] { "Invalid or expired refresh token." });
-        }
+
+
+        var isAccessTokenValid =
+            await CheckIfAccessTokenIsValid(accessToken, foundSession.UserId, foundSession.SessionId);
+
+        if (foundSession.RefreshTokenExpiry < DateTime.UtcNow && !isAccessTokenValid)
+            await InvalidateSession(foundSession);
 
         var user = await _unitOfWork.User.GetAsync(u => u.Id == foundSession.UserId);
         if (user == null)
@@ -305,19 +198,39 @@ public class AuthService : IAuthService
 
         // Create new tokens
         var newAccessToken = CreateAccessToken(user, foundSession.SessionId);
-        var newRefreshToken = await CreateRefreshToken(user.Id, foundSession.SessionId);
+        var newRefreshToken = CreateRefreshToken();
+        var newCsrfToken = CreateCsrfToken();
+
+        var newSession = await CreateSession(user.Id, foundSession.SessionId, newRefreshToken, newCsrfToken);
 
         // Invalidate old refresh token
         await InvalidateSession(foundSession);
 
-        // Set new refresh token in cookie
-        _httpContextAccessor.HttpContext.Response.Cookies.Append("RefreshToken", newRefreshToken, new CookieOptions
+        _httpContextAccessor.HttpContext.Response.Cookies.Append("CSRF-TOKEN", newCsrfToken.Token, new CookieOptions
+        {
+            HttpOnly = false,
+            Secure = true,
+            SameSite = SameSiteMode.Strict,
+            Expires = DateTime.UtcNow.AddHours(1)
+        });
+
+
+        _httpContextAccessor.HttpContext.Response.Cookies.Append("AccessToken", newAccessToken, new CookieOptions
         {
             HttpOnly = true,
             Secure = true,
             SameSite = SameSiteMode.Strict,
-            Expires = DateTime.UtcNow.AddHours(12)
+            Expires = DateTimeOffset.UtcNow.AddMinutes(30)
         });
+
+        _httpContextAccessor.HttpContext.Response.Cookies.Append("RefreshToken", newRefreshToken.Token,
+            new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.Strict,
+                Expires = DateTimeOffset.UtcNow.AddHours(12)
+            });
 
         return Result<TokenResponseDto>.Success(new TokenResponseDto { AccessToken = newAccessToken });
     }
@@ -447,15 +360,18 @@ public class AuthService : IAuthService
         return token;
     }
 
-    private async Task<string> CreateRefreshToken(string userId, string sessionId)
+    private async Task<string> CreateSession(string userId, string sessionId, RefreshToken refreshToken,
+        CsrfToken csrfToken)
     {
         Session session = new()
         {
             IsValid = true,
             UserId = userId,
             SessionId = sessionId,
-            RefreshTokenExpiry = DateTime.UtcNow.AddHours(12),
-            RefreshToken = Guid.NewGuid() + "-" + Guid.NewGuid()
+            RefreshTokenExpiry = refreshToken.Expiry,
+            RefreshToken = refreshToken.Token,
+            CsrfToken = csrfToken.Token,
+            CsrfTokenExpiry = csrfToken.Expiry,
         };
 
         await _unitOfWork.Session.CreateAsync(session);
@@ -463,9 +379,29 @@ public class AuthService : IAuthService
         return session.RefreshToken;
     }
 
+    private CsrfToken CreateCsrfToken()
+    {
+        return new CsrfToken()
+        {
+            Token = Guid.NewGuid().ToString() + "-" + Guid.NewGuid().ToString(),
+            Expiry = DateTime.UtcNow.AddMinutes(30)
+        };
+    }
+
+    private RefreshToken CreateRefreshToken()
+    {
+        return new RefreshToken()
+        {
+            Token = Guid.NewGuid().ToString() + "-" + Guid.NewGuid().ToString(),
+            Expiry = DateTime.UtcNow.AddHours(12)
+        };
+    }
+
     private async Task InvalidateSession(Session session)
     {
         session.IsValid = false;
+        session.RefreshTokenExpiry = DateTime.UtcNow;
+        session.CsrfTokenExpiry = DateTime.UtcNow;
         await _unitOfWork.SaveAsync();
     }
 

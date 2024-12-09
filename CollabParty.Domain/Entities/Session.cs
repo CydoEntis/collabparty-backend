@@ -21,6 +21,9 @@ namespace CollabParty.Domain.Entities
 
         public bool IsValid { get; set; }
         
+        public string CsrfToken { get; set; } 
+        public DateTime CsrfTokenExpiry { get; set; } 
+        
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
     }
