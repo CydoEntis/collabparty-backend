@@ -3,7 +3,7 @@ using CollabParty.Domain.Enums;
 
 namespace CollabParty.Application.Common.Dtos.Member;
 
-public class MemberResponseDto
+public class PartyMemberResponseDto
 {
     public string Id { get; set; }
     public string Username { get; set; }
