@@ -60,23 +60,6 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
     .AddDefaultTokenProviders();
 
 
-// builder.Services.Configure<IdentityOptions>(options =>
-// {
-//     options.Tokens.PasswordResetTokenProvider = "ResetPassword";
-// });
-//
-// builder.Services.Configure<DataProtectionTokenProviderOptions>(options =>
-// {
-//     // Set the expiration time of the token to 15 minutes
-//     options.TokenLifespan = TimeSpan.FromMinutes(15);
-// });
-
-
-// builder.Services.Configure<DataProtectionTokenProviderOptions>(options =>
-// {
-//     options.TokenLifespan = TimeSpan.FromMinutes(15);
-// });
-
 // AutoMapper setup
 builder.Services.AddAutoMapper(typeof(MappingConfig));
 
@@ -90,6 +73,8 @@ builder.Services.AddScoped<IEmailTemplateService, EmailTemplateService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<ISessionService, SessionService>();
 builder.Services.AddScoped<ICookieService, CookieService>();
+builder.Services.AddScoped<IPartyService, PartyService>();
+builder.Services.AddScoped<IPartyMemberService, PartyMemberService>();
 
 // Suppress Model State Validation for Custom Filters
 builder.Services.Configure<ApiBehaviorOptions>(options =>

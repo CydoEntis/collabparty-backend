@@ -2,6 +2,7 @@ using AutoMapper;
 using CollabParty.Application.Common.Dtos.Member;
 using CollabParty.Application.Common.Dtos.User;
 using CollabParty.Application.Common.Models;
+using CollabParty.Application.Services.Interfaces;
 using CollabParty.Domain.Entities;
 using CollabParty.Domain.Enums;
 using CollabParty.Domain.Interfaces;
@@ -9,7 +10,7 @@ using Microsoft.Extensions.Logging;
 
 namespace CollabParty.Application.Services.Implementations;
 
-public class PartyMemberService
+public class PartyMemberService : IPartyMemberService
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger _logger;

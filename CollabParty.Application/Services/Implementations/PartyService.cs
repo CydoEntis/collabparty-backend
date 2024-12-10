@@ -50,7 +50,6 @@ public class PartyService : IPartyService
         }
     }
 
-
     public async Task<Result<PaginatedResult<PartyDto>>> GetAllPartiesForUser(string userId, QueryParamsDto dto)
     {
         try
@@ -123,4 +122,5 @@ public class PartyService : IPartyService
             return Result<PartyDto>.Failure("An error occurred while fetching party.");
         }
     }
+    
 }
