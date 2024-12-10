@@ -96,7 +96,7 @@ public class PartyService : IPartyService
         try
         {
             var recentParties = await _unitOfWork.Party.GetMostRecentPartiesForUserAsync(userId,
-                includeProperties: "PartyMembers");
+                includeProperties: "PartyMembers,PartyMembers.User,PartyMembers.User.UnlockedAvatars,PartyMembers.User.UnlockedAvatars.Avatar");
 
 
             var partyDto = _mapper.Map<List<PartyDto>>(recentParties);
