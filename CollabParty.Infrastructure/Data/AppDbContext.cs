@@ -41,13 +41,13 @@ namespace CollabParty.Infrastructure.Data
 
             builder.Entity<UnlockedAvatar>()
                 .HasOne(ua => ua.User)
-                .WithMany(u => u.UserAvatars)
+                .WithMany(u => u.UnlockedAvatars)
                 .HasForeignKey(ua => ua.UserId)
                 .OnDelete(DeleteBehavior.NoAction);
 
             builder.Entity<UnlockedAvatar>()
                 .HasOne(ua => ua.Avatar)
-                .WithMany(a => a.UserAvatars)
+                .WithMany(a => a.UnlockedAvatars)
                 .HasForeignKey(ua => ua.AvatarId)
                 .OnDelete(DeleteBehavior.NoAction);
 

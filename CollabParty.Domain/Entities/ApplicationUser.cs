@@ -20,7 +20,7 @@ namespace CollabParty.Domain.Entities
 
         public DateTime? UpdatedAt { get; set; }
 
-        public ICollection<UnlockedAvatar> UserAvatars { get; set; } = new List<UnlockedAvatar>();
+        public ICollection<UnlockedAvatar> UnlockedAvatars { get; set; } = new List<UnlockedAvatar>();
 
         public int CalculateExpForLevel(int level)
         {

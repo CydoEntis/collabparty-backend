@@ -50,10 +50,12 @@ public class PartyService : IPartyService
         }
     }
 
+
     public async Task<Result<PaginatedResult<PartyDto>>> GetAllPartiesForUser(string userId, QueryParamsDto dto)
     {
         try
         {
+            // Map QueryParamsDto to QueryParams<Party>
             var queryParams = new QueryParams<Party>
             {
                 SearchTerm = dto.SearchTerm,
@@ -64,17 +66,21 @@ public class PartyService : IPartyService
                 EndDate = dto.EndDate,
                 PageNumber = dto.PageNumber,
                 PageSize = dto.PageSize,
-                IncludeProperties = "PartyMembers",
+                IncludeProperties = "PartyMembers,PartyMembers.User,PartyMembers.User.UnlockedAvatars,PartyMembers.User.UnlockedAvatars.Avatar",
                 Filter = p => p.PartyMembers.Any(pm => pm.UserId == userId),
             };
 
+            // Fetch paginated result
             var paginatedResult = await _unitOfWork.Party.GetPaginatedAsync(queryParams);
 
-            var partyDtos = _mapper.Map<List<PartyDto>>(paginatedResult);
+            // Map to PaginatedResult<PartyDto>
 
-            var result = new PaginatedResult<PartyDto>(partyDtos, paginatedResult.TotalItems,
+            var partyDto = _mapper.Map<List<PartyDto>>(paginatedResult.Items);
+
+            var result = new PaginatedResult<PartyDto>(partyDto, paginatedResult.TotalItems,
                 paginatedResult.CurrentPage, queryParams.PageSize);
-
+            
+            // Return success result
             return Result<PaginatedResult<PartyDto>>.Success(result);
         }
         catch (Exception ex)
@@ -83,6 +89,7 @@ public class PartyService : IPartyService
             return Result<PaginatedResult<PartyDto>>.Failure("An error occurred while fetching parties.");
         }
     }
+
 
     public async Task<Result<List<PartyDto>>> GetRecentParties(string userId)
     {
@@ -122,5 +129,4 @@ public class PartyService : IPartyService
             return Result<PartyDto>.Failure("An error occurred while fetching party.");
         }
     }
-    
 }

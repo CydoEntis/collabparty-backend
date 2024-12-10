@@ -28,7 +28,7 @@ public class AvatarService : IAvatarService
                 return Result<List<LockedAvatarDto>>.Failure("User ID is required");
 
             var lockedAvatars = await _unitOfWork.Avatar.GetAllAsync(a =>
-                !a.UserAvatars.Any(ua => ua.UserId == userId && ua.IsUnlocked && ua.UnlockedAt != null));
+                !a.UnlockedAvatars.Any(ua => ua.UserId == userId && ua.IsUnlocked && ua.UnlockedAt != null));
 
             if (lockedAvatars == null || !lockedAvatars.Any())
                 return Result<List<LockedAvatarDto>>.Success(new List<LockedAvatarDto>());

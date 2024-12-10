@@ -14,6 +14,6 @@ namespace CollabParty.Domain.Entities
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
         
-        public List<UnlockedAvatar> UserAvatars { get; set; } 
+        public List<UnlockedAvatar> UnlockedAvatars { get; set; } 
     }
 }
