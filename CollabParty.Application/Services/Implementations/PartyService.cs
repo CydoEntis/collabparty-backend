@@ -115,7 +115,7 @@ public class PartyService : IPartyService
         {
             var foundParty = await _unitOfWork.Party.GetAsync(
                 p => p.Id == partyId && p.PartyMembers.Any(pm => pm.UserId == userId),
-                includeProperties: "PartyMembers");
+                includeProperties: "PartyMembers,PartyMembers.User,PartyMembers.User.UnlockedAvatars,PartyMembers.User.UnlockedAvatars.Avatar");
 
             if (foundParty == null)
                 return Result<PartyDto>.Failure($"No party with the {partyId} exists");
