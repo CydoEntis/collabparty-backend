@@ -9,4 +9,6 @@ public interface IBaseRepository<T> where T : class
     Task<T> CreateAsync(T entity);
     Task RemoveAsync(T entity);
     Task SaveAsync();
+
+    Task<bool> ExistsAsync(Expression<Func<T, bool>> filter);
 }

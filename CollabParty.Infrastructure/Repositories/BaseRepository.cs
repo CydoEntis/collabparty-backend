@@ -109,4 +109,14 @@ public class BaseRepository<T> : IBaseRepository<T> where T : class
 
         return new PaginatedResult<T>(items, totalCount, pageNumber, pageSize);
     }
+    
+    public async Task<bool> ExistsAsync(Expression<Func<T, bool>> filter)
+    {
+        if (_dbSet == null)
+        {
+            throw new InvalidOperationException("DbSet is not initialized.");
+        }
+
+        return await _dbSet.AnyAsync(filter);
+    }
 }

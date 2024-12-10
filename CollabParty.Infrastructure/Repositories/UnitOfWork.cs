@@ -30,6 +30,7 @@ public class UnitOfWork : IUnitOfWork
 
         Avatar = new AvatarRepository(db);
         Party = new PartyRepository(db);
+        PartyMember = new PartyMemberRepository(db);
 
         Quest = new QuestRepository(db);
         QuestAssignment = new QuestAssignmentRepository(db);

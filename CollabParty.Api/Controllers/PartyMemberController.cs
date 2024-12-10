@@ -1,7 +1,5 @@
-﻿using System.Net;
+using System.Net;
 using System.Security.Claims;
-using CollabParty.Application.Common.Dtos;
-using CollabParty.Application.Common.Dtos.Party;
 using CollabParty.Application.Common.Dtos.User;
 using CollabParty.Application.Common.Models;
 using CollabParty.Application.Common.Utility;
@@ -11,79 +9,20 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace CollabParty.Api.Controllers;
 
-[Route("api/user-parties")]
+[Route("api/party-members")]
 [ApiController]
 [Authorize]
-public class UserPartyController : ControllerBase
+public class PartyMemberController : ControllerBase
 {
-    private readonly IPartyService _partyService;
-    private readonly IUserPartyService _userPartyService;
+    private readonly IPartyMemberService _partyMemberService;
 
-    public UserPartyController(IPartyService partyService, IUserPartyService userPartyService)
+    public PartyMemberController(IPartyMemberService partyMemberService)
     {
-        _partyService = partyService;
-        _userPartyService = userPartyService;
-    }
-
-    [HttpPost]
-    public async Task<ActionResult<ApiResponse>> CreateParty([FromBody] CreatePartyDto dto)
-    {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
-
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-        if (string.IsNullOrEmpty(userId))
-            return Unauthorized(ApiResponse.Error("authorization", "Unauthorized access.",
-                HttpStatusCode.Unauthorized));
-
-        var result = await _partyService.CreateParty(userId, dto);
-
-        if (result.IsSuccess)
-            return Ok(ApiResponse.Success(result.Data));
-
-        var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
-        return BadRequest(ApiResponse.ValidationError(formattedErrors));
-    }
-
-    [HttpGet]
-    public async Task<ActionResult<ApiResponse>> GetParties([FromQuery] QueryParamsDto dto)
-    {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-        if (string.IsNullOrEmpty(userId))
-            return Unauthorized(ApiResponse.Error("authorization", "Unauthorized access.",
-                HttpStatusCode.Unauthorized));
-
-        var result = await _userPartyService.GetAllPartiesForUser(userId, dto);
-
-        if (result.IsSuccess)
-            return Ok(ApiResponse.Success(result.Data));
-
-        var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
-        return BadRequest(ApiResponse.ValidationError(formattedErrors));
-    }
-
-    [HttpGet("most-recent")]
-    public async Task<ActionResult<ApiResponse>> GetMostRecentParties()
-    {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-        if (string.IsNullOrEmpty(userId))
-            return Unauthorized(ApiResponse.Error("authorization", "Unauthorized access.",
-                HttpStatusCode.Unauthorized));
-
-        var result = await _userPartyService.GetRecentParties(userId);
-
-        if (result.IsSuccess)
-            return Ok(ApiResponse.Success(result.Data));
-
-        var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
-        return BadRequest(ApiResponse.ValidationError(formattedErrors));
+        _partyMemberService = partyMemberService;
     }
 
     [HttpGet("{partyId:int}")]
-    public async Task<ActionResult<ApiResponse>> GetParty(int partyId)
+    public async Task<ActionResult<ApiResponse>> GetPartyMembers(int partyId)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
@@ -91,7 +30,7 @@ public class UserPartyController : ControllerBase
             return Unauthorized(ApiResponse.Error("authorization", "Unauthorized access.",
                 HttpStatusCode.Unauthorized));
 
-        var result = await _userPartyService.GetParty(userId, partyId);
+        var result = await _partyMemberService.GetPartyMembers(userId, partyId);
 
         if (result.IsSuccess)
             return Ok(ApiResponse.Success(result.Data));
@@ -100,5 +39,58 @@ public class UserPartyController : ControllerBase
         return BadRequest(ApiResponse.ValidationError(formattedErrors));
     }
 
+    [HttpDelete("{partyId:int}/remove-members")]
+    public async Task<ActionResult<ApiResponse>> RemovePartyMembers(int partyId, [FromBody] RemoverUserFromPartyDto dto)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized(ApiResponse.Error("authorization", "Unauthorized access.",
+                HttpStatusCode.Unauthorized));
+
+        var result = await _partyMemberService.RemovePartyMembers(userId, partyId, dto);
+
+        if (result.IsSuccess)
+            return Ok(ApiResponse.Success(result.Data));
+
+        var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
+        return BadRequest(ApiResponse.ValidationError(formattedErrors));
+    }
+
+    [HttpPut("{partyId:int}/members/change-role")]
+    public async Task<ActionResult<ApiResponse>> UpdatePartyMembersRole(int partyId,
+        [FromBody] UpdatePartyMembersRoleDto dto)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized(ApiResponse.Error("authorization", "Unauthorized access.",
+                HttpStatusCode.Unauthorized));
+
+        var result = await _partyMemberService.UpdatePartyMemberRoles(userId, partyId, dto);
+
+        if (result.IsSuccess)
+            return Ok(ApiResponse.Success(result.Data));
+
+        var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
+        return BadRequest(ApiResponse.ValidationError(formattedErrors));
+    }
+
+    [HttpDelete("{partyId:int}/leave")]
+    public async Task<ActionResult<ApiResponse>> LeaveParty(int partyId)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized(ApiResponse.Error("authorization", "Unauthorized access.",
+                HttpStatusCode.Unauthorized));
+
+        var result = await _partyMemberService.LeaveParty(userId, partyId);
+
+        if (result.IsSuccess)
+            return Ok(ApiResponse.Success());
+
+        var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
+        return BadRequest(ApiResponse.ValidationError(formattedErrors));
+    }
 }

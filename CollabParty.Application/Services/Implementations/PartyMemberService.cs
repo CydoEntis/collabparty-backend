@@ -13,8 +13,15 @@ namespace CollabParty.Application.Services.Implementations;
 public class PartyMemberService : IPartyMemberService
 {
     private readonly IUnitOfWork _unitOfWork;
-    private readonly ILogger _logger;
+    private readonly ILogger<PartyMember> _logger;
     private readonly IMapper _mapper;
+
+    public PartyMemberService(IUnitOfWork unitOfWork, ILogger<PartyMember> logger, IMapper mapper)
+    {
+        _unitOfWork = unitOfWork;
+        _logger = logger;
+        _mapper = mapper;
+    }
 
     public async Task<Result> AddPartyMember(string userId, int partyId)
     {
@@ -74,21 +81,43 @@ public class PartyMemberService : IPartyMemberService
     {
         try
         {
-            var foundParty = await _unitOfWork.PartyMember.GetAsync(up => up.PartyId == partyId && up.UserId == userId,
-                includeProperties: "User,User.UnlockedAvatars");
+            // Fetch the user’s membership in the given party (without ExistsAsync)
+            var userPartyMember = await _unitOfWork.PartyMember.GetAsync(
+                pm => pm.PartyId == partyId && pm.UserId == userId,
+                includeProperties: "User,User.UnlockedAvatars,User.UnlockedAvatars.Avatar");
 
-            if (foundParty == null)
-                return Result<List<PartyMemberResponseDto>>.Failure($"No party with the {partyId} exists");
+            // If the user is not part of the party, return an error
+            if (userPartyMember == null)
+            {
+                return Result<List<PartyMemberResponseDto>>.Failure(
+                    "You are not a member of this party or the party does not exist.");
+            }
 
-            var partyMemberDtos = _mapper.Map<List<PartyMemberResponseDto>>(foundParty);
+            // Fetch all party members for the given party
+            var partyMembers = await _unitOfWork.PartyMember.GetAllAsync(
+                pm => pm.PartyId == partyId,
+                includeProperties: "User,User.UnlockedAvatars,User.UnlockedAvatars.Avatar");
+
+            // If no members are found, return an error
+            if (!partyMembers.Any())
+            {
+                return Result<List<PartyMemberResponseDto>>.Failure(
+                    $"No members found for party with ID {partyId}.");
+            }
+
+            // Map the party members to DTOs
+            var partyMemberDtos = _mapper.Map<List<PartyMemberResponseDto>>(partyMembers);
             return Result<List<PartyMemberResponseDto>>.Success(partyMemberDtos);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to get party members");
+            // Log the exception and return a failure result
+            _logger.LogError(ex, "Failed to get party members for party {PartyId}.", partyId);
             return Result<List<PartyMemberResponseDto>>.Failure("An error occurred while fetching party members.");
         }
     }
+
+
 
     public async Task<Result<List<PartyMemberResponseDto>>> RemovePartyMembers(string userId, int partyId,
         RemoverUserFromPartyDto dto)
