@@ -35,7 +35,7 @@ public class UserService : IUserService
             if (string.IsNullOrWhiteSpace(userId))
                 return Result<UserDtoResponse>.Failure("User ID is required");
 
-            var foundUser = await _unitOfWork.User.GetAsync(u => u.Id == userId, includeProperties: "UserAvatars,UserAvatars.Avatar");
+            var foundUser = await _unitOfWork.User.GetAsync(u => u.Id == userId, includeProperties: "UnlockedAvatars,UnlockedAvatars.Avatar");
 
             if (foundUser == null)
                 return Result<UserDtoResponse>.Failure("User does not exist");

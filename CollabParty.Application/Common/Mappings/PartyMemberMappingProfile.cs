@@ -13,7 +13,7 @@ public class PartyMemberMappingProfile : Profile
             .ForMember(dest => dest.Username, opt => opt.MapFrom(src => src.User.UserName))
             .ForMember(dest => dest.CurrentLevel, opt => opt.MapFrom(src => src.User.CurrentLevel))
             .ForMember(dest => dest.Role, opt => opt.MapFrom(src => src.Role))
-            .ForMember(dest => dest.AvatarResponse, opt => opt.MapFrom(src =>
+            .ForMember(dest => dest.Avatar, opt => opt.MapFrom(src =>
                 src.User.UnlockedAvatars.Where(ua => ua.IsActive).Select(ua => ua).FirstOrDefault()));
     }
 }

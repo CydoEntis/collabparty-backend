@@ -9,5 +9,5 @@ public class PartyMemberResponseDto
     public string Username { get; set; }
     public int CurrentLevel { get; set; }
     public UserRole Role { get; set; }
-    public AvatarResponseDto AvatarResponse { get; set; }
+    public AvatarResponseDto Avatar { get; set; }
 }

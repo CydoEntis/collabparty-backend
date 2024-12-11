@@ -10,7 +10,7 @@ public class QueryParamsDto
     public string? DateFilterField { get; set; } = DateFilter.CreatedAt; 
     public PriorityLevel PriorityLevel { get; set; } 
     public int PageNumber { get; set; } = 1; 
-    public int PageSize { get; set; } = 18; 
+    public int PageSize { get; set; } = 1; 
     public string? StartDate { get; set; } 
     public string? EndDate { get; set; } 
 }
