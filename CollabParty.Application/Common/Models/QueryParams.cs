@@ -5,11 +5,11 @@ namespace CollabParty.Application.Common.Models;
 
 public class QueryParams<T>
 {
-    public string? SearchTerm { get; set; }
-    public string? SortDirection { get; set; }
-    public string? SortField { get; set; }
-    public string? DateFilterField { get; set; }
-    public PriorityLevel PriorityLevel { get; set; }
+    public string? Search { get; set; }
+    public string? OrderBy { get; set; }
+    public string? SortBy { get; set; }
+    public string? DateFilter { get; set; }
+    public PriorityLevelOption PriorityLevelOption { get; set; }
     public int PageNumber { get; set; } = 1;
     public int PageSize { get; set; } = 18;
     public string? StartDate { get; set; }

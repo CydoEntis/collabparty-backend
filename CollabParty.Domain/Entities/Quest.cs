@@ -17,7 +17,7 @@ public class Quest
 
     public string Description { get; set; }
 
-    public PriorityLevel PriorityLevel { get; set; }
+    public PriorityLevelOption PriorityLevelOption { get; set; }
 
     public int GoldReward { get; set; }
     public int ExpReward { get; set; }

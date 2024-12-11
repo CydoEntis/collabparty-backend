@@ -1,6 +1,6 @@
 ﻿namespace CollabParty.Domain.Enums;
 
-public static class SortField
+public static class SortByOption
 {
     public const string Name = "name";
     public const string CreatedAt = "created-at";

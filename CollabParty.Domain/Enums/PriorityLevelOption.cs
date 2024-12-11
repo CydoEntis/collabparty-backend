@@ -1,6 +1,6 @@
 ﻿namespace CollabParty.Domain.Enums;
 
-public enum PriorityLevel
+public enum PriorityLevelOption
 {
     Low = 1,
     Medium = 2,

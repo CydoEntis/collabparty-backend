@@ -58,10 +58,10 @@ public class PartyService : IPartyService
             // Map QueryParamsDto to QueryParams<Party>
             var queryParams = new QueryParams<Party>
             {
-                SearchTerm = dto.SearchTerm,
-                SortDirection = dto.SortDirection,
-                SortField = dto.SortField,
-                DateFilterField = dto.DateFilterField,
+                Search = dto.Search,
+                OrderBy = dto.OrderBy,
+                SortBy = dto.SortBy,
+                DateFilter = dto.DateFilter,
                 StartDate = dto.StartDate,
                 EndDate = dto.EndDate,
                 PageNumber = dto.PageNumber,

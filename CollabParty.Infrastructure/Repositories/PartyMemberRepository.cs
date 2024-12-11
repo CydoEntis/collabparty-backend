@@ -27,21 +27,21 @@ public class PartyMemberRepository : BaseRepository<PartyMember>, IPartyMemberRe
             if (queryParams.Filter != null)
                 query = query.Where(queryParams.Filter);
 
-            if (!string.IsNullOrEmpty(queryParams.SearchTerm))
-                query = ApplySearchTerm(query, queryParams.SearchTerm);
+            if (!string.IsNullOrEmpty(queryParams.Search))
+                query = Search(query, queryParams.Search);
 
             if (!string.IsNullOrEmpty(queryParams.StartDate) || !string.IsNullOrEmpty(queryParams.EndDate))
                 query = ApplyDateFilters(query, queryParams);
 
-            if (!string.IsNullOrEmpty(queryParams.SortDirection) && !string.IsNullOrEmpty(queryParams.SortField))
-                query = ApplySortDirection(query, queryParams.SortField, queryParams.SortDirection);
+            if (!string.IsNullOrEmpty(queryParams.OrderBy) && !string.IsNullOrEmpty(queryParams.SortBy))
+                query = OrderBy(query, queryParams.SortBy, queryParams.OrderBy);
 
             if (!string.IsNullOrEmpty(queryParams.IncludeProperties))
                 query = ApplyIncludeProperties(query, queryParams.IncludeProperties);
         }
 
-        if (queryParams == null || string.IsNullOrEmpty(queryParams.SortDirection) ||
-            string.IsNullOrEmpty(queryParams.SortField))
+        if (queryParams == null || string.IsNullOrEmpty(queryParams.OrderBy) ||
+            string.IsNullOrEmpty(queryParams.SortBy))
             query = query.OrderByDescending(up => up.Party.CreatedAt);
 
         int pageNumber = queryParams?.PageNumber ?? 1;
@@ -98,23 +98,23 @@ public class PartyMemberRepository : BaseRepository<PartyMember>, IPartyMemberRe
         await _db.SaveChangesAsync();
     }
 
-    private IQueryable<PartyMember> ApplySearchTerm(IQueryable<PartyMember> query, string searchTerm)
+    private IQueryable<PartyMember> Search(IQueryable<PartyMember> query, string searchTerm)
     {
         return query.Where(up => up.Party.Name.Contains(searchTerm));
     }
 
-    private IQueryable<PartyMember> ApplySortDirection(IQueryable<PartyMember> query, string filter,
+    private IQueryable<PartyMember> OrderBy(IQueryable<PartyMember> query, string filter,
         string sortDirection)
     {
         return filter switch
         {
-            SortField.Name => sortDirection == SortDirection.Asc
+            SortByOption.Name => sortDirection == OrderByOption.Asc
                 ? query.OrderBy(up => up.Party.Name)
                 : query.OrderByDescending(up => up.Party.Name),
-            SortField.CreatedAt => sortDirection == SortDirection.Asc
+            SortByOption.CreatedAt => sortDirection == OrderByOption.Asc
                 ? query.OrderBy(up => up.Party.CreatedAt)
                 : query.OrderByDescending(up => up.Party.CreatedAt),
-            SortField.UpdatedAt => sortDirection == SortDirection.Asc
+            SortByOption.UpdatedAt => sortDirection == OrderByOption.Asc
                 ? query.OrderBy(up => up.Party.UpdatedAt)
                 : query.OrderByDescending(up => up.Party.UpdatedAt),
             _ => query
@@ -126,12 +126,12 @@ public class PartyMemberRepository : BaseRepository<PartyMember>, IPartyMemberRe
     {
         if (!string.IsNullOrEmpty(queryParams.StartDate) && DateTime.TryParse(queryParams.StartDate, out var startDate))
         {
-            query = ApplyDateFilter(query, queryParams.DateFilterField, startDate, ">=");
+            query = ApplyDateFilter(query, queryParams.DateFilter, startDate, ">=");
         }
 
         if (!string.IsNullOrEmpty(queryParams.EndDate) && DateTime.TryParse(queryParams.EndDate, out var endDate))
         {
-            query = ApplyDateFilter(query, queryParams.DateFilterField, endDate, "<=");
+            query = ApplyDateFilter(query, queryParams.DateFilter, endDate, "<=");
         }
 
         return query;
@@ -144,8 +144,8 @@ public class PartyMemberRepository : BaseRepository<PartyMember>, IPartyMemberRe
 
         var dateField = filterDate switch
         {
-            SortField.CreatedAt => "CreatedAt",
-            SortField.UpdatedAt => "UpdatedAt",
+            SortByOption.CreatedAt => "CreatedAt",
+            SortByOption.UpdatedAt => "UpdatedAt",
             _ => null
         };
 

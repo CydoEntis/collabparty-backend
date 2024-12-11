@@ -1,6 +1,6 @@
 ﻿namespace CollabParty.Domain.Enums;
 
-public static class DateFilter
+public static class DateFilterOption
 {
     public const string CreatedAt = "created-at";
     public const string UpdatedAt = "updated-at";
