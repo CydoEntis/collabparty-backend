@@ -31,6 +31,7 @@ public class TokenService : ITokenService
         var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
         var expires = DateTime.UtcNow.AddMinutes(30);
+        // var expires = DateTime.UtcNow.AddMinutes(30);
 
         var tokenDescriptor = new SecurityTokenDescriptor
         {
@@ -54,7 +55,7 @@ public class TokenService : ITokenService
 
     public RefreshToken CreateRefreshToken()
     {
-        var expires = DateTime.UtcNow.AddHours(12);
+        var expires = DateTime.UtcNow.AddHours(16);
         var token = Guid.NewGuid().ToString();
 
         _cookieService.Append(CookieNames.RefreshToken, token, true, expires);

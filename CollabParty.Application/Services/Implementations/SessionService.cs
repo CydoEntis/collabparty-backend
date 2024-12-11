@@ -14,7 +14,7 @@ public class SessionService : ISessionService
         _unitOfWork = unitOfWork;
     }
 
-    public async Task CreateSession(string userId, string sessionId, RefreshToken refreshToken, CsrfToken csrfToken)
+    public async Task CreateSession(string userId, string sessionId, RefreshToken refreshToken)
     {
         var session = new Session
         {
@@ -22,8 +22,7 @@ public class SessionService : ISessionService
             SessionId = sessionId,
             RefreshToken = refreshToken.Token,
             RefreshTokenExpiry = refreshToken.Expiry,
-            CsrfToken = csrfToken.Token,
-            CsrfTokenExpiry = csrfToken.Expiry,
+
             IsValid = true
         };
 
@@ -34,7 +33,6 @@ public class SessionService : ISessionService
     {
         session.IsValid = false;
         session.RefreshTokenExpiry = DateTime.UtcNow;
-        session.CsrfTokenExpiry = DateTime.UtcNow;
         await _unitOfWork.SaveAsync();
     }
 
