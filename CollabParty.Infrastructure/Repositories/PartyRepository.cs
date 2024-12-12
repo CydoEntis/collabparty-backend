@@ -129,13 +129,12 @@ public class PartyRepository : BaseRepository<Party>, IPartyRepository
         return query;
     }
 
-    private IQueryable<Party> ApplyDateFilter(IQueryable<Party> query, string filterDate, DateTime date,
-        string operatorSymbol)
+    private IQueryable<Party> ApplyDateFilter(IQueryable<Party> query, string filterDate, DateTime date, string operatorSymbol)
     {
         var dateField = filterDate switch
         {
-            DateFilterOption.CreatedAt => "CreatedAt",
-            DateFilterOption.UpdatedAt => "UpdatedAt",
+            SortByOption.CreatedAt => "CreatedAt",
+            SortByOption.UpdatedAt => "UpdatedAt",
             _ => null
         };
 
@@ -143,14 +142,15 @@ public class PartyRepository : BaseRepository<Party>, IPartyRepository
         {
             if (operatorSymbol == ">=")
             {
-                query = query.Where(p => EF.Property<DateTime>(p.CreatedAt, dateField) >= date);
+                query = query.Where(p => EF.Property<DateTime>(p, dateField) >= date);
             }
             else if (operatorSymbol == "<=")
             {
-                query = query.Where(p => EF.Property<DateTime>(p.UpdatedAt, dateField) <= date);
+                query = query.Where(p => EF.Property<DateTime>(p, dateField) <= date);
             }
         }
 
         return query;
     }
+
 }
