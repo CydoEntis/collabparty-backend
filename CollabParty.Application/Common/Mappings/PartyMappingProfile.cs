@@ -9,5 +9,6 @@ public class PartyMappingProfile : Profile
     public PartyMappingProfile()
     {
         CreateMap<Party, PartyDto>();
+        CreateMap<CreatePartyDto, Party>();
     }
 }

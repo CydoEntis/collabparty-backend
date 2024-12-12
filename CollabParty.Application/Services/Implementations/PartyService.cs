@@ -33,12 +33,13 @@ public class PartyService : IPartyService
         try
         {
             var newParty = _mapper.Map<Party>(dto);
+            newParty.CreatedById = userId;
             Party createdParty = await _unitOfWork.Party.CreateAsync(newParty);
 
             await _partyMemberService.AddPartyLeader(userId, createdParty.Id);
 
             var foundParty = await _unitOfWork.Party.GetAsync(p => p.Id == newParty.Id,
-                includeProperties: "User.UserAvatars.Avatar");
+                includeProperties: "CreatedBy,CreatedBy.UnlockedAvatars.Avatar");
 
             var partyDto = _mapper.Map<PartyDto>(foundParty);
             return Result<PartyDto>.Success(partyDto);
