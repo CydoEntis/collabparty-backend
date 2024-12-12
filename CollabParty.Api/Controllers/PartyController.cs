@@ -26,22 +26,30 @@ public class PartyController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<ApiResponse>> CreateParty([FromBody] CreatePartyDto dto)
     {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
+        try
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-        if (string.IsNullOrEmpty(userId))
-            return Unauthorized(ApiResponse.Error("authorization", "Unauthorized access.",
-                HttpStatusCode.Unauthorized));
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized(ApiResponse.Error("authorization", "Unauthorized access.",
+                    HttpStatusCode.Unauthorized));
 
-        var result = await _partyService.CreateParty(userId, dto);
+            var result = await _partyService.CreateParty(userId, dto);
 
-        if (result.IsSuccess)
-            return Ok(ApiResponse.Success(result.Data));
+            if (result.IsSuccess)
+                return Ok(ApiResponse.Success(result.Data));
 
-        var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
-        return BadRequest(ApiResponse.ValidationError(formattedErrors));
+            var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
+            return BadRequest(ApiResponse.ValidationError(formattedErrors));
+        }
+        catch (Exception ex)
+        {
+            return
+                ApiResponse.Error("internal", ex.InnerException.Message, HttpStatusCode.InternalServerError);
+        }
     }
 
     [HttpGet]
@@ -61,8 +69,8 @@ public class PartyController : ControllerBase
         var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
         return BadRequest(ApiResponse.ValidationError(formattedErrors));
     }
-    
-    
+
+
     [HttpGet("recent")]
     public async Task<ActionResult<ApiResponse>> GetRecentParties()
     {
@@ -80,7 +88,7 @@ public class PartyController : ControllerBase
         var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
         return BadRequest(ApiResponse.ValidationError(formattedErrors));
     }
-    
+
 
     [HttpGet("{partyId:int}")]
     public async Task<ActionResult<ApiResponse>> GetParty(int partyId)
