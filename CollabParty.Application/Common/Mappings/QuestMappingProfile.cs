@@ -7,7 +7,7 @@ public class QuestMappingProfile : Profile
 {
     public QuestMappingProfile()
     {
-        CreateMap<Quest, CreateQuestRequestDto>().ReverseMap();
-        CreateMap<Quest, CreateQuestRequestDto>().ReverseMap();
+        CreateMap<CreateQuestRequestDto, Quest>().ForMember(dest => dest.PriorityLevel, opt => opt.MapFrom(src => src.PriorityLevel));
+        CreateMap<Quest, QuestResponseDto>().ReverseMap();
     }
 }
