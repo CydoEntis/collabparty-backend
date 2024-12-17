@@ -5,5 +5,5 @@ namespace CollabParty.Application.Services.Interfaces;
 
 public interface IQuestService
 {
-    Task<Result<QuestResponseDto>> CreateQuest(string userId, CreateQuestRequestDto dto);
+    Task<Result> CreateQuest(string userId, CreateQuestRequestDto dto);
 }

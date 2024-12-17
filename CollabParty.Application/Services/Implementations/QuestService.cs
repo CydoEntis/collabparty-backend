@@ -7,20 +7,22 @@ using Microsoft.Extensions.Logging;
 
 namespace CollabParty.Application.Services.Implementations;
 
-public class QuestService
+public class QuestService : IQuestService
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<QuestService> _logger;
     private readonly IMapper _mapper;
     private readonly IQuestStepService _questStepService;
+    private readonly IQuestAssignmentService _questAssignmentService;
 
     public QuestService(IUnitOfWork unitOfWork, ILogger<QuestService> logger, IMapper mapper,
-        IQuestStepService questStepService)
+        IQuestStepService questStepService, IQuestAssignmentService questAssignmentService)
     {
         _unitOfWork = unitOfWork;
         _logger = logger;
         _mapper = mapper;
         _questStepService = questStepService;
+        _questAssignmentService = questAssignmentService;
     }
 
     public async Task<Result> CreateQuest(string userId, CreateQuestRequestDto dto)
@@ -29,15 +31,15 @@ public class QuestService
         {
             var newQuest = _mapper.Map<Quest>(dto);
             newQuest.CreatedById = userId;
-            Quest createdQuest = await _unitOfWork.Quest.CreateAsync(newQuest);
+            var createdQuest = await _unitOfWork.Quest.CreateAsync(newQuest);
             await _questStepService.CreateQuestSteps(createdQuest.Id, dto.Steps);
-            
+            await _questAssignmentService.AssignPartyMembersToQuest(createdQuest.Id, dto.PartyMembers);
 
             return Result.Success("Quest created successfully.");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to assign user to party.");
+            _logger.LogError(ex, "Failed to create quest.");
             return Result.Failure("An error occurred while creating the party.");
         }
     }

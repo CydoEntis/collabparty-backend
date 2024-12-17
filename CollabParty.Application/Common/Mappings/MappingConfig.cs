@@ -16,6 +16,7 @@ public class MappingConfig
             cfg.AddProfile(new AvatarMappingProfile());
             cfg.AddProfile(new PartyMappingProfile());
             cfg.AddProfile(new PartyMemberMappingProfile());
+            cfg.AddProfile(new QuestMappingProfile());
             // cfg.AddProfile(new PartyMappingProfile());
             // cfg.AddProfile(new MemberMappingProfile());
             // cfg.AddProfile(new QuestMappingProfile());
