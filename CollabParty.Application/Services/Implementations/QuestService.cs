@@ -47,6 +47,26 @@ public class QuestService : IQuestService
         }
     }
 
+    public async Task<Result<List<QuestResponseDto>>> GetQuests(string userId, int partyId)
+    {
+        try
+        {
+            var foundQuests = await _unitOfWork.Quest.GetAllAsync(q =>
+                q.Party.PartyMembers.Any(qm => qm.UserId == userId) && q.PartyId == partyId);
+
+            if (!foundQuests.Any()) return Result<List<QuestResponseDto>>.Failure("No quests found.");
+
+            var questDtos = _mapper.Map<List<QuestResponseDto>>(foundQuests);
+
+            return Result<List<QuestResponseDto>>.Success(questDtos);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to create quest.");
+            return Result<List<QuestResponseDto>>.Failure("An error occurred while creating the party.");
+        }
+    }
+
     private int CalculateQuestExpReward(PriorityLevelOption priorityLevel)
     {
         return priorityLevel switch
