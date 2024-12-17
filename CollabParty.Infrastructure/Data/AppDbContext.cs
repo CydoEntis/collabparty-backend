@@ -13,7 +13,7 @@ namespace CollabParty.Infrastructure.Data
 
         public DbSet<PartyMember> PartyMembers { get; set; }
         public DbSet<Quest> Quests { get; set; }
-        public DbSet<QuestAssignment> QuestAissignments { get; set; }
+        public DbSet<QuestAssignment> QuestAssignments { get; set; }
         public DbSet<QuestComment> QuestComments { get; set; }
         public DbSet<QuestFile> QuestFiles { get; set; }
         public DbSet<QuestStep> QuestSteps { get; set; }
