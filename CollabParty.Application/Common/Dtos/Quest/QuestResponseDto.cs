@@ -1,3 +1,4 @@
+using CollabParty.Application.Common.Dtos.Member;
 using CollabParty.Application.Common.Dtos.User;
 using CollabParty.Domain.Enums;
 
@@ -5,11 +6,11 @@ namespace CollabParty.Application.Common.Dtos.Quest;
 
 public class QuestResponseDto
 {
-    public string Id { get; set; }
+    public int Id { get; set; }
     public string Title { get; set; }
     public string Description { get; set; }
     public PriorityLevelOption PriorityLevel { get; set; }
-    public List<UserDtoResponse> PartyMembers { get; set; }
+    public List<PartyMemberResponseDto> PartyMembers { get; set; }
     public int TotalPartyMembers { get; set; }
     public int TotalSteps { get; set; }
     public int CompletedSteps { get; set; }

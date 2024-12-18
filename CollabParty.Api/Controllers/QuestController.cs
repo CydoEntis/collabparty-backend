@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace CollabParty.Api.Controllers;
 
-[Route("api/quests")]
+[Route("/api/parties")]
 [ApiController]
 [Authorize]
 public class QuestController : ControllerBase
@@ -21,7 +21,7 @@ public class QuestController : ControllerBase
         _questService = questService;
     }
 
-    [HttpPost]
+    [HttpPost("quests")]
     public async Task<ActionResult<ApiResponse>> CreateQuest([FromBody] CreateQuestRequestDto dto)
     {
         try
@@ -42,13 +42,14 @@ public class QuestController : ControllerBase
         }
         catch (Exception ex)
         {
-            return
-                ApiResponse.Error("internal", ex.InnerException.Message, HttpStatusCode.InternalServerError);
+            return ApiResponse.Error("internal", ex.InnerException?.Message ?? ex.Message,
+                HttpStatusCode.InternalServerError);
         }
     }
-    
-    [HttpGet]
-    public async Task<ActionResult<ApiResponse>> GetAllQuests([FromBody] QuestRequestDto dto)
+
+    // Updated route to match /api/parties/{partyId}/quests
+    [HttpGet("{partyId:int}/quests")]
+    public async Task<ActionResult<ApiResponse>> GetAllQuests(int partyId)
     {
         try
         {
@@ -58,7 +59,7 @@ public class QuestController : ControllerBase
                 return Unauthorized(ApiResponse.Error("authorization", "Unauthorized access.",
                     HttpStatusCode.Unauthorized));
 
-            var result = await _questService.GetQuests(userId, dto.PartyId);
+            var result = await _questService.GetQuests(userId, partyId); // Corrected here
 
             if (result.IsSuccess)
                 return Ok(ApiResponse.Success(result.Data));
@@ -68,8 +69,8 @@ public class QuestController : ControllerBase
         }
         catch (Exception ex)
         {
-            return
-                ApiResponse.Error("internal", ex.InnerException.Message, HttpStatusCode.InternalServerError);
+            return ApiResponse.Error("internal", ex.InnerException?.Message ?? ex.Message,
+                HttpStatusCode.InternalServerError);
         }
     }
 }

@@ -3,6 +3,7 @@ using CollabParty.Application.Common.Dtos.Quest;
 using CollabParty.Application.Common.Dtos.User;
 using CollabParty.Application.Common.Dtos.Avatar;
 using System.Linq;
+using CollabParty.Application.Common.Dtos.Member;
 
 namespace CollabParty.Application.Common.Mappings
 {
@@ -20,10 +21,14 @@ namespace CollabParty.Application.Common.Mappings
                     opt.MapFrom(src => src.Party.PartyMembers.Count))
                 .ForMember(dest => dest.PartyMembers, opt =>
                     opt.MapFrom(src => src.Party.PartyMembers
-                        .Select(pm => new UserDtoResponse
+                        .Take(4)
+                        .Select(pm => new PartyMemberResponseDto()
                         {
-                            Id = pm.UserId,
+                            PartyId = pm.PartyId,
+                            UserId = pm.UserId,
                             Username = pm.User.UserName,
+                            Role = pm.Role,
+                            CurrentLevel = pm.User.CurrentLevel,
                             Avatar = pm.User.UnlockedAvatars
                                 .Where(ua => ua.IsActive)
                                 .Select(a => new AvatarResponseDto
