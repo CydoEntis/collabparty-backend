@@ -45,7 +45,8 @@ namespace CollabParty.Application.Common.Mappings
                 .ForMember(dest => dest.CompletedSteps, opt =>
                     opt.MapFrom(src => src.QuestSteps.Count(q => q.IsCompleted)))
                 .ForMember(dest => dest.CompletedBy, opt =>
-                    opt.MapFrom(src => src.CompletedBy != null ? src.CompletedBy.UserName : null));
+                    opt.MapFrom(src => src.CompletedBy != null ? src.CompletedBy.UserName : null))
+                .ForMember(dest => dest.DueDate, opt => opt.MapFrom(src => src.DueDate));
         }
     }
 }

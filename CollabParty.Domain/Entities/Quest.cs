@@ -13,7 +13,7 @@ public class Quest
     public string CreatedById { get; set; }
     public ApplicationUser CreatedBy { get; set; }
 
-    public string Title { get; set; }
+    public string Name { get; set; }
 
     public string Description { get; set; }
 
@@ -30,6 +30,7 @@ public class Quest
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime DueDate { get; set; } = DateTime.UtcNow;
 
     public ICollection<QuestAssignment> QuestAssignments { get; set; }
 
