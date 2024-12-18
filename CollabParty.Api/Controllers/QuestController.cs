@@ -46,4 +46,30 @@ public class QuestController : ControllerBase
                 ApiResponse.Error("internal", ex.InnerException.Message, HttpStatusCode.InternalServerError);
         }
     }
+    
+    [HttpGet]
+    public async Task<ActionResult<ApiResponse>> GetAllQuests([FromBody] QuestRequestDto dto)
+    {
+        try
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized(ApiResponse.Error("authorization", "Unauthorized access.",
+                    HttpStatusCode.Unauthorized));
+
+            var result = await _questService.GetQuests(userId, dto.PartyId);
+
+            if (result.IsSuccess)
+                return Ok(ApiResponse.Success(result.Data));
+
+            var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
+            return BadRequest(ApiResponse.ValidationError(formattedErrors));
+        }
+        catch (Exception ex)
+        {
+            return
+                ApiResponse.Error("internal", ex.InnerException.Message, HttpStatusCode.InternalServerError);
+        }
+    }
 }

@@ -52,7 +52,9 @@ public class QuestService : IQuestService
         try
         {
             var foundQuests = await _unitOfWork.Quest.GetAllAsync(q =>
-                q.Party.PartyMembers.Any(qm => qm.UserId == userId) && q.PartyId == partyId);
+                    q.Party.PartyMembers.Any(qm => qm.UserId == userId) && q.PartyId == partyId,
+                includeProperties:
+                "Party.PartyMembers.User.UnlockedAvatars.Avatar,QuestSteps");
 
             if (!foundQuests.Any()) return Result<List<QuestResponseDto>>.Failure("No quests found.");
 
