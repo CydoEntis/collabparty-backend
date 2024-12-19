@@ -1,4 +1,5 @@
 using CollabParty.Application.Common.Dtos.QuestComments;
+using CollabParty.Application.Common.Dtos.QuestFiles;
 using CollabParty.Application.Common.Dtos.QuestSteps;
 using CollabParty.Domain.Enums;
 
@@ -23,5 +24,5 @@ public class QuestDetailResponseDto
     public DateTime DueDate { get; set; } = DateTime.UtcNow;
     public ICollection<QuestStepResponseDto> QuestSteps { get; set; }
     public ICollection<QuestCommentResponseDto> QuestComments { get; set; }
-    public ICollection<QuestFileResponseDto> QuestFiles { get; set; }
+    public ICollection<QuestFilesResponseDto> QuestFiles { get; set; }
 }

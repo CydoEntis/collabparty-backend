@@ -1,6 +1,7 @@
 using AutoMapper;
 using CollabParty.Application.Common.Dtos;
 using CollabParty.Application.Common.Dtos.Auth;
+using CollabParty.Application.Common.Dtos.Member;
 using CollabParty.Application.Common.Dtos.User;
 using CollabParty.Domain.Entities;
 
@@ -18,6 +19,7 @@ public class UserMappingProfile : Profile
             .ForMember(dest => dest.ExpToNextLevel, opt => opt.MapFrom(src => src.ExpToNextLevel))
             .ForMember(dest => dest.Avatar, opt => opt.MapFrom(src => src.UnlockedAvatars.FirstOrDefault(ua => ua.IsActive).Avatar));
         CreateMap<ApplicationUser, UpdateUserResponseDto>();
+        
 
     }
 }
