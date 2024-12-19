@@ -88,6 +88,29 @@ public class QuestService : IQuestService
         }
     }
 
+    
+    public async Task<Result<QuestDetailResponseDto>> GetParty(string userId, int questId)
+    {
+        try
+        {
+            var foundQuest = await _unitOfWork.Quest.GetAsync(
+                q => q.Id == questId,
+                includeProperties:
+                "Party.PartyMembers.User.UnlockedAvatars.Avatar,QuestSteps,QuestComments,QuestF");
+
+            if (foundQuest == null)
+                return Result<QuestDetailResponseDto>.Failure($"No party with the {questId} exists");
+
+            var partyDto = _mapper.Map<QuestDetailResponseDto>(foundQuest);
+            return Result<QuestDetailResponseDto>.Success(partyDto);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get party with id");
+            return Result<QuestDetailResponseDto>.Failure("An error occurred while fetching party.");
+        }
+    }
+    
     private int CalculateQuestExpReward(PriorityLevelOption priorityLevel)
     {
         return priorityLevel switch
