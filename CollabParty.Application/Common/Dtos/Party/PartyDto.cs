@@ -12,9 +12,8 @@ public class PartyDto
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
     public List<PartyMemberResponseDto> PartyMembers { get; set; }
-    // public int TotalMembers { get; set; }
-    // public int TotalQuests { get; set; }
-    // public int CompletedQuests { get; set; }
-    // public int ActiveQuests { get; set; }
-    // public int PastDueQuests { get; set; }
+    public int TotalPartyMembers { get; set; }
+    public int TotalQuests { get; set; }
+    public int CompletedQuests { get; set; }
+    public int PastDueQuests { get; set; }
 }

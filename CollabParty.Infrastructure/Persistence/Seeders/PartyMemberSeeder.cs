@@ -21,10 +21,13 @@ namespace CollabParty.Infrastructure.Persistence.Seeders
                     {
                         foreach (var party in parties)
                         {
-                            int numberOfMembers = random.Next(3, 11); 
-                            numberOfMembers = Math.Min(numberOfMembers, users.Count); 
+                            int numberOfMembers = random.Next(1, 11);
+                            numberOfMembers =
+                                Math.Min(numberOfMembers,
+                                    users.Count);
 
-                            var selectedUsers = users.OrderBy(u => random.Next()).Take(numberOfMembers).ToList();
+
+                            var selectedUsers = users.OrderBy(_ => random.Next()).Take(numberOfMembers).ToList();
 
                             for (int i = 0; i < selectedUsers.Count; i++)
                             {
@@ -32,11 +35,11 @@ namespace CollabParty.Infrastructure.Persistence.Seeders
                                 UserRole role;
 
                                 if (i == 0)
-                                    role = UserRole.Leader; 
+                                    role = UserRole.Leader;
                                 else if (i == 1 || i == 2)
-                                    role = UserRole.Captain; 
+                                    role = UserRole.Captain;
                                 else
-                                    role = UserRole.Member; 
+                                    role = UserRole.Member;
 
                                 var partyMember = new PartyMember
                                 {

@@ -56,7 +56,6 @@ public class PartyService : IPartyService
     {
         try
         {
-            // Map QueryParamsDto to QueryParams<Party>
             var queryParams = new QueryParams<Party>
             {
                 Search = dto.Search,
@@ -67,21 +66,23 @@ public class PartyService : IPartyService
                 EndDate = dto.EndDate,
                 PageNumber = dto.PageNumber,
                 PageSize = dto.PageSize,
-                IncludeProperties = "PartyMembers,PartyMembers.User,PartyMembers.User.UnlockedAvatars,PartyMembers.User.UnlockedAvatars.Avatar",
-                Filter = p => p.PartyMembers.Any(pm => pm.UserId == userId),
+                IncludeProperties = "Quests,PartyMembers.User.UnlockedAvatars.Avatar", 
+                Filter = p => p.PartyMembers.Any(pm => pm.UserId == userId), 
             };
 
-            // Fetch paginated result
             var paginatedResult = await _unitOfWork.Party.GetPaginatedAsync(queryParams);
 
-            // Map to PaginatedResult<PartyDto>
+            foreach (var party in paginatedResult.Items)
+            {
+                party.Quests ??= new List<Quest>(); 
+                party.Quests = party.Quests.Where(q => q.PartyId == party.Id).ToList();
+            }
 
             var partyDto = _mapper.Map<List<PartyDto>>(paginatedResult.Items);
 
             var result = new PaginatedResult<PartyDto>(partyDto, paginatedResult.TotalItems,
                 paginatedResult.CurrentPage, queryParams.PageSize);
-            
-            // Return success result
+
             return Result<PaginatedResult<PartyDto>>.Success(result);
         }
         catch (Exception ex)
@@ -92,12 +93,14 @@ public class PartyService : IPartyService
     }
 
 
+
     public async Task<Result<List<PartyDto>>> GetRecentParties(string userId)
     {
         try
         {
             var recentParties = await _unitOfWork.Party.GetMostRecentPartiesForUserAsync(userId,
-                includeProperties: "PartyMembers,PartyMembers.User,PartyMembers.User.UnlockedAvatars,PartyMembers.User.UnlockedAvatars.Avatar");
+                includeProperties:
+                "PartyMembers,PartyMembers.User,PartyMembers.User.UnlockedAvatars,PartyMembers.User.UnlockedAvatars.Avatar");
 
 
             var partyDto = _mapper.Map<List<PartyDto>>(recentParties);
@@ -116,7 +119,8 @@ public class PartyService : IPartyService
         {
             var foundParty = await _unitOfWork.Party.GetAsync(
                 p => p.Id == partyId && p.PartyMembers.Any(pm => pm.UserId == userId),
-                includeProperties: "PartyMembers,PartyMembers.User,PartyMembers.User.UnlockedAvatars,PartyMembers.User.UnlockedAvatars.Avatar");
+                includeProperties:
+                "PartyMembers,PartyMembers.User,PartyMembers.User.UnlockedAvatars,PartyMembers.User.UnlockedAvatars.Avatar");
 
             if (foundParty == null)
                 return Result<PartyDto>.Failure($"No party with the {partyId} exists");
