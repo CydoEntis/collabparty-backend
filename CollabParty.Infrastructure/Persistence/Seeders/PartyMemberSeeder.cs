@@ -9,34 +9,32 @@ namespace CollabParty.Infrastructure.Persistence.Seeders
     {
         public static void Seed(AppDbContext dbContext)
         {
-            if (!dbContext.PartyMembers.Any())
+            var random = new Random();
+            var users = dbContext.Users.ToList();
+            var parties = dbContext.Parties.ToList();
+
+            using (var transaction = dbContext.Database.BeginTransaction())
             {
-                var random = new Random();
-                var users = dbContext.Users.ToList();
-                var parties = dbContext.Parties.ToList();
-
-                using (var transaction = dbContext.Database.BeginTransaction())
+                try
                 {
-                    try
+                    foreach (var party in parties)
                     {
-                        foreach (var party in parties)
+                        var existingMembers = dbContext.PartyMembers.Where(pm => pm.PartyId == party.Id).ToList();
+
+                        if (existingMembers.Count > 0)
                         {
-                            int numberOfMembers = random.Next(1, 11);
-                            numberOfMembers =
-                                Math.Min(numberOfMembers,
-                                    users.Count);
+                            int numberOfAdditionalMembers = random.Next(1, 11) - existingMembers.Count;
+                            numberOfAdditionalMembers = Math.Min(numberOfAdditionalMembers, users.Count - existingMembers.Count);
 
+                            var existingUserIds = existingMembers.Select(pm => pm.UserId).ToList();
+                            var availableUsers = users.Where(u => !existingUserIds.Contains(u.Id)).OrderBy(u => random.Next()).Take(numberOfAdditionalMembers).ToList();
 
-                            var selectedUsers = users.OrderBy(_ => random.Next()).Take(numberOfMembers).ToList();
-
-                            for (int i = 0; i < selectedUsers.Count; i++)
+                            for (int i = 0; i < availableUsers.Count; i++)
                             {
-                                var user = selectedUsers[i];
+                                var user = availableUsers[i];
                                 UserRole role;
 
                                 if (i == 0)
-                                    role = UserRole.Leader;
-                                else if (i == 1 || i == 2)
                                     role = UserRole.Captain;
                                 else
                                     role = UserRole.Member;
@@ -52,15 +50,15 @@ namespace CollabParty.Infrastructure.Persistence.Seeders
                                 dbContext.PartyMembers.Add(partyMember);
                             }
                         }
+                    }
 
-                        dbContext.SaveChanges();
-                        transaction.Commit();
-                    }
-                    catch (Exception ex)
-                    {
-                        transaction.Rollback();
-                        throw new Exception("An error occurred while seeding party members.", ex);
-                    }
+                    dbContext.SaveChanges();
+                    transaction.Commit();
+                }
+                catch (Exception ex)
+                {
+                    transaction.Rollback();
+                    throw new Exception("An error occurred while seeding party members.", ex);
                 }
             }
         }

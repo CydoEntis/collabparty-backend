@@ -1,7 +1,7 @@
 ﻿using CollabParty.Domain.Entities;
-using CollabParty.Domain.Enums;
 using CollabParty.Infrastructure.Data;
 using System.Linq;
+using CollabParty.Domain.Enums;
 
 namespace CollabParty.Infrastructure.Persistence.Seeders
 {
@@ -58,31 +58,26 @@ namespace CollabParty.Infrastructure.Persistence.Seeders
                                 UpdatedAt = DateTime.UtcNow.AddDays(-random.Next(0, 30)),
                             };
 
-                            var selectedUsers = users.OrderBy(u => random.Next()).Take(3).ToList();
-
-                            if (selectedUsers.Any())
+                            // Select a random user as the leader
+                            var leader = users.OrderBy(u => random.Next()).FirstOrDefault();
+                            if (leader != null)
                             {
-                                var leader = selectedUsers.First();
+                                party.CreatedById = leader.Id;  // Assign the leader as the creator of the party
 
-                                party.CreatedById = leader.Id;
-
+                                // First, add the party to the database and get the generated PartyId
                                 dbContext.Parties.Add(party);
                                 dbContext.SaveChanges();
 
-                                foreach (var user in selectedUsers)
+                                // Add the leader as a party member with the 'Leader' role
+                                var partyMember = new PartyMember
                                 {
-                                    var role = user == leader ? UserRole.Leader : UserRole.Member;
+                                    UserId = leader.Id,
+                                    PartyId = party.Id,  // This will now have a valid PartyId
+                                    Role = UserRole.Leader,
+                                    JoinedAt = DateTime.UtcNow
+                                };
 
-                                    var partyMember = new PartyMember
-                                    {
-                                        UserId = user.Id,
-                                        PartyId = party.Id,
-                                        Role = role,
-                                        JoinedAt = DateTime.UtcNow
-                                    };
-
-                                    dbContext.PartyMembers.Add(partyMember);
-                                }
+                                dbContext.PartyMembers.Add(partyMember);
                             }
                         }
 
