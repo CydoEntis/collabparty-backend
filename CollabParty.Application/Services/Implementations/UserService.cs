@@ -35,7 +35,8 @@ public class UserService : IUserService
             if (string.IsNullOrWhiteSpace(userId))
                 return Result<UserDtoResponse>.Failure("User ID is required");
 
-            var foundUser = await _unitOfWork.User.GetAsync(u => u.Id == userId, includeProperties: "UnlockedAvatars,UnlockedAvatars.Avatar");
+            var foundUser = await _unitOfWork.User.GetAsync(u => u.Id == userId,
+                includeProperties: "UnlockedAvatars,UnlockedAvatars.Avatar");
 
             if (foundUser == null)
                 return Result<UserDtoResponse>.Failure("User does not exist");
@@ -50,7 +51,7 @@ public class UserService : IUserService
             return Result<UserDtoResponse>.Failure("An error occurred while updating the user");
         }
     }
-    
+
     public async Task<Result<UpdateUserResponseDto>> UpdateUserDetails(string userId, UpdateUserRequestDto dto)
     {
         try
@@ -87,9 +88,69 @@ public class UserService : IUserService
             return Result<UpdateUserResponseDto>.Failure("An error occurred while updating the user");
         }
     }
-    
 
-    
+    public async Task<Result> AddGold(string userId, int amount)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(userId))
+                return Result.Failure("User ID is required");
 
+            var user = await _unitOfWork.User.GetAsync(u => u.Id == userId);
+            if (user == null)
+                return Result.Failure("User does not exist");
 
+            user.Gold += amount;
+            await _unitOfWork.User.UpdateAsync(user);
+
+            return Result.Success($"Successfully added {amount} gold to user with ID {userId}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Failed to add gold to user with ID {userId}");
+            return Result.Failure("An error occurred while adding gold");
+        }
+    }
+
+    public async Task<Result> AddExperience(string userId, int amount)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(userId))
+                return Result.Failure("User ID is required");
+
+            var user = await _unitOfWork.User.GetAsync(u => u.Id == userId);
+            if (user == null)
+                return Result.Failure("User does not exist");
+
+            user.CurrentExp += amount;
+
+            // Check for level-up
+            var leveledUp = false;
+            while (user.CurrentExp >= GetExperienceThreshold(user.CurrentLevel))
+            {
+                user.CurrentExp -= GetExperienceThreshold(user.CurrentLevel);
+                user.CurrentExp++;
+                leveledUp = true;
+            }
+
+            await _unitOfWork.User.UpdateAsync(user);
+
+            var message = leveledUp
+                ? $"User with ID {userId} leveled up to level {user.CurrentLevel}"
+                : $"Successfully added {amount} experience to user with ID {userId}";
+
+            return Result.Success(message);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Failed to add experience to user with ID {userId}");
+            return Result.Failure("An error occurred while adding experience");
+        }
+    }
+
+    private int GetExperienceThreshold(int level)
+    {
+        return 100 + (level * 50);
+    }
 }

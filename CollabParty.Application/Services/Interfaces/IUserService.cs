@@ -9,4 +9,6 @@ public interface IUserService
 {
     Task<Result<UserDtoResponse>> GetUserDetails(string userId);
     Task<Result<UpdateUserResponseDto>> UpdateUserDetails(string userId, UpdateUserRequestDto dto);
+    Task<Result> AddGold(string userId, int amount);
+    Task<Result> AddExperience(string userId, int amount);
 }

@@ -18,15 +18,17 @@ public class QuestService : IQuestService
     private readonly IMapper _mapper;
     private readonly IQuestStepService _questStepService;
     private readonly IQuestAssignmentService _questAssignmentService;
+    private readonly IUserService _userService;
 
     public QuestService(IUnitOfWork unitOfWork, ILogger<QuestService> logger, IMapper mapper,
-        IQuestStepService questStepService, IQuestAssignmentService questAssignmentService)
+        IQuestStepService questStepService, IQuestAssignmentService questAssignmentService, IUserService userService)
     {
         _unitOfWork = unitOfWork;
         _logger = logger;
         _mapper = mapper;
         _questStepService = questStepService;
         _questAssignmentService = questAssignmentService;
+        _userService = userService;
     }
 
     public async Task<Result> CreateQuest(string userId, CreateQuestRequestDto dto)
@@ -68,7 +70,7 @@ public class QuestService : IQuestService
                 IncludeProperties =
                     "Party.PartyMembers.User.UnlockedAvatars.Avatar,QuestSteps",
                 Filter = q =>
-                    q.Party.PartyMembers.Any(qm => qm.UserId == userId) && q.PartyId == partyId,
+                    q.Party.PartyMembers.Any(qm => qm.UserId == userId) && q.PartyId == partyId && !q.IsCompleted,
             };
 
             var paginatedResult = await _unitOfWork.Quest.GetPaginatedAsync(queryParams);
@@ -108,6 +110,41 @@ public class QuestService : IQuestService
         {
             _logger.LogError(ex, "Failed to get party with id");
             return Result<QuestDetailResponseDto>.Failure("An error occurred while fetching party.");
+        }
+    }
+
+    public async Task<Result<int>> CompleteQuest(string userId, int questId)
+    {
+        try
+        {
+            var foundQuest = await _unitOfWork.Quest.GetAsync(
+                q => q.Id == questId,
+                includeProperties:
+                "Party.PartyMembers.User.UnlockedAvatars.Avatar,QuestSteps,QuestComments,QuestFiles");
+
+            if (foundQuest == null)
+                return Result<int>.Failure($"No party with the {questId} exists");
+           
+            foundQuest.IsCompleted = true;
+            foundQuest.CompletedById = userId;
+
+            foreach (var questStep in foundQuest.QuestSteps)
+            {
+                questStep.IsCompleted = true;
+                questStep.CompletedAt = DateTime.UtcNow;
+            }
+            
+            await _userService.AddExperience(userId, foundQuest.ExpReward);
+            await _userService.AddGold(userId, foundQuest.GoldReward);
+
+            await _unitOfWork.Quest.UpdateAsync(foundQuest);
+            
+            return Result<int>.Success(foundQuest.Id);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get party with id");
+            return Result<int>.Failure("An error occurred while completing quest.");
         }
     }
 

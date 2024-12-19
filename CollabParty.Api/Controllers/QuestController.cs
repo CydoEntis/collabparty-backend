@@ -100,4 +100,30 @@ public class QuestController : ControllerBase
                 HttpStatusCode.InternalServerError);
         }
     }
+
+    [HttpPut("quests/{questId:int}/complete")]
+    public async Task<ActionResult<ApiResponse>> CompleteQuest(int questId)
+    {
+        try
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized(ApiResponse.Error("authorization", "Unauthorized access.",
+                    HttpStatusCode.Unauthorized));
+
+            var result = await _questService.CompleteQuest(userId, questId);
+
+            if (result.IsSuccess)
+                return Ok(ApiResponse.Success(result.Data));
+
+            var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
+            return BadRequest(ApiResponse.ValidationError(formattedErrors));
+        }
+        catch (Exception ex)
+        {
+            return ApiResponse.Error("internal", ex.InnerException?.Message ?? ex.Message,
+                HttpStatusCode.InternalServerError);
+        }
+    }
 }

@@ -13,4 +13,5 @@ public interface IQuestService
         QueryParamsDto dto);
 
     Task<Result<QuestDetailResponseDto>> GetQuest(int questId);
+    Task<Result<int>> CompleteQuest(string userId, int questId);
 }
