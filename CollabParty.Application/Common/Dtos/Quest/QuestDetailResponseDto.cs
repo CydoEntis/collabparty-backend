@@ -1,3 +1,4 @@
+using CollabParty.Application.Common.Dtos.Member;
 using CollabParty.Application.Common.Dtos.QuestComments;
 using CollabParty.Application.Common.Dtos.QuestFiles;
 using CollabParty.Application.Common.Dtos.QuestSteps;
@@ -22,6 +23,8 @@ public class QuestDetailResponseDto
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public DateTime DueDate { get; set; } = DateTime.UtcNow;
+    public List<PartyMemberResponseDto> PartyMembers { get; set; }
+    public int TotalPartyMembers { get; set; }
     public ICollection<QuestStepResponseDto> QuestSteps { get; set; }
     public ICollection<QuestCommentResponseDto> QuestComments { get; set; }
     public ICollection<QuestFilesResponseDto> QuestFiles { get; set; }

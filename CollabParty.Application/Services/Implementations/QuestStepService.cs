@@ -1,5 +1,6 @@
 using AutoMapper;
 using CollabParty.Application.Common.Dtos.Quest;
+using CollabParty.Application.Common.Dtos.QuestSteps;
 using CollabParty.Application.Common.Models;
 using CollabParty.Application.Services.Interfaces;
 using CollabParty.Domain.Entities;
@@ -48,6 +49,39 @@ public class QuestStepService : IQuestStepService
         {
             _logger.LogError(ex, "Failed to assign user to party.");
             return Result.Failure("An error occurred while creating the party.");
+        }
+    }
+
+    public async Task<Result<int>> UpdateStepStatus(QuestStepStatusDto dto)
+    {
+        try
+        {
+            var questStep = await _unitOfWork.QuestStep.GetAsync(qs => qs.Id == dto.QuestStepId);
+            if (questStep == null)
+            {
+                return Result<int>.Failure($"Quest step with ID {dto.QuestStepId} not found.");
+            }
+
+            if (questStep.IsCompleted)
+            {
+                questStep.CompletedAt = DateTime.UtcNow;
+            }
+            else
+            {
+                questStep.CompletedAt = null;
+            }
+
+            questStep.IsCompleted = dto.IsCompleted;
+            questStep.UpdatedAt = DateTime.UtcNow;
+
+            await _unitOfWork.QuestStep.UpdateAsync(questStep);
+
+            return Result<int>.Success(questStep.QuestId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Failed to update quest step with ID {dto.QuestStepId}.");
+            return Result<int>.Failure("An error occurred while updating the quest step.");
         }
     }
 }

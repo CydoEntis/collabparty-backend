@@ -11,4 +11,6 @@ public interface IQuestService
 
     Task<Result<PaginatedResult<QuestResponseDto>>> GetQuests(string userId, int partyId,
         QueryParamsDto dto);
+
+    Task<Result<QuestDetailResponseDto>> GetQuest(int questId);
 }

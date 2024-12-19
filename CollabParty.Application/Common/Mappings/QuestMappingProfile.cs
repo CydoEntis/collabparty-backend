@@ -47,6 +47,12 @@ namespace CollabParty.Application.Common.Mappings
                 .ForMember(dest => dest.CompletedBy, opt =>
                     opt.MapFrom(src => src.CompletedBy != null ? src.CompletedBy.UserName : null))
                 .ForMember(dest => dest.DueDate, opt => opt.MapFrom(src => src.DueDate));
+
+            CreateMap<Quest, QuestDetailResponseDto>()
+                .ForMember(dest => dest.PartyMembers,
+                    opt => opt.MapFrom(src => src.Party.PartyMembers.Select(pm => pm.User))).ForMember(
+                    dest => dest.TotalPartyMembers, opt =>
+                        opt.MapFrom(src => src.Party.PartyMembers.Count));
         }
     }
 }

@@ -41,4 +41,9 @@ public class SessionService : ISessionService
         var session = await _unitOfWork.Session.GetAsync(s => s.RefreshToken == refreshToken);
         return session != null && session.RefreshTokenExpiry > DateTime.UtcNow;
     }
+    
+    public async Task<Session?> GetSessionByUserId(string userId)
+    {
+        return await _unitOfWork.Session.GetAsync(s => s.UserId == userId);
+    }
 }

@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
-using CollabParty.Api.Middleware;
+// using CollabParty.Api.Middleware;
 using CollabParty.Application.Common.Constants;
 using CollabParty.Application.Common.Interfaces;
 using CollabParty.Application.Common.Models;
@@ -193,7 +193,7 @@ using (var scope = app.Services.CreateScope())
 }
 
 
-app.UseMiddleware<CsrfMiddleware>();
+// app.UseMiddleware<CsrfMiddleware>();
 
 app.UseHttpsRedirection();
 app.UseCors("AllowSpecificOrigin");
