@@ -22,7 +22,8 @@ public static class QuestStepsSeeder
                     QuestId = quest.Id,
                     Description = $"Step {i + 1} description for quest {quest.Name}",
                     CreatedAt = DateTime.UtcNow,
-                    CompletedAt = isCompleted ? DateTime.UtcNow.AddDays(-random.Next(1, 30)) : null // Random completion date in the past or null
+                    CompletedAt = isCompleted ? DateTime.UtcNow.AddDays(-random.Next(1, 30)) : null, // Random completion date in the past or null
+                    IsCompleted = isCompleted
                 });
             }
         }

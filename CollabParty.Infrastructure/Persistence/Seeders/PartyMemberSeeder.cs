@@ -21,23 +21,22 @@ namespace CollabParty.Infrastructure.Persistence.Seeders
                     {
                         foreach (var party in parties)
                         {
-                            int numberOfMembers = random.Next(1, 11);
-                            numberOfMembers = Math.Min(numberOfMembers, users.Count);
+                            int numberOfMembers = random.Next(3, 11); 
+                            numberOfMembers = Math.Min(numberOfMembers, users.Count); 
 
                             var selectedUsers = users.OrderBy(u => random.Next()).Take(numberOfMembers).ToList();
 
-                            int leaderIndex = 0;
-                            int captainIndex = 1;
-
-                            foreach (var user in selectedUsers)
+                            for (int i = 0; i < selectedUsers.Count; i++)
                             {
+                                var user = selectedUsers[i];
                                 UserRole role;
-                                if (selectedUsers.IndexOf(user) == leaderIndex)
-                                    role = UserRole.Leader;
-                                else if (selectedUsers.IndexOf(user) == captainIndex || selectedUsers.IndexOf(user) == captainIndex + 1)
-                                    role = UserRole.Captain;
+
+                                if (i == 0)
+                                    role = UserRole.Leader; 
+                                else if (i == 1 || i == 2)
+                                    role = UserRole.Captain; 
                                 else
-                                    role = UserRole.Member;
+                                    role = UserRole.Member; 
 
                                 var partyMember = new PartyMember
                                 {
