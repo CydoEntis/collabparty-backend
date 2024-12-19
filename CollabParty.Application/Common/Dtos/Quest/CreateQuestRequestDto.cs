@@ -10,4 +10,5 @@ public class CreateQuestRequestDto
     public PriorityLevelOption PriorityLevel { get; set; }
     public string[] Steps { get; set; }
     public string[] PartyMembers { get; set; }
+    public DateTime DueDate { get; set; }
 }

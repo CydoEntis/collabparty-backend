@@ -1,6 +1,11 @@
 ﻿using CollabParty.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 using CollabParty.Infrastructure.Data;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Transactions;
 
 namespace CollabParty.Infrastructure.Persistence.Seeders
 {
@@ -38,13 +43,30 @@ namespace CollabParty.Infrastructure.Persistence.Seeders
                     };
 
                     users.Add(user);
+                }
 
-                    var result = await userManager.CreateAsync(user, "Test123*");
-
-                    if (!result.Succeeded)
+                // Begin transaction scope to handle user creation
+                using (var transaction = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
+                {
+                    try
                     {
-                        Console.WriteLine(
-                            $"Failed to create user {name}. Errors: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+                        foreach (var user in users)
+                        {
+                            var result = await userManager.CreateAsync(user, "Test123*");
+
+                            if (!result.Succeeded)
+                            {
+                                Console.WriteLine(
+                                    $"Failed to create user {user.UserName}. Errors: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+                            }
+                        }
+
+                        transaction.Complete();
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"An error occurred while seeding users: {ex.Message}");
+                        // Transaction will be rolled back automatically if an exception occurs
                     }
                 }
             }

@@ -1,54 +1,65 @@
 ﻿using CollabParty.Domain.Entities;
 using CollabParty.Domain.Enums;
 using CollabParty.Infrastructure.Data;
+using System.Linq;
 
-
-namespace CollabParty.Infrastructure.Persistence.Seeders;
-
-public class PartyMemberSeeder
+namespace CollabParty.Infrastructure.Persistence.Seeders
 {
-    public static void Seed(AppDbContext dbContext)
+    public class PartyMemberSeeder
     {
-        if (!dbContext.PartyMembers.Any())
+        public static void Seed(AppDbContext dbContext)
         {
-            var random = new Random();
-            var users = dbContext.Users.ToList();
-            var parties = dbContext.Parties.ToList();
-
-            foreach (var party in parties)
+            if (!dbContext.PartyMembers.Any())
             {
-                int numberOfMembers = random.Next(1, 11);
-                numberOfMembers = Math.Min(numberOfMembers, users.Count);
+                var random = new Random();
+                var users = dbContext.Users.ToList();
+                var parties = dbContext.Parties.ToList();
 
-                var selectedUsers = users.OrderBy(u => random.Next()).Take(numberOfMembers).ToList();
-
-                int leaderIndex = 0;
-                int captainIndex = 1;
-
-                for (int i = 0; i < selectedUsers.Count; i++)
+                using (var transaction = dbContext.Database.BeginTransaction())
                 {
-                    var user = selectedUsers[i];
-
-                    UserRole role;
-                    if (i == leaderIndex)
-                        role = UserRole.Leader;
-                    else if (i == captainIndex || i == captainIndex + 1)
-                        role = UserRole.Captain;
-                    else
-                        role = UserRole.Member;
-
-                    var partyMember = new PartyMember
+                    try
                     {
-                        UserId = user.Id,
-                        PartyId = party.Id,
-                        Role = role,
-                        JoinedAt = DateTime.UtcNow
-                    };
+                        foreach (var party in parties)
+                        {
+                            int numberOfMembers = random.Next(1, 11);
+                            numberOfMembers = Math.Min(numberOfMembers, users.Count);
 
-                    dbContext.PartyMembers.Add(partyMember);
+                            var selectedUsers = users.OrderBy(u => random.Next()).Take(numberOfMembers).ToList();
+
+                            int leaderIndex = 0;
+                            int captainIndex = 1;
+
+                            foreach (var user in selectedUsers)
+                            {
+                                UserRole role;
+                                if (selectedUsers.IndexOf(user) == leaderIndex)
+                                    role = UserRole.Leader;
+                                else if (selectedUsers.IndexOf(user) == captainIndex || selectedUsers.IndexOf(user) == captainIndex + 1)
+                                    role = UserRole.Captain;
+                                else
+                                    role = UserRole.Member;
+
+                                var partyMember = new PartyMember
+                                {
+                                    UserId = user.Id,
+                                    PartyId = party.Id,
+                                    Role = role,
+                                    JoinedAt = DateTime.UtcNow
+                                };
+
+                                dbContext.PartyMembers.Add(partyMember);
+                            }
+                        }
+
+                        dbContext.SaveChanges();
+                        transaction.Commit();
+                    }
+                    catch (Exception ex)
+                    {
+                        transaction.Rollback();
+                        throw new Exception("An error occurred while seeding party members.", ex);
+                    }
                 }
-
-                dbContext.SaveChanges();
             }
         }
     }

@@ -1,10 +1,13 @@
 using AutoMapper;
+using CollabParty.Application.Common.Dtos;
+using CollabParty.Application.Common.Dtos.Party;
 using CollabParty.Application.Common.Dtos.Quest;
 using CollabParty.Application.Common.Models;
 using CollabParty.Application.Services.Interfaces;
 using CollabParty.Domain.Enums;
 using CollabParty.Domain.Interfaces;
 using Microsoft.Extensions.Logging;
+using Questlog.Application.Common.Models;
 
 namespace CollabParty.Application.Services.Implementations;
 
@@ -47,25 +50,41 @@ public class QuestService : IQuestService
         }
     }
 
-    public async Task<Result<List<QuestResponseDto>>> GetQuests(string userId, int partyId)
+    public async Task<Result<PaginatedResult<QuestResponseDto>>> GetQuests(string userId, int partyId,
+        QueryParamsDto dto)
     {
         try
         {
-            var foundQuests = await _unitOfWork.Quest.GetAllAsync(q =>
+            var queryParams = new QueryParams<Quest>
+            {
+                Search = dto.Search,
+                OrderBy = dto.OrderBy,
+                SortBy = dto.SortBy,
+                DateFilter = dto.DateFilter,
+                StartDate = dto.StartDate,
+                EndDate = dto.EndDate,
+                PageNumber = dto.PageNumber,
+                PageSize = dto.PageSize,
+                IncludeProperties =
+                    "Party.PartyMembers.User.UnlockedAvatars.Avatar,QuestSteps",
+                Filter = q =>
                     q.Party.PartyMembers.Any(qm => qm.UserId == userId) && q.PartyId == partyId,
-                includeProperties:
-                "Party.PartyMembers.User.UnlockedAvatars.Avatar,QuestSteps");
+            };
 
-            if (!foundQuests.Any()) return Result<List<QuestResponseDto>>.Failure("No quests found.");
+            var paginatedResult = await _unitOfWork.Quest.GetPaginatedAsync(queryParams);
 
-            var questDtos = _mapper.Map<List<QuestResponseDto>>(foundQuests);
 
-            return Result<List<QuestResponseDto>>.Success(questDtos);
+            var questDtos = _mapper.Map<List<QuestResponseDto>>(paginatedResult.Items);
+
+            var result = new PaginatedResult<QuestResponseDto>(questDtos, paginatedResult.TotalItems,
+                paginatedResult.CurrentPage, queryParams.PageSize);
+
+            return Result<PaginatedResult<QuestResponseDto>>.Success(result);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to create quest.");
-            return Result<List<QuestResponseDto>>.Failure("An error occurred while creating the party.");
+            _logger.LogError(ex, "Failed to fetch user parties.");
+            return Result<PaginatedResult<QuestResponseDto>>.Failure("An error occurred while fetching parties.");
         }
     }
 

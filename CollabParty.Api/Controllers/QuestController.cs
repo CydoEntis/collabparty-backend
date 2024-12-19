@@ -1,5 +1,6 @@
 using System.Net;
 using System.Security.Claims;
+using CollabParty.Application.Common.Dtos;
 using CollabParty.Application.Common.Dtos.Quest;
 using CollabParty.Application.Common.Models;
 using CollabParty.Application.Common.Utility;
@@ -49,7 +50,7 @@ public class QuestController : ControllerBase
 
     // Updated route to match /api/parties/{partyId}/quests
     [HttpGet("{partyId:int}/quests")]
-    public async Task<ActionResult<ApiResponse>> GetAllQuests(int partyId)
+    public async Task<ActionResult<ApiResponse>> GetAllQuests(int partyId, [FromQuery] QueryParamsDto query)
     {
         try
         {
@@ -59,7 +60,7 @@ public class QuestController : ControllerBase
                 return Unauthorized(ApiResponse.Error("authorization", "Unauthorized access.",
                     HttpStatusCode.Unauthorized));
 
-            var result = await _questService.GetQuests(userId, partyId); // Corrected here
+            var result = await _questService.GetQuests(userId, partyId, query); // Corrected here
 
             if (result.IsSuccess)
                 return Ok(ApiResponse.Success(result.Data));

@@ -52,7 +52,7 @@ builder.Services.Configure<DataProtectionTokenProviderOptions>(options =>
 
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(connectionString));
+    options.UseSqlServer(connectionString, options => options.CommandTimeout(360)));
 
 // Identity Configuration
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
@@ -121,7 +121,7 @@ builder.Services.AddAuthentication(options =>
     })
     .AddJwtBearer(options =>
     {
-        options.RequireHttpsMetadata = false; 
+        options.RequireHttpsMetadata = false;
         options.SaveToken = true;
         options.TokenValidationParameters = new TokenValidationParameters
         {
@@ -134,31 +134,29 @@ builder.Services.AddAuthentication(options =>
             ClockSkew = TimeSpan.Zero,
         };
 
-   
+
         options.Events = new JwtBearerEvents
         {
             OnAuthenticationFailed = context =>
             {
-                
                 Console.WriteLine("Authentication failed: " + context.Exception.Message);
                 return Task.CompletedTask;
             },
             OnTokenValidated = context =>
             {
-              
                 Console.WriteLine("Token validated successfully.");
                 return Task.CompletedTask;
             },
             OnMessageReceived = context =>
             {
-           
-                var token = context.Request.Cookies[CookieNames.AccessToken]; 
+                var token = context.Request.Cookies[CookieNames.AccessToken];
 
                 Console.WriteLine(token);
                 if (!string.IsNullOrEmpty(token))
                 {
-                    context.Token = token; 
+                    context.Token = token;
                 }
+
                 return Task.CompletedTask;
             }
         };
@@ -188,7 +186,12 @@ using (var scope = app.Services.CreateScope())
     PartySeeder.Seed(dbContext);
     UnlockedAvatarSeeder.Seed(dbContext);
     PartyMemberSeeder.Seed(dbContext);
+    QuestSeeder.Seed(dbContext);
+    QuestStepsSeeder.Seed(dbContext);
+    // Commit all changes after seeding
+    dbContext.SaveChanges(); // Perform only one save after all seeding is done
 }
+
 
 app.UseMiddleware<CsrfMiddleware>();
 

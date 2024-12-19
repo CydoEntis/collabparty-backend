@@ -1,7 +1,4 @@
 ﻿using CollabParty.Domain.Entities;
-using CollabParty.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
-using System.Linq;
 using CollabParty.Infrastructure.Data;
 
 namespace CollabParty.Infrastructure.Persistence.Seeders
@@ -10,9 +7,12 @@ namespace CollabParty.Infrastructure.Persistence.Seeders
     {
         public static void Seed(AppDbContext dbContext)
         {
-            if (!dbContext.Avatars.Any()) 
+            // Check if avatars already exist in the database
+            if (!dbContext.Avatars.Any())
             {
-                dbContext.Avatars.AddRange(
+                // Define the avatars array to be added
+                var avatars = new[]
+                {
                     new Avatar
                     {
                         Name = "male_a", DisplayName = "Male Peasant", UnlockLevel = 1, Tier = 0, UnlockCost = 0,
@@ -36,14 +36,12 @@ namespace CollabParty.Infrastructure.Persistence.Seeders
                     new Avatar
                     {
                         Name = "skeleton_a", DisplayName = "Skeleton Soldier", UnlockLevel = 3, Tier = 1,
-                        UnlockCost = 200,
-                        ImageUrl = "/Avatars/skeleton_a.png"
+                        UnlockCost = 200, ImageUrl = "/Avatars/skeleton_a.png"
                     },
                     new Avatar
                     {
                         Name = "skeleton_b", DisplayName = "Skeleton Captain", UnlockLevel = 3, Tier = 1,
-                        UnlockCost = 200,
-                        ImageUrl = "/Avatars/skeleton_b.png"
+                        UnlockCost = 200, ImageUrl = "/Avatars/skeleton_b.png"
                     },
                     new Avatar
                     {
@@ -53,8 +51,7 @@ namespace CollabParty.Infrastructure.Persistence.Seeders
                     new Avatar
                     {
                         Name = "zombie_female", DisplayName = "Female Zombie", UnlockLevel = 5, Tier = 2,
-                        UnlockCost = 350,
-                        ImageUrl = "/Avatars/zombie_female.png"
+                        UnlockCost = 350, ImageUrl = "/Avatars/zombie_female.png"
                     },
                     new Avatar
                     {
@@ -174,8 +171,7 @@ namespace CollabParty.Infrastructure.Persistence.Seeders
                     new Avatar
                     {
                         Name = "werewolf_a", DisplayName = "Werewolf Boss", UnlockLevel = 40, Tier = 11,
-                        UnlockCost = 4000,
-                        ImageUrl = "/Avatars/werewolf_a.png"
+                        UnlockCost = 4000, ImageUrl = "/Avatars/werewolf_a.png"
                     },
                     new Avatar
                     {
@@ -185,8 +181,7 @@ namespace CollabParty.Infrastructure.Persistence.Seeders
                     new Avatar
                     {
                         Name = "werewolf_c", DisplayName = "Werewolf Chief", UnlockLevel = 40, Tier = 11,
-                        UnlockCost = 4000,
-                        ImageUrl = "/Avatars/werewolf_c.png"
+                        UnlockCost = 4000, ImageUrl = "/Avatars/werewolf_c.png"
                     },
                     new Avatar
                     {
@@ -196,8 +191,7 @@ namespace CollabParty.Infrastructure.Persistence.Seeders
                     new Avatar
                     {
                         Name = "female_orc", DisplayName = "Female Orc", UnlockLevel = 50, Tier = 12,
-                        UnlockCost = 5000,
-                        ImageUrl = "/Avatars/female_orc.png"
+                        UnlockCost = 5000, ImageUrl = "/Avatars/female_orc.png"
                     },
                     new Avatar
                     {
@@ -217,29 +211,41 @@ namespace CollabParty.Infrastructure.Persistence.Seeders
                     new Avatar
                     {
                         Name = "male_devil", DisplayName = "Male Devil", UnlockLevel = 80, Tier = 15,
-                        UnlockCost = 8000,
-                        ImageUrl = "/Avatars/male_devil.png"
+                        UnlockCost = 8000, ImageUrl = "/Avatars/male_devil.png"
                     },
                     new Avatar
                     {
                         Name = "female_devil", DisplayName = "Female Devil", UnlockLevel = 80, Tier = 15,
-                        UnlockCost = 8000,
-                        ImageUrl = "/Avatars/female_devil.png"
+                        UnlockCost = 8000, ImageUrl = "/Avatars/female_devil.png"
                     },
                     new Avatar
                     {
                         Name = "demon_male", DisplayName = "Male Demon", UnlockLevel = 100, Tier = 16,
-                        UnlockCost = 10000,
-                        ImageUrl = "/Avatars/demon_male.png"
+                        UnlockCost = 10000, ImageUrl = "/Avatars/demon_male.png"
                     },
                     new Avatar
                     {
                         Name = "demon_female", DisplayName = "Female Demon", UnlockLevel = 100, Tier = 16,
                         UnlockCost = 10000, ImageUrl = "/Avatars/demon_female.png"
                     }
-                );
+                };
 
-                dbContext.SaveChanges();
+                // Start a transaction
+                using (var transaction = dbContext.Database.BeginTransaction())
+                {
+                    try
+                    {
+                        // Add the avatars to the database
+                        dbContext.Avatars.AddRange(avatars);
+                        dbContext.SaveChanges();
+                        transaction.Commit(); // Commit the transaction
+                    }
+                    catch (Exception ex)
+                    {
+                        transaction.Rollback(); // Rollback on error
+                        throw new Exception("An error occurred while seeding avatars.", ex);
+                    }
+                }
             }
         }
     }

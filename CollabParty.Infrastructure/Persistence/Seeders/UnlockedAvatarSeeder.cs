@@ -1,5 +1,8 @@
 ﻿using CollabParty.Domain.Entities;
 using CollabParty.Infrastructure.Data;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace CollabParty.Infrastructure.Persistence.Seeders;
 
@@ -38,8 +41,20 @@ public class UnlockedAvatarSeeder
                 }
             }
 
-            dbContext.UnlockedAvatars.AddRange(userAvatars);
-            dbContext.SaveChanges();
+            using (var transaction = dbContext.Database.BeginTransaction())
+            {
+                try
+                {
+                    dbContext.UnlockedAvatars.AddRange(userAvatars);
+                    dbContext.SaveChanges();
+                    transaction.Commit();
+                }
+                catch (Exception ex)
+                {
+                    transaction.Rollback();
+                    throw new Exception("An error occurred while seeding unlocked avatars.", ex);
+                }
+            }
         }
     }
 }
