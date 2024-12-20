@@ -188,6 +188,7 @@ using (var scope = app.Services.CreateScope())
     PartyMemberSeeder.Seed(dbContext);
     QuestSeeder.Seed(dbContext);
     QuestStepsSeeder.Seed(dbContext);
+    QuestAssignmentSeeder.Seed(dbContext);
     // Commit all changes after seeding
     dbContext.SaveChanges(); // Perform only one save after all seeding is done
 }

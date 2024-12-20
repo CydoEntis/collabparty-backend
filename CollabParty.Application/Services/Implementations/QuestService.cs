@@ -68,9 +68,9 @@ public class QuestService : IQuestService
                 PageNumber = dto.PageNumber,
                 PageSize = dto.PageSize,
                 IncludeProperties =
-                    "Party.PartyMembers.User.UnlockedAvatars.Avatar,QuestSteps",
+                    "QuestAssignments.User.UnlockedAvatars.Avatar,QuestSteps",
                 Filter = q =>
-                    q.Party.PartyMembers.Any(qm => qm.UserId == userId) && q.PartyId == partyId && !q.IsCompleted,
+                    q.PartyId == partyId && !q.IsCompleted && q.Party.PartyMembers.Any(qm => qm.UserId == userId),
             };
 
             var paginatedResult = await _unitOfWork.Quest.GetPaginatedAsync(queryParams);
@@ -124,7 +124,7 @@ public class QuestService : IQuestService
 
             if (foundQuest == null)
                 return Result<int>.Failure($"No party with the {questId} exists");
-           
+
             foundQuest.IsCompleted = true;
             foundQuest.CompletedById = userId;
 
@@ -133,12 +133,12 @@ public class QuestService : IQuestService
                 questStep.IsCompleted = true;
                 questStep.CompletedAt = DateTime.UtcNow;
             }
-            
+
             await _userService.AddExperience(userId, foundQuest.ExpReward);
             await _userService.AddGold(userId, foundQuest.GoldReward);
 
             await _unitOfWork.Quest.UpdateAsync(foundQuest);
-            
+
             return Result<int>.Success(foundQuest.Id);
         }
         catch (Exception ex)

@@ -39,7 +39,6 @@ public static class QuestSeeder
 
         foreach (var party in parties)
         {
-            // Skip seeding if quests already exist for this party
             if (dbContext.Quests.Any(q => q.PartyId == party.Id)) continue;
 
             var quests = new List<Quest>();
