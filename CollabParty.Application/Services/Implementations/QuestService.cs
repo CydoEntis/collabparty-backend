@@ -101,13 +101,14 @@ public class QuestService : IQuestService
                 includeProperties:
                 "QuestAssignments.User.UnlockedAvatars.Avatar,QuestSteps,QuestComments,QuestFiles");
 
-            
+
             if (foundQuest == null)
                 return Result<QuestDetailResponseDto>.Failure($"No party with the {questId} exists");
 
-            var partyMembers = await _unitOfWork.PartyMember.GetAllAsync(p => p.PartyId == foundQuest.PartyId, includeProperties: "User.UnlockedAvatars.Avatar");
+            var partyMembers = await _unitOfWork.PartyMember.GetAllAsync(p => p.PartyId == foundQuest.PartyId,
+                includeProperties: "User.UnlockedAvatars.Avatar");
             var partyMembersDto = _mapper.Map<List<PartyMemberResponseDto>>(partyMembers);
-            
+
             var questDetailDto = _mapper.Map<QuestDetailResponseDto>(foundQuest);
             questDetailDto.PartyMembers = partyMembersDto;
             return Result<QuestDetailResponseDto>.Success(questDetailDto);
@@ -153,6 +154,85 @@ public class QuestService : IQuestService
             return Result<int>.Failure("An error occurred while completing quest.");
         }
     }
+
+    public async Task<Result> UpdateQuest(int questId, UpdateQuestRequestDto dto)
+    {
+        try
+        {
+            var existingQuest = await _unitOfWork.Quest.GetAsync(
+                q => q.Id == questId,
+                includeProperties: "QuestSteps,QuestAssignments"
+            );
+
+            if (existingQuest == null)
+            {
+                return Result.Failure($"Quest with ID {questId} not found.");
+            }
+
+            // Map updated properties
+            existingQuest.Name = dto.Name;
+            existingQuest.Description = dto.Description;
+            existingQuest.PriorityLevel = dto.PriorityLevel;
+            existingQuest.DueDate = dto.DueDate;
+
+            // Update rewards based on priority level
+            existingQuest.ExpReward = CalculateQuestExpReward(dto.PriorityLevel);
+            existingQuest.GoldReward = CalculateQuestGoldReward(dto.PriorityLevel);
+
+            existingQuest.UpdatedAt = DateTime.UtcNow;
+
+            if (dto.Steps != null && dto.Steps.Any())
+            {
+                // TODO: Add an update method for individual quest steps.
+                await _questStepService.UpdateQuestSteps(existingQuest.Id, dto.Steps);
+            }
+
+            await _unitOfWork.Quest.UpdateAsync(existingQuest);
+
+            return Result.Success("Quest updated successfully.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update quest.");
+            return Result.Failure("An error occurred while updating the quest.");
+        }
+    }
+
+    public async Task<Result> DeleteQuest(int questId)
+    {
+        try
+        {
+            var existingQuest = await _unitOfWork.Quest.GetAsync(
+                q => q.Id == questId,
+                includeProperties: "QuestSteps,QuestAssignments"
+            );
+
+            if (existingQuest == null)
+            {
+                return Result.Failure($"Quest with ID {questId} not found.");
+            }
+
+            foreach (var step in existingQuest.QuestSteps.ToList())
+            {
+                await _unitOfWork.QuestStep.RemoveAsync(step);
+            }
+
+            foreach (var assignment in existingQuest.QuestAssignments.ToList())
+            {
+                await _unitOfWork.QuestAssignment.RemoveAsync(assignment);
+            }
+
+            await _unitOfWork.Quest.RemoveAsync(existingQuest);
+
+            return Result.Success("Quest deleted successfully.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to delete quest.");
+            return Result.Failure("An error occurred while deleting the quest.");
+        }
+    }
+
 
     private int CalculateQuestExpReward(PriorityLevelOption priorityLevel)
     {
