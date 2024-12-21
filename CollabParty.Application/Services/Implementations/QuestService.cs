@@ -1,5 +1,6 @@
 using AutoMapper;
 using CollabParty.Application.Common.Dtos;
+using CollabParty.Application.Common.Dtos.Member;
 using CollabParty.Application.Common.Dtos.Party;
 using CollabParty.Application.Common.Dtos.Quest;
 using CollabParty.Application.Common.Models;
@@ -100,10 +101,15 @@ public class QuestService : IQuestService
                 includeProperties:
                 "QuestAssignments.User.UnlockedAvatars.Avatar,QuestSteps,QuestComments,QuestFiles");
 
+            
             if (foundQuest == null)
                 return Result<QuestDetailResponseDto>.Failure($"No party with the {questId} exists");
 
+            var partyMembers = await _unitOfWork.PartyMember.GetAllAsync(p => p.PartyId == foundQuest.PartyId, includeProperties: "User.UnlockedAvatars.Avatar");
+            var partyMembersDto = _mapper.Map<List<PartyMemberResponseDto>>(partyMembers);
+            
             var questDetailDto = _mapper.Map<QuestDetailResponseDto>(foundQuest);
+            questDetailDto.PartyMembers = partyMembersDto;
             return Result<QuestDetailResponseDto>.Success(questDetailDto);
         }
         catch (Exception ex)

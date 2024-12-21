@@ -49,7 +49,7 @@ namespace CollabParty.Application.Common.Mappings
 
 
             CreateMap<Quest, QuestDetailResponseDto>()
-                .ForMember(
+       .ForMember(
                     dest => dest.TotalPartyMembers, opt =>
                         opt.MapFrom(src => src.Party.PartyMembers.Count))
                 .ForMember(dest => dest.AssignedMembers, opt => opt.MapFrom(src =>
