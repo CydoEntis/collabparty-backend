@@ -182,7 +182,7 @@ public class PartyService : IPartyService
             }
 
             var existingParty = await _unitOfWork.Party.GetAsync(p => p.Id == partyId && p.CreatedById == userId,
-                includeProperties: "Quests,QuestAssignments,QuestFiles,QuestComments,PartyMembers");
+                includeProperties: "Quests,QuestAssignments,QuestFiles,QuestComments,QuestSteps,PartyMembers");
 
             if (existingParty == null)
             {
@@ -204,6 +204,11 @@ public class PartyService : IPartyService
                 foreach (var comment in quest.QuestComments.ToList())
                 {
                     await _unitOfWork.QuestComment.RemoveAsync(comment);
+                }
+
+                foreach (var step in quest.QuestSteps.ToList())
+                {
+                    await _unitOfWork.QuestStep.RemoveAsync(step);
                 }
 
                 await _unitOfWork.Quest.RemoveAsync(quest);
