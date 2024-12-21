@@ -98,7 +98,7 @@ public class QuestService : IQuestService
             var foundQuest = await _unitOfWork.Quest.GetAsync(
                 q => q.Id == questId,
                 includeProperties:
-                "Party.PartyMembers.User.UnlockedAvatars.Avatar,QuestAssignments.User.UnlockedAvatars.Avatar,QuestSteps,QuestComments,QuestFiles");
+                "QuestAssignments.User.UnlockedAvatars.Avatar,QuestSteps,QuestComments,QuestFiles");
 
             if (foundQuest == null)
                 return Result<QuestDetailResponseDto>.Failure($"No party with the {questId} exists");
