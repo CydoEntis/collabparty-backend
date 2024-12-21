@@ -81,42 +81,39 @@ public class PartyMemberService : IPartyMemberService
     {
         try
         {
-            // Fetch the user’s membership in the given party (without ExistsAsync)
             var userPartyMember = await _unitOfWork.PartyMember.GetAsync(
                 pm => pm.PartyId == partyId && pm.UserId == userId,
                 includeProperties: "User,User.UnlockedAvatars,User.UnlockedAvatars.Avatar");
 
-            // If the user is not part of the party, return an error
+
             if (userPartyMember == null)
             {
                 return Result<List<PartyMemberResponseDto>>.Failure(
                     "You are not a member of this party or the party does not exist.");
             }
 
-            // Fetch all party members for the given party
+
             var partyMembers = await _unitOfWork.PartyMember.GetAllAsync(
                 pm => pm.PartyId == partyId,
                 includeProperties: "User,User.UnlockedAvatars,User.UnlockedAvatars.Avatar");
 
-            // If no members are found, return an error
+
             if (!partyMembers.Any())
             {
                 return Result<List<PartyMemberResponseDto>>.Failure(
                     $"No members found for party with ID {partyId}.");
             }
 
-            // Map the party members to DTOs
+
             var partyMemberDtos = _mapper.Map<List<PartyMemberResponseDto>>(partyMembers);
             return Result<List<PartyMemberResponseDto>>.Success(partyMemberDtos);
         }
         catch (Exception ex)
         {
-            // Log the exception and return a failure result
             _logger.LogError(ex, "Failed to get party members for party {PartyId}.", partyId);
             return Result<List<PartyMemberResponseDto>>.Failure("An error occurred while fetching party members.");
         }
     }
-
 
 
     public async Task<Result<List<PartyMemberResponseDto>>> RemovePartyMembers(string userId, int partyId,
@@ -155,69 +152,145 @@ public class PartyMemberService : IPartyMemberService
         }
     }
 
-    public async Task<Result<List<PartyMemberResponseDto>>> UpdatePartyMemberRoles(string userId, int partyId,
-        UpdatePartyMembersRoleDto dto)
+    public async Task<Result> UpdatePartyMemberRoles(string userId, int partyId, List<UpdateRoleDto> roleChanges)
     {
         try
         {
-            var foundParty = await _unitOfWork.PartyMember.GetAsync(
-                up => up.PartyId == partyId && up.UserId == userId);
+            var party = await _unitOfWork.Party.GetAsync(p => p.Id == partyId && p.CreatedById == userId);
+            if (party == null)
+                return Result.Failure("Party not found or you do not have permission to update roles.");
 
-
-            if (foundParty == null)
-                return Result<List<PartyMemberResponseDto>>.Failure($"No party with ID {partyId} exists");
-
-            if (foundParty.Role == UserRole.Member)
-                return Result<List<PartyMemberResponseDto>>.Failure(
-                    "User must have a role of Leader or Captain to update member roles");
-
-            var allPartyMembers = await _unitOfWork.PartyMember
-                .GetAllAsync(up => up.PartyId == partyId);
-
-            var usersToUpdate = allPartyMembers
-                .Where(up => dto.NewRoles.Any(nr => nr.UserId == up.UserId))
-                .ToList();
-
-            if (!usersToUpdate.Any())
-                return Result<List<PartyMemberResponseDto>>.Failure("No matching users found to update roles");
-
-            foreach (var user in usersToUpdate)
+            // Update roles
+            var partyMembers = await _unitOfWork.PartyMember.GetAllAsync(pm => pm.PartyId == partyId);
+            foreach (var roleChange in roleChanges)
             {
-                var newRole = dto.NewRoles.First(nr => nr.UserId == user.UserId).Role;
-                user.Role = newRole;
+                var member = partyMembers.FirstOrDefault(pm => pm.UserId == roleChange.UserId);
+                if (member == null)
+                    continue;
+
+                member.Role = roleChange.NewRole;
+                if (roleChange.NewRole == UserRole.Leader)
+                {
+                    // Transfer leadership
+                    party.CreatedById = roleChange.UserId;
+                }
             }
 
-            await _unitOfWork.PartyMember.UpdateUsersAsync(usersToUpdate);
-
-            var PartyMemberResponseDtos = _mapper.Map<List<PartyMemberResponseDto>>(usersToUpdate);
-            return Result<List<PartyMemberResponseDto>>.Success(PartyMemberResponseDtos);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to update party member roles");
-            return Result<List<PartyMemberResponseDto>>.Failure("An error occurred while updating member roles.");
-        }
-    }
-
-    public async Task<Result> LeaveParty(string userId, int partyId)
-    {
-        try
-        {
-            var foundParty = await _unitOfWork.PartyMember.GetAsync(
-                up => up.PartyId == partyId && up.UserId == userId);
-
-            if (foundParty == null)
-                return Result.Failure($"No party with ID {partyId} exists");
-
-
-            await _unitOfWork.PartyMember.RemoveAsync(foundParty);
+            await _unitOfWork.PartyMember.UpdateUsersAsync(partyMembers);
+            await _unitOfWork.Party.UpdateAsync(party);
 
             return Result.Success();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to update party member roles");
+            _logger.LogError(ex, "Failed to update party member roles.");
             return Result.Failure("An error occurred while updating member roles.");
+        }
+    }
+
+
+    public async Task<Result> LeaveParty(string userId, int partyId)
+    {
+        try
+        {
+            var foundPartyMember =
+                await _unitOfWork.PartyMember.GetAsync(pm => pm.PartyId == partyId && pm.UserId == userId);
+            if (foundPartyMember == null)
+                return Result.Failure("You are not a member of this party.");
+
+            var questAssignments =
+                await _unitOfWork.QuestAssignment.GetAllAsync(qa => qa.UserId == userId && qa.Quest.PartyId == partyId);
+            foreach (var assignment in questAssignments)
+            {
+                await _unitOfWork.QuestAssignment.RemoveAsync(assignment);
+            }
+
+            // Remove party member
+            await _unitOfWork.PartyMember.RemoveAsync(foundPartyMember);
+
+            return Result.Success();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to leave the party.");
+            return Result.Failure("An error occurred while leaving the party.");
+        }
+    }
+
+
+    public async Task<Result> InvitePartyMember(string userId, int partyId, string inviteeEmail)
+    {
+        try
+        {
+            var party = await _unitOfWork.Party.GetAsync(p => p.Id == partyId && p.CreatedById == userId);
+
+            if (party == null)
+                return Result.Failure("Party not found or you do not have permission to invite members.");
+
+            // Generate token (for simplicity, we'll just use a GUID as a token)
+            var token = Guid.NewGuid().ToString();
+            var tokenExpiration = DateTime.UtcNow.AddMinutes(15); // Token expires after 15 minutes
+
+            // Create an invite record in the database (store token and expiration date)
+            var invite = new PartyMemberInvite
+            {
+                PartyId = partyId,
+                InviterUserId = userId,
+                InviteeEmail = inviteeEmail,
+                Token = token,
+                ExpirationDate = tokenExpiration
+            };
+
+            await _unitOfWork.PartyMemberInvite.CreateAsync(invite);
+
+            // Send email with the invite link (simulating an email send here)
+            var inviteLink = $"https://yourapp.com/party/invite/{token}";
+            await _emailService.SendInviteEmailAsync(inviteeEmail, inviteLink);
+
+            return Result.Success();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to invite party member.");
+            return Result.Failure("An error occurred while sending the invite.");
+        }
+    }
+
+    public async Task<Result> AcceptInvite(string token)
+    {
+        try
+        {
+            // Fetch the invite by token
+            var invite = await _unitOfWork.PartyMemberInvite.GetAsync(i => i.Token == token);
+
+            if (invite == null || invite.ExpirationDate < DateTime.UtcNow)
+                return Result.Failure("Invalid or expired invite token.");
+
+            // Check if user already a member of the party
+            var isMember = await _unitOfWork.PartyMember.ExistsAsync(pm =>
+                pm.PartyId == invite.PartyId && pm.UserId == invite.InviteeUserId);
+            if (isMember)
+                return Result.Failure("User is already a member of the party.");
+
+            // Add the invitee as a party member
+            var partyMember = new PartyMember
+            {
+                PartyId = invite.PartyId,
+                UserId = invite.InviteeUserId,
+                Role = UserRole.Member,
+                JoinedAt = DateTime.UtcNow
+            };
+            await _unitOfWork.PartyMember.CreateAsync(partyMember);
+
+            // Remove the invite to prevent re-use
+            await _unitOfWork.PartyMemberInvite.RemoveAsync(invite);
+
+            return Result.Success();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to accept invite.");
+            return Result.Failure("An error occurred while accepting the invite.");
         }
     }
 }
