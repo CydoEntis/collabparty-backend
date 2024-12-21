@@ -141,7 +141,7 @@ public class QuestController : ControllerBase
             var result = await _questService.UpdateQuest(questId, dto);
 
             if (result.IsSuccess)
-                return Ok(ApiResponse.Success(result.Message));
+                return Ok(ApiResponse.Success(result.Data));
 
             var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
             return BadRequest(ApiResponse.ValidationError(formattedErrors));
@@ -167,7 +167,7 @@ public class QuestController : ControllerBase
             var result = await _questService.DeleteQuest(questId);
 
             if (result.IsSuccess)
-                return Ok(ApiResponse.Success(result.Message));
+                return Ok(ApiResponse.Success(result.Data));
 
             var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
             return BadRequest(ApiResponse.ValidationError(formattedErrors));

@@ -155,7 +155,7 @@ public class QuestService : IQuestService
         }
     }
 
-    public async Task<Result> UpdateQuest(int questId, UpdateQuestRequestDto dto)
+    public async Task<Result<int>> UpdateQuest(int questId, UpdateQuestRequestDto dto)
     {
         try
         {
@@ -166,7 +166,7 @@ public class QuestService : IQuestService
 
             if (existingQuest == null)
             {
-                return Result.Failure($"Quest with ID {questId} not found.");
+                return Result<int>.Failure($"Quest with ID {questId} not found.");
             }
 
             // Map updated properties
@@ -187,33 +187,34 @@ public class QuestService : IQuestService
                 var stepUpdateResult = await _questStepService.UpdateQuestSteps(existingQuest.Id, dto.Steps);
                 if (!stepUpdateResult.IsSuccess)
                 {
-                    return Result.Failure(stepUpdateResult.Message);
+                    return Result<int>.Failure(stepUpdateResult.Message);
                 }
             }
 
             // Update quest assignments
             if (dto.AssignedPartyMembers != null)
             {
-                var assignmentUpdateResult = await _questAssignmentService.UpdateQuestAssignments(existingQuest.Id, dto.AssignedPartyMembers);
+                var assignmentUpdateResult =
+                    await _questAssignmentService.UpdateQuestAssignments(existingQuest.Id, dto.AssignedPartyMembers);
                 if (!assignmentUpdateResult.IsSuccess)
                 {
-                    return Result.Failure(assignmentUpdateResult.Message);
+                    return Result<int>.Failure(assignmentUpdateResult.Message);
                 }
             }
 
             await _unitOfWork.Quest.UpdateAsync(existingQuest);
 
-            return Result.Success("Quest updated successfully.");
+            return Result<int>.Success(existingQuest.Id);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to update quest.");
-            return Result.Failure("An error occurred while updating the quest.");
+            return Result<int>.Failure("An error occurred while updating the quest.");
         }
     }
 
 
-    public async Task<Result> DeleteQuest(int questId)
+    public async Task<Result<int>> DeleteQuest(int questId)
     {
         try
         {
@@ -224,7 +225,7 @@ public class QuestService : IQuestService
 
             if (existingQuest == null)
             {
-                return Result.Failure($"Quest with ID {questId} not found.");
+                return Result<int>.Failure($"Quest with ID {questId} not found.");
             }
 
             // Remove quest steps
@@ -242,15 +243,14 @@ public class QuestService : IQuestService
             // Remove the quest itself
             await _unitOfWork.Quest.RemoveAsync(existingQuest);
 
-            return Result.Success("Quest deleted successfully.");
+            return Result<int>.Success(existingQuest.Id);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to delete quest.");
-            return Result.Failure("An error occurred while deleting the quest.");
+            return Result<int>.Failure("An error occurred while deleting the quest.");
         }
     }
-
 
 
     private int CalculateQuestExpReward(PriorityLevelOption priorityLevel)
