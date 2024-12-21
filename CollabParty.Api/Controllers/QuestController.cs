@@ -138,7 +138,7 @@ public class QuestController : ControllerBase
                 return Unauthorized(ApiResponse.Error("authorization", "Unauthorized access.",
                     HttpStatusCode.Unauthorized));
 
-            var result = await _questService.UpdateQuest(questId, dto);
+            var result = await _questService.UpdateQuest(userId, questId, dto);
 
             if (result.IsSuccess)
                 return Ok(ApiResponse.Success(result.Data));
@@ -164,7 +164,7 @@ public class QuestController : ControllerBase
                 return Unauthorized(ApiResponse.Error("authorization", "Unauthorized access.",
                     HttpStatusCode.Unauthorized));
 
-            var result = await _questService.DeleteQuest(questId);
+            var result = await _questService.DeleteQuest(userId, questId);
 
             if (result.IsSuccess)
                 return Ok(ApiResponse.Success(result.Data));

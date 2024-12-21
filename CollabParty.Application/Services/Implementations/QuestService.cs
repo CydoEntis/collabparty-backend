@@ -155,10 +155,19 @@ public class QuestService : IQuestService
         }
     }
 
-    public async Task<Result<int>> UpdateQuest(int questId, UpdateQuestRequestDto dto)
+    public async Task<Result<int>> UpdateQuest(string userId, int questId, UpdateQuestRequestDto dto)
     {
         try
         {
+            
+            var user = await _unitOfWork.PartyMember.GetAsync(p => p.UserId == userId);
+            
+            if (user.Role != UserRole.Leader || user.Role != UserRole.Captain)
+            {
+                return Result<int>.Failure("You do not have permission to update quests.");
+            }
+            
+            
             var existingQuest = await _unitOfWork.Quest.GetAsync(
                 q => q.Id == questId,
                 includeProperties: "QuestSteps,QuestAssignments"
@@ -214,10 +223,18 @@ public class QuestService : IQuestService
     }
 
 
-    public async Task<Result<int>> DeleteQuest(int questId)
+    public async Task<Result<int>> DeleteQuest(string userId, int questId)
     {
         try
         {
+
+            var user = await _unitOfWork.PartyMember.GetAsync(p => p.UserId == userId);
+            
+            if (user.Role != UserRole.Leader || user.Role != UserRole.Captain)
+            {
+                return Result<int>.Failure("You do not have permission to delete quests.");
+            }
+
             var existingQuest = await _unitOfWork.Quest.GetAsync(
                 q => q.Id == questId,
                 includeProperties: "QuestSteps,QuestAssignments"
