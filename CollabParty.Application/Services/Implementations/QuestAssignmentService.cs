@@ -45,4 +45,85 @@ public class QuestAssignmentService : IQuestAssignmentService
             return Result.Failure("An error occurred while assigning members to the quest.");
         }
     }
+    
+    public async Task<Result> UpdateQuestAssignments(int questId, string[] updatedPartyMemberIds)
+    {
+        try
+        {
+            var existingAssignments = await _unitOfWork.QuestAssignment.GetAllAsync(qa => qa.QuestId == questId);
+
+            if (existingAssignments == null)
+            {
+                return Result.Failure($"No quest assignments found for quest ID {questId}.");
+            }
+
+            var assignmentsToDelete = existingAssignments
+                .Where(assignment => !updatedPartyMemberIds.Contains(assignment.UserId))
+                .ToList();
+
+            var assignmentsToAdd = updatedPartyMemberIds
+                .Where(userId => !existingAssignments.Any(assignment => assignment.UserId == userId))
+                .Select(userId => new QuestAssignment
+                {
+                    QuestId = questId,
+                    UserId = userId,
+                    AssignedAt = DateTime.UtcNow,
+                    IsCompleted = false
+                })
+                .ToList();
+
+            foreach (var assignment in assignmentsToDelete)
+            {
+                await _unitOfWork.QuestAssignment.RemoveAsync(assignment);
+            }
+
+            foreach (var newAssignment in assignmentsToAdd)
+            {
+                await _unitOfWork.QuestAssignment.CreateAsync(newAssignment);
+            }
+
+            return Result.Success("Quest assignments updated successfully.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update quest assignments.");
+            return Result.Failure("An error occurred while updating quest assignments.");
+        }
+    }
+    
+    public async Task<Result> DeleteQuestAssignments(int questId, string[] partyMemberIdsToDelete)
+    {
+        try
+        {
+            var existingAssignments = await _unitOfWork.QuestAssignment.GetAllAsync(qa => qa.QuestId == questId);
+
+            if (existingAssignments == null || !existingAssignments.Any())
+            {
+                return Result.Failure($"No quest assignments found for quest ID {questId}.");
+            }
+
+            var assignmentsToDelete = existingAssignments
+                .Where(assignment => partyMemberIdsToDelete.Contains(assignment.UserId))
+                .ToList();
+
+            if (!assignmentsToDelete.Any())
+            {
+                return Result.Failure("No matching quest assignments found to delete.");
+            }
+
+            foreach (var assignment in assignmentsToDelete)
+            {
+                await _unitOfWork.QuestAssignment.RemoveAsync(assignment);
+            }
+
+            return Result.Success("Quest assignments deleted successfully.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to delete quest assignments.");
+            return Result.Failure("An error occurred while deleting quest assignments.");
+        }
+    }
+
+
 }

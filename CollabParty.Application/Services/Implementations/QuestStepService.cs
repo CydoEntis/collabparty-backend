@@ -147,4 +147,37 @@ public class QuestStepService : IQuestStepService
             return Result.Failure("An error occurred while updating quest steps.");
         }
     }
+
+
+    public async Task<Result> RemoveQuestSteps(int questId, List<int> stepIdsToRemove)
+    {
+        try
+        {
+            var existingSteps = await _unitOfWork.QuestStep.GetAllAsync(qs => qs.QuestId == questId);
+
+            if (existingSteps == null || !existingSteps.Any())
+            {
+                return Result.Failure($"No quest steps found for quest ID {questId}.");
+            }
+
+            var stepsToDelete = existingSteps.Where(qs => stepIdsToRemove.Contains(qs.Id)).ToList();
+
+            if (!stepsToDelete.Any())
+            {
+                return Result.Failure("No matching quest steps found to remove.");
+            }
+
+            foreach (var step in stepsToDelete)
+            {
+                await _unitOfWork.QuestStep.RemoveAsync(step);
+            }
+
+            return Result.Success("Quest steps removed successfully.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to remove quest steps.");
+            return Result.Failure("An error occurred while removing quest steps.");
+        }
+    }
 }

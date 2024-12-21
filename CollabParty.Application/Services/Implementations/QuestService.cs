@@ -184,7 +184,7 @@ public class QuestService : IQuestService
             if (dto.Steps != null && dto.Steps.Any())
             {
                 // TODO: Add an update method for individual quest steps.
-                // await _questStepService.UpdateQuestSteps(existingQuest.Id, dto.Steps);
+                await _questStepService.UpdateQuestSteps(existingQuest.Id, dto.Steps);
             }
 
             await _unitOfWork.Quest.UpdateAsync(existingQuest);
