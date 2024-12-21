@@ -159,15 +159,14 @@ public class QuestService : IQuestService
     {
         try
         {
-            
             var user = await _unitOfWork.PartyMember.GetAsync(p => p.UserId == userId);
-            
-            if (user.Role != UserRole.Leader || user.Role != UserRole.Captain)
+
+            if (user.Role is not (UserRole.Leader or UserRole.Captain))
             {
                 return Result<int>.Failure("You do not have permission to update quests.");
             }
-            
-            
+
+
             var existingQuest = await _unitOfWork.Quest.GetAsync(
                 q => q.Id == questId,
                 includeProperties: "QuestSteps,QuestAssignments"
@@ -227,13 +226,13 @@ public class QuestService : IQuestService
     {
         try
         {
-
             var user = await _unitOfWork.PartyMember.GetAsync(p => p.UserId == userId);
-            
-            if (user.Role != UserRole.Leader || user.Role != UserRole.Captain)
+
+            if (user.Role is not (UserRole.Leader or UserRole.Captain))
             {
-                return Result<int>.Failure("You do not have permission to delete quests.");
+                return Result<int>.Failure("You do not have permission to update quests.");
             }
+
 
             var existingQuest = await _unitOfWork.Quest.GetAsync(
                 q => q.Id == questId,

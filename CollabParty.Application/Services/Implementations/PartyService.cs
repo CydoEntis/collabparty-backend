@@ -66,15 +66,15 @@ public class PartyService : IPartyService
                 EndDate = dto.EndDate,
                 PageNumber = dto.PageNumber,
                 PageSize = dto.PageSize,
-                IncludeProperties = "Quests,PartyMembers.User.UnlockedAvatars.Avatar", 
-                Filter = p => p.PartyMembers.Any(pm => pm.UserId == userId), 
+                IncludeProperties = "Quests,PartyMembers.User.UnlockedAvatars.Avatar",
+                Filter = p => p.PartyMembers.Any(pm => pm.UserId == userId),
             };
 
             var paginatedResult = await _unitOfWork.Party.GetPaginatedAsync(queryParams);
 
             foreach (var party in paginatedResult.Items)
             {
-                party.Quests ??= new List<Quest>(); 
+                party.Quests ??= new List<Quest>();
                 party.Quests = party.Quests.Where(q => q.PartyId == party.Id).ToList();
             }
 
@@ -91,7 +91,6 @@ public class PartyService : IPartyService
             return Result<PaginatedResult<PartyDto>>.Failure("An error occurred while fetching parties.");
         }
     }
-
 
 
     public async Task<Result<List<PartyDto>>> GetRecentParties(string userId)
@@ -132,6 +131,97 @@ public class PartyService : IPartyService
         {
             _logger.LogError(ex, "Failed to get party with id");
             return Result<PartyDto>.Failure("An error occurred while fetching party.");
+        }
+    }
+
+    public async Task<Result<int>> UpdateParty(string userId, int partyId, UpdatePartyDto dto)
+    {
+        try
+        {
+            var user = await _unitOfWork.PartyMember.GetAsync(p => p.UserId == userId);
+
+            if (user.Role is not UserRole.Leader)
+            {
+                return Result<int>.Failure("You do not have permission to update party.");
+            }
+
+
+            var existingParty = await _unitOfWork.Party.GetAsync(p => p.Id == partyId && p.CreatedById == userId,
+                includeProperties: "PartyMembers");
+
+            if (existingParty == null)
+            {
+                return Result<int>.Failure("Party not found or you do not have permission to update this party.");
+            }
+
+            existingParty.Name = dto.PartyName;
+            existingParty.Description = dto.Description;
+            existingParty.UpdatedAt = DateTime.UtcNow;
+
+            await _unitOfWork.Party.UpdateAsync(existingParty);
+
+
+            return Result<int>.Success(existingParty.Id);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update party.");
+            return Result<int>.Failure("An error occurred while updating the party.");
+        }
+    }
+
+    public async Task<Result<int>> DeleteParty(string userId, int partyId)
+    {
+        try
+        {
+            var user = await _unitOfWork.PartyMember.GetAsync(p => p.UserId == userId);
+
+            if (user.Role is not UserRole.Leader)
+            {
+                return Result<int>.Failure("You do not have permission to delete party.");
+            }
+
+            var existingParty = await _unitOfWork.Party.GetAsync(p => p.Id == partyId && p.CreatedById == userId,
+                includeProperties: "Quests,QuestAssignments,QuestFiles,QuestComments,PartyMembers");
+
+            if (existingParty == null)
+            {
+                return Result<int>.Failure("Party not found or you do not have permission to delete this party.");
+            }
+
+            foreach (var quest in existingParty.Quests.ToList())
+            {
+                foreach (var assignment in quest.QuestAssignments.ToList())
+                {
+                    await _unitOfWork.QuestAssignment.RemoveAsync(assignment);
+                }
+
+                foreach (var file in quest.QuestFiles.ToList())
+                {
+                    await _unitOfWork.QuestFile.RemoveAsync(file);
+                }
+
+                foreach (var comment in quest.QuestComments.ToList())
+                {
+                    await _unitOfWork.QuestComment.RemoveAsync(comment);
+                }
+
+                await _unitOfWork.Quest.RemoveAsync(quest);
+            }
+
+            foreach (var partyMember in existingParty.PartyMembers.ToList())
+            {
+                await _unitOfWork.PartyMember.RemoveAsync(partyMember);
+            }
+
+            await _unitOfWork.Party.RemoveAsync(existingParty);
+
+            return Result<int>.Success(partyId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to delete party.");
+            return Result<int>.Failure("An error occurred while deleting the party.");
         }
     }
 }
