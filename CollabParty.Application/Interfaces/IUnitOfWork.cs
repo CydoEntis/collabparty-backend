@@ -15,5 +15,6 @@ public interface IUnitOfWork
     ISessionRepository Session { get; }
     IUnlockedAvatarRepository UnlockedAvatar { get; }
     IUserRepository User { get; }
+    IPartyInviteRepository PartyInvite { get; }
     Task SaveAsync();
 }

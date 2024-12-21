@@ -2,6 +2,7 @@ namespace CollabParty.Domain.Entities;
 
 public class PartyInvite
 {
+    public int Id { get; set; }
     public int PartyId { get; set; }
     public string InviterUserId { get; set; }
     public string InviteeEmail { get; set; }

@@ -23,6 +23,7 @@ public class UnitOfWork : IUnitOfWork
     public IUnlockedAvatarRepository UnlockedAvatar { get; private set; }
     // public IUserPartyRepository UserParty { get; private set; }
     public IUserRepository User { get; private set; }
+    public IPartyInviteRepository PartyInvite { get; private set; }
 
     public UnitOfWork(AppDbContext db)
     {

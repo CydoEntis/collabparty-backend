@@ -1,5 +1,6 @@
 using System.Net;
 using System.Security.Claims;
+using CollabParty.Application.Common.Dtos.Member;
 using CollabParty.Application.Common.Dtos.User;
 using CollabParty.Application.Common.Models;
 using CollabParty.Application.Common.Utility;
@@ -57,9 +58,9 @@ public class PartyMemberController : ControllerBase
         return BadRequest(ApiResponse.ValidationError(formattedErrors));
     }
 
-    [HttpPut("{partyId:int}/members/change-role")]
+    [HttpPut("{partyId:int}/update-roles")]
     public async Task<ActionResult<ApiResponse>> UpdatePartyMembersRole(int partyId,
-        [FromBody] UpdatePartyMembersRoleDto dto)
+        [FromBody] List<UpdatePartyMemberRoleRequestDto> dto)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
@@ -70,7 +71,7 @@ public class PartyMemberController : ControllerBase
         var result = await _partyMemberService.UpdatePartyMemberRoles(userId, partyId, dto);
 
         if (result.IsSuccess)
-            return Ok(ApiResponse.Success(result.Data));
+            return Ok(ApiResponse.Success(result.Message));
 
         var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
         return BadRequest(ApiResponse.ValidationError(formattedErrors));

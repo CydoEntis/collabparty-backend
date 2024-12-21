@@ -11,4 +11,6 @@ public interface IPartyService
     Task<Result<PaginatedResult<PartyDto>>> GetAllPartiesForUser(string userId, QueryParamsDto dto);
     Task<Result<List<PartyDto>>> GetRecentParties(string userId);
     Task<Result<PartyDto>> GetParty(string userId, int partyId);
+    Task<Result<int>> UpdateParty(string userId, int partyId, UpdatePartyDto dto);
+    Task<Result<int>> DeleteParty(string userId, int partyId);
 }

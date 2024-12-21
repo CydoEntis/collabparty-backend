@@ -223,79 +223,79 @@ public class PartyMemberService : IPartyMemberService
     }
 
 
-    public async Task<Result> InvitePartyMember(string userId, int partyId, string inviteeEmail)
-    {
-        try
-        {
-            var party = await _unitOfWork.Party.GetAsync(p => p.Id == partyId && p.CreatedById == userId);
-
-            if (party == null)
-                return Result.Failure("Party not found or you do not have permission to invite members.");
-
-            // Generate token (for simplicity, we'll just use a GUID as a token)
-            var token = Guid.NewGuid().ToString();
-            var tokenExpiration = DateTime.UtcNow.AddMinutes(15); // Token expires after 15 minutes
-
-            // Create an invite record in the database (store token and expiration date)
-            var invite = new PartyInvite
-            {
-                PartyId = partyId,
-                InviterUserId = userId,
-                InviteeEmail = inviteeEmail,
-                Token = token,
-                ExpirationDate = tokenExpiration
-            };
-
-            await _unitOfWork.PartyMemberInvite.CreateAsync(invite);
-
-            // Send email with the invite link (simulating an email send here)
-            var inviteLink = $"https://yourapp.com/party/invite/{token}";
-            await _emailService.SendInviteEmailAsync(inviteeEmail, inviteLink);
-
-            return Result.Success();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to invite party member.");
-            return Result.Failure("An error occurred while sending the invite.");
-        }
-    }
-
-    public async Task<Result> AcceptInvite(string token)
-    {
-        try
-        {
-            // Fetch the invite by token
-            var invite = await _unitOfWork.PartyMemberInvite.GetAsync(i => i.Token == token);
-
-            if (invite == null || invite.ExpirationDate < DateTime.UtcNow)
-                return Result.Failure("Invalid or expired invite token.");
-
-            // Check if user already a member of the party
-            var isMember = await _unitOfWork.PartyMember.ExistsAsync(pm =>
-                pm.PartyId == invite.PartyId && pm.UserId == invite.InviteeUserId);
-            if (isMember)
-                return Result.Failure("User is already a member of the party.");
-
-            // Add the invitee as a party member
-            var partyMember = new PartyMember
-            {
-                PartyId = invite.PartyId,
-                UserId = invite.InviteeUserId,
-                Role = UserRole.Member,
-                JoinedAt = DateTime.UtcNow
-            };
-            await _unitOfWork.PartyMember.CreateAsync(partyMember);
-
-            // Remove the invite to prevent re-use
-            await _unitOfWork.PartyMemberInvite.RemoveAsync(invite);
-
-            return Result.Success();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to accept invite.");
-            return Result.Failure("An error occurred while accepting the invite.");
-        }
-    }
+    // public async Task<Result> InvitePartyMember(string userId, int partyId, string inviteeEmail)
+    // {
+    //     try
+    //     {
+    //         var party = await _unitOfWork.Party.GetAsync(p => p.Id == partyId && p.CreatedById == userId);
+    //
+    //         if (party == null)
+    //             return Result.Failure("Party not found or you do not have permission to invite members.");
+    //
+    //         // Generate token (for simplicity, we'll just use a GUID as a token)
+    //         var token = Guid.NewGuid().ToString();
+    //         var tokenExpiration = DateTime.UtcNow.AddMinutes(15); // Token expires after 15 minutes
+    //
+    //         // Create an invite record in the database (store token and expiration date)
+    //         var invite = new PartyInvite
+    //         {
+    //             PartyId = partyId,
+    //             InviterUserId = userId,
+    //             InviteeEmail = inviteeEmail,
+    //             Token = token,
+    //             ExpirationDate = tokenExpiration
+    //         };
+    //
+    //         await _unitOfWork.PartyInvite.CreateAsync(invite);
+    //
+    //         // Send email with the invite link (simulating an email send here)
+    //         var inviteLink = $"https://yourapp.com/party/invite/{token}";
+    //         await _emailService.SendInviteEmailAsync(inviteeEmail, inviteLink);
+    //
+    //         return Result.Success();
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         _logger.LogError(ex, "Failed to invite party member.");
+    //         return Result.Failure("An error occurred while sending the invite.");
+    //     }
+    // }
+    //
+    // public async Task<Result> AcceptInvite(string token)
+    // {
+    //     try
+    //     {
+    //         // Fetch the invite by token
+    //         var invite = await _unitOfWork.PartyInvite.GetAsync(i => i.Token == token);
+    //
+    //         if (invite == null || invite.ExpirationDate < DateTime.UtcNow)
+    //             return Result.Failure("Invalid or expired invite token.");
+    //
+    //         // Check if user already a member of the party
+    //         var isMember = await _unitOfWork.PartyMember.ExistsAsync(pm =>
+    //             pm.PartyId == invite.PartyId && pm.UserId == invite.InviteeUserId);
+    //         if (isMember)
+    //             return Result.Failure("User is already a member of the party.");
+    //
+    //         // Add the invitee as a party member
+    //         var partyMember = new PartyMember
+    //         {
+    //             PartyId = invite.PartyId,
+    //             UserId = invite.InviteeUserId,
+    //             Role = UserRole.Member,
+    //             JoinedAt = DateTime.UtcNow
+    //         };
+    //         await _unitOfWork.PartyMember.CreateAsync(partyMember);
+    //
+    //         // Remove the invite to prevent re-use
+    //         await _unitOfWork.PartyMemberInvite.RemoveAsync(invite);
+    //
+    //         return Result.Success();
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         _logger.LogError(ex, "Failed to accept invite.");
+    //         return Result.Failure("An error occurred while accepting the invite.");
+    //     }
+    // }
 }

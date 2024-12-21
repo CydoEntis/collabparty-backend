@@ -108,58 +108,39 @@ public class PartyController : ControllerBase
         return BadRequest(ApiResponse.ValidationError(formattedErrors));
     }
 
-    // [HttpGet("{partyId:int}/members")]
-    // public async Task<ActionResult<ApiResponse>> GetPartyMembers(int partyId)
-    // {
-    //     var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-    //
-    //     if (string.IsNullOrEmpty(userId))
-    //         return Unauthorized(ApiResponse.Error("authorization", "Unauthorized access.",
-    //             HttpStatusCode.Unauthorized));
-    //
-    //     var result = await _partyService.GetPartyMembers(userId, partyId);
-    //
-    //     if (result.IsSuccess)
-    //         return Ok(ApiResponse.Success(result.Data));
-    //
-    //     var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
-    //     return BadRequest(ApiResponse.ValidationError(formattedErrors));
-    // }
+    [HttpPut("{partyId:int}")]
+    public async Task<ActionResult<ApiResponse>> UpdateParty(int partyId, [FromBody] UpdatePartyDto dto)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-    // [HttpDelete("{partyId:int}/members")]
-    // public async Task<ActionResult<ApiResponse>> RemovePartyMembers(int partyId, [FromBody] RemoverUserFromPartyDto dto)
-    // {
-    //     var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-    //
-    //     if (string.IsNullOrEmpty(userId))
-    //         return Unauthorized(ApiResponse.Error("authorization", "Unauthorized access.",
-    //             HttpStatusCode.Unauthorized));
-    //
-    //     var result = await _userPartyService.RemovePartyMembers(userId, partyId, dto);
-    //
-    //     if (result.IsSuccess)
-    //         return Ok(ApiResponse.Success(result.Data));
-    //
-    //     var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
-    //     return BadRequest(ApiResponse.ValidationError(formattedErrors));
-    // }
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized(ApiResponse.Error("authorization", "Unauthorized access.",
+                HttpStatusCode.Unauthorized));
 
-    // [HttpPut("{partyId:int}/members/change-role")]
-    // public async Task<ActionResult<ApiResponse>> UpdatePartyMembersRole(int partyId,
-    //     [FromBody] UpdatePartyMembersRoleDto dto)
-    // {
-    //     var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-    //
-    //     if (string.IsNullOrEmpty(userId))
-    //         return Unauthorized(ApiResponse.Error("authorization", "Unauthorized access.",
-    //             HttpStatusCode.Unauthorized));
-    //
-    //     var result = await _userPartyService.UpdatePartyMemberRoles(userId, partyId, dto);
-    //
-    //     if (result.IsSuccess)
-    //         return Ok(ApiResponse.Success(result.Data));
-    //
-    //     var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
-    //     return BadRequest(ApiResponse.ValidationError(formattedErrors));
-    // }
+        var result = await _partyService.UpdateParty(userId, partyId, dto);
+
+        if (result.IsSuccess)
+            return Ok(ApiResponse.Success(result.Data));
+
+        var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
+        return BadRequest(ApiResponse.ValidationError(formattedErrors));
+    }
+
+    [HttpDelete("{partyId:int}")]
+    public async Task<ActionResult<ApiResponse>> DeleteParty(int partyId)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized(ApiResponse.Error("authorization", "Unauthorized access.",
+                HttpStatusCode.Unauthorized));
+
+        var result = await _partyService.DeleteParty(userId, partyId);
+
+        if (result.IsSuccess)
+            return Ok(ApiResponse.Success(result.Data));
+
+        var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
+        return BadRequest(ApiResponse.ValidationError(formattedErrors));
+    }
 }
