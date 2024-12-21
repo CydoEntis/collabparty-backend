@@ -52,7 +52,27 @@ namespace CollabParty.Application.Common.Mappings
                 .ForMember(dest => dest.PartyMembers,
                     opt => opt.MapFrom(src => src.Party.PartyMembers.Select(pm => pm.User))).ForMember(
                     dest => dest.TotalPartyMembers, opt =>
-                        opt.MapFrom(src => src.Party.PartyMembers.Count));
+                        opt.MapFrom(src => src.Party.PartyMembers.Count))
+                .ForMember(dest => dest.AssignedMembers, opt => opt.MapFrom(src =>
+                    src.QuestAssignments.Select(qa =>
+                        new PartyMemberResponseDto()
+                        {
+                            PartyId = qa.Quest.PartyId,
+                            UserId = qa.UserId,
+                            Username = qa.User.UserName,
+                            CurrentLevel = qa.User.CurrentLevel,
+                            Avatar = qa.User.UnlockedAvatars
+                                .Where(ua => ua.IsActive)
+                                .Select(a => new AvatarResponseDto
+                                {
+                                    Id = a.Avatar.Id,
+                                    Name = a.Avatar.Name,
+                                    DisplayName = a.Avatar.DisplayName,
+                                    ImageUrl = a.Avatar.ImageUrl
+                                })
+                                .FirstOrDefault()
+                        }))
+                );
         }
     }
 }

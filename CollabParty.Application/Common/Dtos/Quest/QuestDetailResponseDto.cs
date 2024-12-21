@@ -25,6 +25,7 @@ public class QuestDetailResponseDto
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public DateTime DueDate { get; set; } = DateTime.UtcNow;
     public List<PartyMemberResponseDto> PartyMembers { get; set; }
+    public List<PartyMemberResponseDto> AssignedMembers { get; set; }
     public int TotalPartyMembers { get; set; }
     public ICollection<QuestStepResponseDto> QuestSteps { get; set; }
     public ICollection<QuestCommentResponseDto> QuestComments { get; set; }

@@ -70,7 +70,7 @@ public class QuestService : IQuestService
                 IncludeProperties =
                     "QuestAssignments.User.UnlockedAvatars.Avatar,QuestSteps",
                 Filter = q =>
-                    q.PartyId == partyId && !q.IsCompleted && q.Party.PartyMembers.Any(qm => qm.UserId == userId),
+                    q.PartyId == partyId && !q.IsCompleted && q.QuestAssignments.Any(qa => qa.UserId == userId),
             };
 
             var paginatedResult = await _unitOfWork.Quest.GetPaginatedAsync(queryParams);
@@ -98,7 +98,7 @@ public class QuestService : IQuestService
             var foundQuest = await _unitOfWork.Quest.GetAsync(
                 q => q.Id == questId,
                 includeProperties:
-                "Party.PartyMembers.User.UnlockedAvatars.Avatar,QuestSteps,QuestComments,QuestFiles");
+                "Party.PartyMembers.User.UnlockedAvatars.Avatar,QuestAssignments.User.UnlockedAvatars.Avatar,QuestSteps,QuestComments,QuestFiles");
 
             if (foundQuest == null)
                 return Result<QuestDetailResponseDto>.Failure($"No party with the {questId} exists");
