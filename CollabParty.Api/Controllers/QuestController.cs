@@ -126,4 +126,56 @@ public class QuestController : ControllerBase
                 HttpStatusCode.InternalServerError);
         }
     }
+
+    [HttpPut("quests/{questId:int}")]
+    public async Task<ActionResult<ApiResponse>> UpdateQuest(int questId, [FromBody] UpdateQuestRequestDto dto)
+    {
+        try
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized(ApiResponse.Error("authorization", "Unauthorized access.",
+                    HttpStatusCode.Unauthorized));
+
+            var result = await _questService.UpdateQuest(questId, dto);
+
+            if (result.IsSuccess)
+                return Ok(ApiResponse.Success(result.Message));
+
+            var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
+            return BadRequest(ApiResponse.ValidationError(formattedErrors));
+        }
+        catch (Exception ex)
+        {
+            return ApiResponse.Error("internal", ex.InnerException?.Message ?? ex.Message,
+                HttpStatusCode.InternalServerError);
+        }
+    }
+
+    [HttpDelete("quests/{questId:int}")]
+    public async Task<ActionResult<ApiResponse>> DeleteQuest(int questId)
+    {
+        try
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized(ApiResponse.Error("authorization", "Unauthorized access.",
+                    HttpStatusCode.Unauthorized));
+
+            var result = await _questService.DeleteQuest(questId);
+
+            if (result.IsSuccess)
+                return Ok(ApiResponse.Success(result.Message));
+
+            var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
+            return BadRequest(ApiResponse.ValidationError(formattedErrors));
+        }
+        catch (Exception ex)
+        {
+            return ApiResponse.Error("internal", ex.InnerException?.Message ?? ex.Message,
+                HttpStatusCode.InternalServerError);
+        }
+    }
 }
