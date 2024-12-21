@@ -84,4 +84,67 @@ public class QuestStepService : IQuestStepService
             return Result<int>.Failure("An error occurred while updating the quest step.");
         }
     }
+
+    public async Task<Result> UpdateQuestSteps(int questId, List<UpdateQuestStepDto> updatedSteps)
+    {
+        try
+        {
+            var existingSteps = await _unitOfWork.QuestStep.GetAllAsync(qs => qs.QuestId == questId);
+            if (existingSteps == null)
+            {
+                return Result.Failure($"No quest steps found for quest ID {questId}.");
+            }
+
+            var stepsToAdd = new List<QuestStep>();
+            var stepsToUpdate = new List<QuestStep>();
+            var stepsToDelete = existingSteps.Where(es => updatedSteps.All(us => us.Id != es.Id)).ToList();
+
+            foreach (var stepDto in updatedSteps)
+            {
+                if (stepDto.Id == 0)
+                {
+                    stepsToAdd.Add(new QuestStep
+                    {
+                        QuestId = questId,
+                        Description = stepDto.Description,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    });
+                }
+                else
+                {
+                    var existingStep = existingSteps.FirstOrDefault(es => es.Id == stepDto.Id);
+                    if (existingStep != null)
+                    {
+                        existingStep.Description = stepDto.Description;
+                        existingStep.UpdatedAt = DateTime.UtcNow;
+
+                        stepsToUpdate.Add(existingStep);
+                    }
+                }
+            }
+
+            foreach (var step in stepsToAdd)
+            {
+                await _unitOfWork.QuestStep.CreateAsync(step);
+            }
+
+            foreach (var step in stepsToUpdate)
+            {
+                await _unitOfWork.QuestStep.UpdateAsync(step);
+            }
+
+            foreach (var step in stepsToDelete)
+            {
+                await _unitOfWork.QuestStep.RemoveAsync(step);
+            }
+
+            return Result.Success("Quest steps updated successfully.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update quest steps.");
+            return Result.Failure("An error occurred while updating quest steps.");
+        }
+    }
 }
