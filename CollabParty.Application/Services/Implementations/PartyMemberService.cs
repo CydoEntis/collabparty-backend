@@ -152,7 +152,8 @@ public class PartyMemberService : IPartyMemberService
         }
     }
 
-    public async Task<Result> UpdatePartyMemberRoles(string userId, int partyId, List<UpdateRoleDto> roleChanges)
+    public async Task<Result> UpdatePartyMemberRoles(string userId, int partyId,
+        List<UpdatePartyMemberRoleRequestDto> roleChanges)
     {
         try
         {
@@ -162,9 +163,13 @@ public class PartyMemberService : IPartyMemberService
 
             // Update roles
             var partyMembers = await _unitOfWork.PartyMember.GetAllAsync(pm => pm.PartyId == partyId);
+
+            // Convert IEnumerable to List
+            var partyMembersList = partyMembers.ToList();
+
             foreach (var roleChange in roleChanges)
             {
-                var member = partyMembers.FirstOrDefault(pm => pm.UserId == roleChange.UserId);
+                var member = partyMembersList.FirstOrDefault(pm => pm.UserId == roleChange.UserId);
                 if (member == null)
                     continue;
 
@@ -176,7 +181,7 @@ public class PartyMemberService : IPartyMemberService
                 }
             }
 
-            await _unitOfWork.PartyMember.UpdateUsersAsync(partyMembers);
+            await _unitOfWork.PartyMember.UpdateUsersAsync(partyMembersList);
             await _unitOfWork.Party.UpdateAsync(party);
 
             return Result.Success();
@@ -232,7 +237,7 @@ public class PartyMemberService : IPartyMemberService
             var tokenExpiration = DateTime.UtcNow.AddMinutes(15); // Token expires after 15 minutes
 
             // Create an invite record in the database (store token and expiration date)
-            var invite = new PartyMemberInvite
+            var invite = new PartyInvite
             {
                 PartyId = partyId,
                 InviterUserId = userId,
