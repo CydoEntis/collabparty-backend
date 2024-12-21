@@ -181,10 +181,24 @@ public class QuestService : IQuestService
 
             existingQuest.UpdatedAt = DateTime.UtcNow;
 
+            // Update quest steps
             if (dto.Steps != null && dto.Steps.Any())
             {
-                // TODO: Add an update method for individual quest steps.
-                await _questStepService.UpdateQuestSteps(existingQuest.Id, dto.Steps);
+                var stepUpdateResult = await _questStepService.UpdateQuestSteps(existingQuest.Id, dto.Steps);
+                if (!stepUpdateResult.IsSuccess)
+                {
+                    return Result.Failure(stepUpdateResult.Message);
+                }
+            }
+
+            // Update quest assignments
+            if (dto.AssignedPartyMembers != null)
+            {
+                var assignmentUpdateResult = await _questAssignmentService.UpdateQuestAssignments(existingQuest.Id, dto.AssignedPartyMembers);
+                if (!assignmentUpdateResult.IsSuccess)
+                {
+                    return Result.Failure(assignmentUpdateResult.Message);
+                }
             }
 
             await _unitOfWork.Quest.UpdateAsync(existingQuest);
@@ -197,6 +211,7 @@ public class QuestService : IQuestService
             return Result.Failure("An error occurred while updating the quest.");
         }
     }
+
 
     public async Task<Result> DeleteQuest(int questId)
     {
@@ -212,16 +227,19 @@ public class QuestService : IQuestService
                 return Result.Failure($"Quest with ID {questId} not found.");
             }
 
+            // Remove quest steps
             foreach (var step in existingQuest.QuestSteps.ToList())
             {
                 await _unitOfWork.QuestStep.RemoveAsync(step);
             }
 
+            // Remove quest assignments
             foreach (var assignment in existingQuest.QuestAssignments.ToList())
             {
                 await _unitOfWork.QuestAssignment.RemoveAsync(assignment);
             }
 
+            // Remove the quest itself
             await _unitOfWork.Quest.RemoveAsync(existingQuest);
 
             return Result.Success("Quest deleted successfully.");
@@ -232,6 +250,7 @@ public class QuestService : IQuestService
             return Result.Failure("An error occurred while deleting the quest.");
         }
     }
+
 
 
     private int CalculateQuestExpReward(PriorityLevelOption priorityLevel)

@@ -14,4 +14,6 @@ public interface IQuestService
 
     Task<Result<QuestDetailResponseDto>> GetQuest(int questId);
     Task<Result<int>> CompleteQuest(string userId, int questId);
+    Task<Result> UpdateQuest(int questId, UpdateQuestRequestDto dto);
+    Task<Result> DeleteQuest(int questId);
 }
