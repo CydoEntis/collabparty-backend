@@ -66,22 +66,32 @@ public class PartyService : IPartyService
                 EndDate = dto.EndDate,
                 PageNumber = dto.PageNumber,
                 PageSize = dto.PageSize,
-                IncludeProperties = "Quests,PartyMembers.User.UnlockedAvatars.Avatar",
+                IncludeProperties = "PartyMembers.User.UnlockedAvatars.Avatar",
                 Filter = p => p.PartyMembers.Any(pm => pm.UserId == userId),
             };
 
             var paginatedResult = await _unitOfWork.Party.GetPaginatedAsync(queryParams);
 
-            foreach (var party in paginatedResult.Items)
-            {
-                party.Quests ??= new List<Quest>();
-                party.Quests = party.Quests.Where(q => q.PartyId == party.Id).ToList();
-            }
+            var partyIds = paginatedResult.Items.Select(p => p.Id).ToList();
+            var quests = await _unitOfWork.Quest.GetAllAsync(q => partyIds.Contains(q.PartyId));
 
             var partyDto = _mapper.Map<List<PartyDto>>(paginatedResult.Items);
 
-            var result = new PaginatedResult<PartyDto>(partyDto, paginatedResult.TotalItems,
-                paginatedResult.CurrentPage, queryParams.PageSize);
+            foreach (var party in partyDto)
+            {
+                var partyQuests = quests.Where(q => q.PartyId == party.Id).ToList();
+
+                party.TotalQuests = partyQuests.Count;
+                party.CompletedQuests = partyQuests.Count(q => q.IsCompleted);
+                party.PastDueQuests = partyQuests.Count(q => q.DueDate < DateTime.UtcNow);
+            }
+
+            var result = new PaginatedResult<PartyDto>(
+                partyDto,
+                paginatedResult.TotalItems,
+                paginatedResult.CurrentPage,
+                queryParams.PageSize
+            );
 
             return Result<PaginatedResult<PartyDto>>.Success(result);
         }
@@ -138,15 +148,15 @@ public class PartyService : IPartyService
     {
         try
         {
-            var user = await _unitOfWork.PartyMember.GetAsync(p => p.UserId == userId);
-
+            var user = await _unitOfWork.PartyMember.GetAsync(p => p.UserId == userId && p.PartyId == partyId);
+            
             if (user.Role is not UserRole.Leader)
             {
                 return Result<int>.Failure("You do not have permission to update party.");
             }
 
 
-            var existingParty = await _unitOfWork.Party.GetAsync(p => p.Id == partyId && p.CreatedById == userId,
+            var existingParty = await _unitOfWork.Party.GetAsync(p => p.Id == partyId,
                 includeProperties: "PartyMembers");
 
             if (existingParty == null)
@@ -154,7 +164,7 @@ public class PartyService : IPartyService
                 return Result<int>.Failure("Party not found or you do not have permission to update this party.");
             }
 
-            existingParty.Name = dto.PartyName;
+            existingParty.Name = dto.Name;
             existingParty.Description = dto.Description;
             existingParty.UpdatedAt = DateTime.UtcNow;
 
