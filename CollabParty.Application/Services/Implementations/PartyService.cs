@@ -183,7 +183,8 @@ public class PartyService : IPartyService
             }
 
             var existingParty = await _unitOfWork.Party.GetAsync(p => p.Id == partyId && p.CreatedById == userId,
-                includeProperties: "Quests,QuestAssignments,QuestFiles,QuestComments,QuestSteps,PartyMembers");
+                includeProperties:
+                "Quests.QuestAssignments,Quests.QuestFiles,Quests.QuestComments,Quests.QuestSteps,PartyMembers");
 
             if (existingParty == null)
             {
