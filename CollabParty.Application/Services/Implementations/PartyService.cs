@@ -66,8 +66,8 @@ public class PartyService : IPartyService
                 EndDate = dto.EndDate,
                 PageNumber = dto.PageNumber,
                 PageSize = dto.PageSize,
-                IncludeProperties = "Quests,PartyMembers.User.UnlockedAvatars.Avatar",  
-                Filter = p => p.PartyMembers.Any(pm => pm.UserId == userId),  
+                IncludeProperties = "Quests,PartyMembers.User.UnlockedAvatars.Avatar",
+                Filter = p => p.PartyMembers.Any(pm => pm.UserId == userId),
             };
 
             var paginatedResult = await _unitOfWork.Party.GetPaginatedAsync(queryParams);
@@ -91,7 +91,6 @@ public class PartyService : IPartyService
             return Result<PaginatedResult<PartyDto>>.Failure("An error occurred while fetching parties.");
         }
     }
-
 
 
     public async Task<Result<List<PartyDto>>> GetRecentParties(string userId)
@@ -175,7 +174,8 @@ public class PartyService : IPartyService
     {
         try
         {
-            var user = await _unitOfWork.PartyMember.GetAsync(p => p.UserId == userId);
+            var user = await _unitOfWork.PartyMember.GetAsync(p => p.UserId == userId && p.PartyId == partyId);
+
 
             if (user.Role is not UserRole.Leader)
             {
