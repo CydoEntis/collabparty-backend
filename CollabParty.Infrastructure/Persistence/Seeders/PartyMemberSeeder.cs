@@ -3,63 +3,59 @@ using CollabParty.Domain.Enums;
 using CollabParty.Infrastructure.Data;
 using System.Linq;
 
-namespace CollabParty.Infrastructure.Persistence.Seeders
+namespace CollabParty.Infrastructure.Persistence.Seeders;
+
+public class PartyMemberSeeder
 {
-    public class PartyMemberSeeder
+    public static void Seed(AppDbContext dbContext)
     {
-        public static void Seed(AppDbContext dbContext)
+        var random = new Random();
+        var users = dbContext.Users.ToList();
+        var parties = dbContext.Parties.ToList();
+
+        using (var transaction = dbContext.Database.BeginTransaction())
         {
-            var random = new Random();
-            var users = dbContext.Users.ToList();
-            var parties = dbContext.Parties.ToList();
-
-            using (var transaction = dbContext.Database.BeginTransaction())
+            try
             {
-                try
+                foreach (var party in parties)
                 {
-                    foreach (var party in parties)
+                    var existingMembers = dbContext.PartyMembers.Where(pm => pm.PartyId == party.Id).ToList();
+
+                    if (existingMembers.Count == 0)
                     {
-                        var existingMembers = dbContext.PartyMembers.Where(pm => pm.PartyId == party.Id).ToList();
+                        int numberOfMembers = random.Next(2, 6);
 
-                        if (existingMembers.Count > 0)
+                        var availableUsers = users.Where(u => !existingMembers.Select(pm => pm.UserId).Contains(u.Id))
+                            .OrderBy(u => random.Next())
+                            .Take(numberOfMembers)
+                            .ToList();
+
+                        for (int i = 0; i < availableUsers.Count; i++)
                         {
-                            int numberOfAdditionalMembers = random.Next(1, 11) - existingMembers.Count;
-                            numberOfAdditionalMembers = Math.Min(numberOfAdditionalMembers, users.Count - existingMembers.Count);
+                            var user = availableUsers[i];
+                            UserRole role =
+                                (i == 0) ? UserRole.Captain : UserRole.Member;
 
-                            var existingUserIds = existingMembers.Select(pm => pm.UserId).ToList();
-                            var availableUsers = users.Where(u => !existingUserIds.Contains(u.Id)).OrderBy(u => random.Next()).Take(numberOfAdditionalMembers).ToList();
-
-                            for (int i = 0; i < availableUsers.Count; i++)
+                            var partyMember = new PartyMember
                             {
-                                var user = availableUsers[i];
-                                UserRole role;
+                                UserId = user.Id,
+                                PartyId = party.Id,
+                                Role = role,
+                                JoinedAt = DateTime.UtcNow
+                            };
 
-                                if (i == 0)
-                                    role = UserRole.Captain;
-                                else
-                                    role = UserRole.Member;
-
-                                var partyMember = new PartyMember
-                                {
-                                    UserId = user.Id,
-                                    PartyId = party.Id,
-                                    Role = role,
-                                    JoinedAt = DateTime.UtcNow
-                                };
-
-                                dbContext.PartyMembers.Add(partyMember);
-                            }
+                            dbContext.PartyMembers.Add(partyMember);
                         }
                     }
+                }
 
-                    dbContext.SaveChanges();
-                    transaction.Commit();
-                }
-                catch (Exception ex)
-                {
-                    transaction.Rollback();
-                    throw new Exception("An error occurred while seeding party members.", ex);
-                }
+                dbContext.SaveChanges();
+                transaction.Commit();
+            }
+            catch (Exception ex)
+            {
+                transaction.Rollback();
+                throw new Exception("An error occurred while seeding party members.", ex);
             }
         }
     }
