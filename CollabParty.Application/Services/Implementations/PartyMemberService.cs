@@ -176,7 +176,6 @@ public class PartyMemberService : IPartyMemberService
                 member.Role = roleChange.NewRole;
                 if (roleChange.NewRole == UserRole.Leader)
                 {
-                    // Transfer leadership
                     party.CreatedById = roleChange.UserId;
                 }
             }
@@ -213,6 +212,18 @@ public class PartyMemberService : IPartyMemberService
             // Remove party member
             await _unitOfWork.PartyMember.RemoveAsync(foundPartyMember);
 
+            var remainingMembers =
+                await _unitOfWork.PartyMember.GetAllAsync(pm => pm.PartyId == partyId);
+            if (!remainingMembers.Any())
+            {
+                // No members left, delete the party
+                var party = await _unitOfWork.Party.GetAsync(p => p.Id == partyId);
+                if (party != null)
+                {
+                    await _unitOfWork.Party.RemoveAsync(party);
+                }
+            }
+
             return Result.Success();
         }
         catch (Exception ex)
@@ -221,6 +232,7 @@ public class PartyMemberService : IPartyMemberService
             return Result.Failure("An error occurred while leaving the party.");
         }
     }
+
 
 
     // public async Task<Result> InvitePartyMember(string userId, int partyId, string inviteeEmail)
