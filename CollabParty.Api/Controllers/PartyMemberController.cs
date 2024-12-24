@@ -94,4 +94,6 @@ public class PartyMemberController : ControllerBase
         var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
         return BadRequest(ApiResponse.ValidationError(formattedErrors));
     }
+    
+
 }

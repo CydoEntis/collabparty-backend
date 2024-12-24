@@ -58,6 +58,15 @@ public class QuestService : IQuestService
     {
         try
         {
+            // Fetch user's role in the party
+            var partyMember = await _unitOfWork.PartyMember
+                .GetAsync(pm => pm.UserId == userId && pm.PartyId == partyId);
+
+            if (partyMember == null)
+                return Result<PaginatedResult<QuestResponseDto>>.Failure("User is not part of the party.");
+
+            var isLeaderOrCaptain = partyMember.Role == UserRole.Leader || partyMember.Role == UserRole.Captain;
+
             var queryParams = new QueryParams<Quest>
             {
                 Search = dto.Search,
@@ -71,11 +80,11 @@ public class QuestService : IQuestService
                 IncludeProperties =
                     "QuestAssignments.User.UnlockedAvatars.Avatar,QuestSteps",
                 Filter = q =>
-                    q.PartyId == partyId && !q.IsCompleted && q.QuestAssignments.Any(qa => qa.UserId == userId),
+                    q.PartyId == partyId && !q.IsCompleted && 
+                    (isLeaderOrCaptain || q.QuestAssignments.Any(qa => qa.UserId == userId)),
             };
 
             var paginatedResult = await _unitOfWork.Quest.GetPaginatedAsync(queryParams);
-
 
             var questDtos = _mapper.Map<List<QuestResponseDto>>(paginatedResult.Items);
 
@@ -86,10 +95,11 @@ public class QuestService : IQuestService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to fetch user parties.");
-            return Result<PaginatedResult<QuestResponseDto>>.Failure("An error occurred while fetching parties.");
+            _logger.LogError(ex, "Failed to fetch user quests.");
+            return Result<PaginatedResult<QuestResponseDto>>.Failure("An error occurred while fetching quests.");
         }
     }
+
 
 
     public async Task<Result<QuestDetailResponseDto>> GetQuest(int questId)
