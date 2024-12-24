@@ -11,4 +11,5 @@ public class PartyMemberResponseDto
     public int CurrentLevel { get; set; }
     public UserRole? Role { get; set; }
     public AvatarResponseDto Avatar { get; set; }
+    public DateTime JoinedAt { get; set; }
 }
