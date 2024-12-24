@@ -36,12 +36,17 @@ public class PartyMemberSeeder
                             UserRole role =
                                 (i == 0) ? UserRole.Captain : UserRole.Member;
 
+                            // Generate a random date within the current month and before today
+                            var today = DateTime.UtcNow.Date;
+                            var startOfMonth = new DateTime(today.Year, today.Month, 1);
+                            int randomDay = random.Next(0, (today - startOfMonth).Days);
+
                             var partyMember = new PartyMember
                             {
                                 UserId = user.Id,
                                 PartyId = party.Id,
                                 Role = role,
-                                JoinedAt = DateTime.UtcNow
+                                JoinedAt = startOfMonth.AddDays(randomDay)
                             };
 
                             dbContext.PartyMembers.Add(partyMember);
