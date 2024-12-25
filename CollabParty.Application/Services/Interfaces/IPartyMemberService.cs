@@ -18,4 +18,6 @@ public interface IPartyMemberService
         List<UpdatePartyMemberRoleRequestDto> roleChanges);
 
     Task<Result> LeaveParty(string userId, int partyId);
+
+    Task<Result> ChangePartyLeader(int partyId, ChangePartyLeaderRequestDto dto);
 }

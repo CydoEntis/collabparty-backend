@@ -40,6 +40,33 @@ public class PartyMemberController : ControllerBase
         return BadRequest(ApiResponse.ValidationError(formattedErrors));
     }
 
+    [HttpPost("{partyId}/change-leader")]
+    public async Task<ActionResult<ApiResponse>> ChangePartyLeader(
+        int partyId,
+        [FromBody] ChangePartyLeaderRequestDto dto)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized(ApiResponse.Error(
+                "authorization",
+                "Unauthorized access.",
+                HttpStatusCode.Unauthorized));
+        }
+
+        var result = await _partyMemberService.ChangePartyLeader(partyId, dto);
+
+        if (result.IsSuccess)
+        {
+            return Ok(ApiResponse.Success(result.Message));
+        }
+
+        var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
+        return BadRequest(ApiResponse.ValidationError(formattedErrors));
+    }
+
+
     [HttpDelete("{partyId:int}/remove-members")]
     public async Task<ActionResult<ApiResponse>> RemovePartyMembers(int partyId, [FromBody] RemoverUserFromPartyDto dto)
     {
@@ -94,6 +121,4 @@ public class PartyMemberController : ControllerBase
         var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
         return BadRequest(ApiResponse.ValidationError(formattedErrors));
     }
-    
-
 }
