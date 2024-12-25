@@ -116,31 +116,31 @@ public class PartyMemberService : IPartyMemberService
     }
 
 
-    public async Task<Result> ChangePartyLeader(int partyId, ChangePartyLeaderRequestDto dto)
+    public async Task<Result<int>> ChangePartyLeader(int partyId, ChangePartyLeaderRequestDto dto)
     {
         if (partyId <= 0)
-            return Result.Failure("Invalid party ID.");
+            return Result<int>.Failure("Invalid party ID.");
 
         if (string.IsNullOrEmpty(dto.CurrentLeaderId) || string.IsNullOrEmpty(dto.NewLeaderId))
-            return Result.Failure("Both current and new leader IDs are required.");
+            return Result<int>.Failure("Both current and new leader IDs are required.");
 
         try
         {
             var party = await _unitOfWork.Party.GetAsync(p => p.Id == partyId);
             if (party == null)
-                return Result.Failure("Party not found.");
+                return Result<int>.Failure("Party not found.");
 
             var currentLeader = await _unitOfWork.PartyMember.GetAsync(
                 pm => pm.PartyId == partyId && pm.UserId == dto.CurrentLeaderId);
 
             if (currentLeader == null || currentLeader.Role != UserRole.Leader)
-                return Result.Failure("Current leader is not valid or not the leader of the party.");
+                return Result<int>.Failure("Current leader is not valid or not the leader of the party.");
 
             var newLeader = await _unitOfWork.PartyMember.GetAsync(
                 pm => pm.PartyId == partyId && pm.UserId == dto.NewLeaderId);
 
             if (newLeader == null)
-                return Result.Failure("New leader not found in the party.");
+                return Result<int>.Failure("New leader not found in the party.");
 
             currentLeader.Role = dto.NewRoleForPreviousLeader;
             newLeader.Role = UserRole.Leader;
@@ -151,12 +151,12 @@ public class PartyMemberService : IPartyMemberService
             await _unitOfWork.PartyMember.UpdateAsync(newLeader);
             await _unitOfWork.Party.UpdateAsync(party);
 
-            return Result.Success("Party leader updated successfully.");
+            return Result<int>.Success(partyId);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to change party leader.");
-            return Result.Failure("An error occurred while changing the party leader.");
+            return Result<int>.Failure("An error occurred while changing the party leader.");
         }
     }
 

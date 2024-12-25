@@ -40,7 +40,9 @@ public class PartyMemberController : ControllerBase
         return BadRequest(ApiResponse.ValidationError(formattedErrors));
     }
 
-    [HttpPost("{partyId}/change-leader")]
+    
+    
+    [HttpPut("{partyId}/change-leader")]
     public async Task<ActionResult<ApiResponse>> ChangePartyLeader(
         int partyId,
         [FromBody] ChangePartyLeaderRequestDto dto)
@@ -59,7 +61,7 @@ public class PartyMemberController : ControllerBase
 
         if (result.IsSuccess)
         {
-            return Ok(ApiResponse.Success(result.Message));
+            return Ok(ApiResponse.Success(result.Data));
         }
 
         var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);

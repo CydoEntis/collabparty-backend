@@ -19,5 +19,5 @@ public interface IPartyMemberService
 
     Task<Result> LeaveParty(string userId, int partyId);
 
-    Task<Result> ChangePartyLeader(int partyId, ChangePartyLeaderRequestDto dto);
+    Task<Result<int>> ChangePartyLeader(int partyId, ChangePartyLeaderRequestDto dto);
 }
