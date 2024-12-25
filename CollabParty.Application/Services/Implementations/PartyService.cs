@@ -128,13 +128,23 @@ public class PartyService : IPartyService
         {
             var foundParty = await _unitOfWork.Party.GetAsync(
                 p => p.Id == partyId && p.PartyMembers.Any(pm => pm.PartyId == partyId),
-                includeProperties:
-                "PartyMembers.User.UnlockedAvatars.Avatar");
+                includeProperties: "PartyMembers.User.UnlockedAvatars.Avatar");
 
             if (foundParty == null)
                 return Result<PartyDto>.Failure($"No party with the {partyId} exists");
 
+            // Retrieve the current user's role
+            var currentUserPartyMember = foundParty.PartyMembers
+                .FirstOrDefault(pm => pm.UserId == userId);
+
+            if (currentUserPartyMember == null)
+                return Result<PartyDto>.Failure("User is not a member of the party.");
+
             var partyDto = _mapper.Map<PartyDto>(foundParty);
+
+            // Map the current user's role to the DTO
+            partyDto.CurrentUserRole = currentUserPartyMember.Role; // Assuming "Role" is a property in PartyMember
+
             return Result<PartyDto>.Success(partyDto);
         }
         catch (Exception ex)
@@ -144,12 +154,13 @@ public class PartyService : IPartyService
         }
     }
 
+
     public async Task<Result<int>> UpdateParty(string userId, int partyId, UpdatePartyDto dto)
     {
         try
         {
             var user = await _unitOfWork.PartyMember.GetAsync(p => p.UserId == userId && p.PartyId == partyId);
-            
+
             if (user.Role is not UserRole.Leader)
             {
                 return Result<int>.Failure("You do not have permission to update party.");
