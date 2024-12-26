@@ -2,6 +2,7 @@ using System.Net;
 using System.Security.Claims;
 using CollabParty.Application.Common.Dtos;
 using CollabParty.Application.Common.Dtos.Quest;
+using CollabParty.Application.Common.Dtos.QuestComments;
 using CollabParty.Application.Common.Models;
 using CollabParty.Application.Common.Utility;
 using CollabParty.Application.Services.Interfaces;
@@ -16,10 +17,12 @@ namespace CollabParty.Api.Controllers;
 public class QuestController : ControllerBase
 {
     private readonly IQuestService _questService;
+    private readonly IQuestCommentService _questCommentService;
 
-    public QuestController(IQuestService questService)
+    public QuestController(IQuestService questService, IQuestCommentService questCommentService)
     {
         _questService = questService;
+        _questCommentService = questCommentService;
     }
 
     [HttpPost("quests")]
@@ -168,6 +171,93 @@ public class QuestController : ControllerBase
 
             if (result.IsSuccess)
                 return Ok(ApiResponse.Success(result.Data));
+
+            var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
+            return BadRequest(ApiResponse.ValidationError(formattedErrors));
+        }
+        catch (Exception ex)
+        {
+            return ApiResponse.Error("internal", ex.InnerException?.Message ?? ex.Message,
+                HttpStatusCode.InternalServerError);
+        }
+    }
+
+    [HttpPost("quests/{questId:int}/comments")]
+    public async Task<ActionResult<ApiResponse>> AddComment(int questId, [FromBody] AddCommentRequestDto dto)
+    {
+        try
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized(ApiResponse.Error("authorization", "Unauthorized access.",
+                    HttpStatusCode.Unauthorized));
+
+            dto.QuestId = questId;
+            dto.UserId = userId;
+
+            var result = await _questCommentService.AddComment(dto);
+
+            if (result.IsSuccess)
+                return Ok(ApiResponse.Success(result.Data));
+
+            var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
+            return BadRequest(ApiResponse.ValidationError(formattedErrors));
+        }
+        catch (Exception ex)
+        {
+            return ApiResponse.Error("internal", ex.InnerException?.Message ?? ex.Message,
+                HttpStatusCode.InternalServerError);
+        }
+    }
+
+    // Edit an existing comment
+    [HttpPut("quests/{questId:int}/comments/{commentId:int}")]
+    public async Task<ActionResult<ApiResponse>> EditComment(int questId, int commentId,
+        [FromBody] EditCommentRequestDto dto)
+    {
+        try
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized(ApiResponse.Error("authorization", "Unauthorized access.",
+                    HttpStatusCode.Unauthorized));
+
+            dto.Id = commentId;
+            dto.UserId = userId;
+
+            var result = await _questCommentService.EditComment(dto);
+
+            if (result.IsSuccess)
+                return Ok(ApiResponse.Success("Comment updated successfully."));
+
+            var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
+            return BadRequest(ApiResponse.ValidationError(formattedErrors));
+        }
+        catch (Exception ex)
+        {
+            return ApiResponse.Error("internal", ex.InnerException?.Message ?? ex.Message,
+                HttpStatusCode.InternalServerError);
+        }
+    }
+
+    // Delete a comment
+    [HttpDelete("quests/{questId:int}/comments/{commentId:int}")]
+    public async Task<ActionResult<ApiResponse>> DeleteComment(int questId, int commentId)
+    {
+        try
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized(ApiResponse.Error("authorization", "Unauthorized access.",
+                    HttpStatusCode.Unauthorized));
+
+            var result = await _questCommentService.DeleteComment(commentId, userId);
+
+            if (result.IsSuccess)
+                return Ok(ApiResponse.Success("Comment deleted successfully."));
 
             var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
             return BadRequest(ApiResponse.ValidationError(formattedErrors));
