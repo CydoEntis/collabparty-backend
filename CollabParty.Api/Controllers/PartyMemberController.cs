@@ -40,8 +40,7 @@ public class PartyMemberController : ControllerBase
         return BadRequest(ApiResponse.ValidationError(formattedErrors));
     }
 
-    
-    
+
     [HttpPut("{partyId}/change-leader")]
     public async Task<ActionResult<ApiResponse>> ChangePartyLeader(
         int partyId,
@@ -69,42 +68,32 @@ public class PartyMemberController : ControllerBase
     }
 
 
-    [HttpDelete("{partyId:int}/remove-members")]
-    public async Task<ActionResult<ApiResponse>> RemovePartyMembers(int partyId, [FromBody] RemoverUserFromPartyDto dto)
+    [HttpPut("{partyId}/members")]
+    public async Task<ActionResult<ApiResponse>> UpdatePartyMembers(
+        int partyId,
+        [FromBody] List<MemberUpdateDto> dto)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
         if (string.IsNullOrEmpty(userId))
-            return Unauthorized(ApiResponse.Error("authorization", "Unauthorized access.",
+        {
+            return Unauthorized(ApiResponse.Error(
+                "authorization",
+                "Unauthorized access.",
                 HttpStatusCode.Unauthorized));
+        }
 
-        var result = await _partyMemberService.RemovePartyMembers(userId, partyId, dto);
+        var result = await _partyMemberService.UpdatePartyMembers(partyId, dto);
 
         if (result.IsSuccess)
+        {
             return Ok(ApiResponse.Success(result.Data));
+        }
 
         var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
         return BadRequest(ApiResponse.ValidationError(formattedErrors));
     }
 
-    [HttpPut("{partyId:int}/update-roles")]
-    public async Task<ActionResult<ApiResponse>> UpdatePartyMembersRole(int partyId,
-        [FromBody] List<UpdatePartyMemberRoleRequestDto> dto)
-    {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-        if (string.IsNullOrEmpty(userId))
-            return Unauthorized(ApiResponse.Error("authorization", "Unauthorized access.",
-                HttpStatusCode.Unauthorized));
-
-        var result = await _partyMemberService.UpdatePartyMemberRoles(userId, partyId, dto);
-
-        if (result.IsSuccess)
-            return Ok(ApiResponse.Success(result.Message));
-
-        var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
-        return BadRequest(ApiResponse.ValidationError(formattedErrors));
-    }
 
     [HttpDelete("{partyId:int}/leave")]
     public async Task<ActionResult<ApiResponse>> LeaveParty(int partyId)

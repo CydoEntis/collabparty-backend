@@ -161,79 +161,41 @@ public class PartyMemberService : IPartyMemberService
     }
 
 
-    public async Task<Result<List<PartyMemberResponseDto>>> RemovePartyMembers(string userId, int partyId,
-        RemoverUserFromPartyDto dto)
+    public async Task<Result<int>> UpdatePartyMembers(int partyId, List<MemberUpdateDto> membersToUpdate)
     {
         try
         {
-            var foundParty = await _unitOfWork.PartyMember.GetAsync(
-                up => up.PartyId == partyId && up.UserId == userId,
-                includeProperties: "PartyMembers");
-
-            if (foundParty == null)
-                return Result<List<PartyMemberResponseDto>>.Failure($"No party with the {dto.PartyId} exists");
-
-            if (foundParty.Role == UserRole.Member)
-                return Result<List<PartyMemberResponseDto>>.Failure(
-                    "User must have a role of Leader or Captain to remove members");
-
-            var usersToRemove = await _unitOfWork.PartyMember.GetAllAsync(
-                up => up.PartyId == dto.PartyId && dto.UserIds.Contains(up.UserId));
-
-            var usersToRemoveList = usersToRemove.ToList();
-
-            if (!usersToRemoveList.Any())
-                return Result<List<PartyMemberResponseDto>>.Failure("Users to remove could not be found");
-
-            await _unitOfWork.PartyMember.RemoveUsersAsync(usersToRemoveList);
-
-            var memberDtos = _mapper.Map<List<PartyMemberResponseDto>>(usersToRemoveList);
-            return Result<List<PartyMemberResponseDto>>.Success(memberDtos);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to get party members");
-            return Result<List<PartyMemberResponseDto>>.Failure("An error occurred while fetching party members.");
-        }
-    }
-
-    public async Task<Result> UpdatePartyMemberRoles(string userId, int partyId,
-        List<UpdatePartyMemberRoleRequestDto> roleChanges)
-    {
-        try
-        {
-            var party = await _unitOfWork.Party.GetAsync(p => p.Id == partyId && p.CreatedById == userId);
+            var party = await _unitOfWork.Party.GetAsync(p => p.Id == partyId);
             if (party == null)
-                return Result.Failure("Party not found or you do not have permission to update roles.");
+                return Result<int>.Failure("Party not found.");
 
-            // Update roles
-            var partyMembers = await _unitOfWork.PartyMember.GetAllAsync(pm => pm.PartyId == partyId);
-
-            // Convert IEnumerable to List
-            var partyMembersList = partyMembers.ToList();
-
-            foreach (var roleChange in roleChanges)
+            foreach (var member in membersToUpdate)
             {
-                var member = partyMembersList.FirstOrDefault(pm => pm.UserId == roleChange.UserId);
-                if (member == null)
-                    continue;
+                var partyMember = await _unitOfWork.PartyMember.GetAsync(
+                    pm => pm.PartyId == partyId && pm.UserId == member.Id);
 
-                member.Role = roleChange.NewRole;
-                if (roleChange.NewRole == UserRole.Leader)
+                if (partyMember == null)
+                    return Result<int>.Failure($"Member with ID {member.Id} not found in the party.");
+
+                if (member.Delete)
                 {
-                    party.CreatedById = roleChange.UserId;
+                    await _unitOfWork.PartyMember.RemoveAsync(partyMember);
+                }
+                else
+                {
+                    partyMember.Role = (UserRole)member.Role;
+                    await _unitOfWork.PartyMember.UpdateAsync(partyMember);
                 }
             }
 
-            await _unitOfWork.PartyMember.UpdateUsersAsync(partyMembersList);
-            await _unitOfWork.Party.UpdateAsync(party);
+            await _unitOfWork.SaveAsync();
 
-            return Result.Success();
+            return Result<int>.Success(party.Id);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to update party member roles.");
-            return Result.Failure("An error occurred while updating member roles.");
+            _logger.LogError(ex, "Failed to update party members.");
+            return Result<int>.Failure("An error occurred while updating party members.");
         }
     }
 

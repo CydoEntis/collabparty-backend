@@ -11,12 +11,7 @@ public interface IPartyMemberService
 
     Task<Result<List<PartyMemberResponseDto>>> GetPartyMembers(string userId, int partyId);
 
-    Task<Result<List<PartyMemberResponseDto>>> RemovePartyMembers(string userId, int partyId,
-        RemoverUserFromPartyDto dto);
-
-    Task<Result> UpdatePartyMemberRoles(string userId, int partyId,
-        List<UpdatePartyMemberRoleRequestDto> roleChanges);
-
+    Task<Result<int>> UpdatePartyMembers(int partyId, List<MemberUpdateDto> membersToUpdate);
     Task<Result> LeaveParty(string userId, int partyId);
 
     Task<Result<int>> ChangePartyLeader(int partyId, ChangePartyLeaderRequestDto dto);
