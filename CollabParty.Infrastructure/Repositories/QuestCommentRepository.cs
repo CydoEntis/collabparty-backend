@@ -12,4 +12,12 @@ public class QuestCommentRepository : BaseRepository<QuestComment>, IQuestCommen
     {
         _db = db;
     }
+
+    public async Task<QuestComment> UpdateAsync(QuestComment entity)
+    {
+        entity.UpdatedAt = DateTime.UtcNow;
+        _db.QuestComments.Update(entity);
+        await _db.SaveChangesAsync();
+        return entity;
+    }
 }

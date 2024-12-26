@@ -1,4 +1,5 @@
 using AutoMapper;
+using CollabParty.Application.Common.Dtos.QuestComments;
 using CollabParty.Application.Common.Models;
 using CollabParty.Domain.Entities;
 using CollabParty.Domain.Interfaces;
@@ -42,7 +43,7 @@ public class QuestCommentService
     {
         try
         {
-            var comment = await _unitOfWork.QuestComment.GetAsync(qc => qc.Id == dto.);
+            var comment = await _unitOfWork.QuestComment.GetAsync(qc => qc.Id == dto.Id);
 
             if (comment == null)
                 return Result.Failure("Comment not found.");
