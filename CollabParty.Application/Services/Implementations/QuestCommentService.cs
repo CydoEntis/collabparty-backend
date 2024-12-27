@@ -4,6 +4,7 @@ using CollabParty.Application.Common.Dtos.QuestComments;
 using CollabParty.Application.Common.Models;
 using CollabParty.Application.Services.Interfaces;
 using CollabParty.Domain.Entities;
+using CollabParty.Domain.Enums;
 using CollabParty.Domain.Interfaces;
 using Microsoft.Extensions.Logging;
 using Questlog.Application.Common.Models;
@@ -36,7 +37,7 @@ public class QuestCommentService : IQuestCommentService
                 SortBy = dto.SortBy,
                 PageNumber = dto.PageNumber,
                 PageSize = dto.PageSize,
-                IncludeProperties = "User", // Include related user if needed
+                IncludeProperties = "User.UnlockedAvatars.Avatar",
                 Filter = qc => qc.QuestId == questId,
             };
 
@@ -104,11 +105,13 @@ public class QuestCommentService : IQuestCommentService
         try
         {
             var comment = await _unitOfWork.QuestComment.GetAsync(qc => qc.Id == commentId);
-
+            var party = await _unitOfWork.Party.GetAsync(p => p.Quests.Any(q => q.Id == comment.QuestId));
+            var partyMember =
+                await _unitOfWork.PartyMember.GetAsync(pm => pm.UserId == userId && pm.PartyId == party.Id);
             if (comment == null)
                 return Result<int>.Failure("Comment not found.");
 
-            if (comment.UserId != userId)
+            if (comment.UserId != userId && !IsUserAuthorized(partyMember.Role))
                 return Result<int>.Failure("You do not have permission to delete this comment.");
 
             await _unitOfWork.QuestComment.RemoveAsync(comment);
@@ -120,5 +123,10 @@ public class QuestCommentService : IQuestCommentService
             _logger.LogError(ex, "Failed to delete comment.");
             return Result<int>.Failure("An error occurred while deleting the comment.");
         }
+    }
+
+    private bool IsUserAuthorized(UserRole role)
+    {
+        return role == UserRole.Leader || role == UserRole.Captain;
     }
 }

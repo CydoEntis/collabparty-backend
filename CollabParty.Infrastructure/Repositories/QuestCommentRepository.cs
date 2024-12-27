@@ -23,7 +23,7 @@ public class QuestCommentRepository : BaseRepository<QuestComment>, IQuestCommen
         await _db.SaveChangesAsync();
         return entity;
     }
-    
+
     public async Task<PaginatedResult<QuestComment>> GetPaginatedAsync(QueryParams<QuestComment>? queryParams)
     {
         IQueryable<QuestComment> query = _dbSet.AsNoTracking();
@@ -32,9 +32,13 @@ public class QuestCommentRepository : BaseRepository<QuestComment>, IQuestCommen
         {
             if (queryParams.Filter != null)
                 query = query.Where(queryParams.Filter);
+
+            if (!string.IsNullOrEmpty(queryParams.IncludeProperties))
+                query = ApplyIncludeProperties(query, queryParams.IncludeProperties);
         }
 
-        if (queryParams == null || string.IsNullOrEmpty(queryParams.OrderBy) || string.IsNullOrEmpty(queryParams.SortBy))
+        if (queryParams == null || string.IsNullOrEmpty(queryParams.OrderBy) ||
+            string.IsNullOrEmpty(queryParams.SortBy))
             query = query.OrderByDescending(qc => qc.CreatedAt);
 
         int pageNumber = queryParams?.PageNumber ?? 1;
@@ -42,5 +46,4 @@ public class QuestCommentRepository : BaseRepository<QuestComment>, IQuestCommen
 
         return await Paginate(query, pageNumber, pageSize);
     }
-
 }
