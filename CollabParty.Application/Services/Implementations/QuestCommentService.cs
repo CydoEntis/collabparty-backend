@@ -1,10 +1,12 @@
 using AutoMapper;
+using CollabParty.Application.Common.Dtos;
 using CollabParty.Application.Common.Dtos.QuestComments;
 using CollabParty.Application.Common.Models;
 using CollabParty.Application.Services.Interfaces;
 using CollabParty.Domain.Entities;
 using CollabParty.Domain.Interfaces;
 using Microsoft.Extensions.Logging;
+using Questlog.Application.Common.Models;
 
 namespace CollabParty.Application.Services.Implementations;
 
