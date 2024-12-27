@@ -78,6 +78,7 @@ builder.Services.AddScoped<IPartyMemberService, PartyMemberService>();
 builder.Services.AddScoped<IQuestService, QuestService>();
 builder.Services.AddScoped<IQuestStepService, QuestStepService>();
 builder.Services.AddScoped<IQuestAssignmentService, QuestAssignmentService>();
+builder.Services.AddScoped<IQuestCommentService, QuestCommentService>();
 
 // Suppress Model State Validation for Custom Filters
 builder.Services.Configure<ApiBehaviorOptions>(options =>

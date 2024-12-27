@@ -21,7 +21,41 @@ public class QuestCommentService : IQuestCommentService
         _mapper = mapper;
     }
 
-    // Add Comment
+
+    public async Task<Result<PaginatedResult<QuestCommentResponseDto>>> GetPaginatedComments(
+        int questId, QueryParamsDto dto)
+    {
+        try
+        {
+            var queryParams = new QueryParams<QuestComment>
+            {
+                Search = dto.Search,
+                OrderBy = dto.OrderBy,
+                SortBy = dto.SortBy,
+                PageNumber = dto.PageNumber,
+                PageSize = dto.PageSize,
+                IncludeProperties = "User", // Include related user if needed
+                Filter = qc => qc.QuestId == questId,
+            };
+
+            var paginatedResult = await _unitOfWork.QuestComment.GetPaginatedAsync(queryParams);
+
+            var commentDtos = _mapper.Map<List<QuestCommentResponseDto>>(paginatedResult.Items);
+
+            var result = new PaginatedResult<QuestCommentResponseDto>(
+                commentDtos, paginatedResult.TotalItems, paginatedResult.CurrentPage, queryParams.PageSize);
+
+            return Result<PaginatedResult<QuestCommentResponseDto>>.Success(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to fetch paginated comments.");
+            return Result<PaginatedResult<QuestCommentResponseDto>>.Failure(
+                "An error occurred while fetching comments.");
+        }
+    }
+
+
     public async Task<Result<int>> AddComment(AddCommentRequestDto dto)
     {
         try
@@ -39,7 +73,6 @@ public class QuestCommentService : IQuestCommentService
         }
     }
 
-    // Edit Comment
     public async Task<Result> EditComment(EditCommentRequestDto dto)
     {
         try
@@ -64,7 +97,6 @@ public class QuestCommentService : IQuestCommentService
         }
     }
 
-    // Delete Comment
     public async Task<Result> DeleteComment(int commentId, string userId)
     {
         try
