@@ -182,6 +182,33 @@ public class QuestController : ControllerBase
         }
     }
 
+    
+    [HttpGet("quests/{questId:int}/comments")]
+    public async Task<ActionResult<ApiResponse>> GetPaginatedComments(int questId, [FromQuery] QueryParamsDto query)
+    {
+        try
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized(ApiResponse.Error("authorization", "Unauthorized access.",
+                    HttpStatusCode.Unauthorized));
+
+            var result = await _questCommentService.GetPaginatedComments(questId, query);
+
+            if (result.IsSuccess)
+                return Ok(ApiResponse.Success(result.Data));
+
+            var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
+            return BadRequest(ApiResponse.ValidationError(formattedErrors));
+        }
+        catch (Exception ex)
+        {
+            return ApiResponse.Error("internal", ex.InnerException?.Message ?? ex.Message,
+                HttpStatusCode.InternalServerError);
+        }
+    }
+    
     [HttpPost("quests/{questId:int}/comments")]
     public async Task<ActionResult<ApiResponse>> AddComment(int questId, [FromBody] AddCommentRequestDto dto)
     {
@@ -230,7 +257,7 @@ public class QuestController : ControllerBase
             var result = await _questCommentService.EditComment(dto);
 
             if (result.IsSuccess)
-                return Ok(ApiResponse.Success("Comment updated successfully."));
+                return Ok(ApiResponse.Success(result.Data));
 
             var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
             return BadRequest(ApiResponse.ValidationError(formattedErrors));
@@ -257,7 +284,7 @@ public class QuestController : ControllerBase
             var result = await _questCommentService.DeleteComment(commentId, userId);
 
             if (result.IsSuccess)
-                return Ok(ApiResponse.Success("Comment deleted successfully."));
+                return Ok(ApiResponse.Success(result.Data));
 
             var formattedErrors = ValidationHelpers.FormatValidationErrors(result.Errors);
             return BadRequest(ApiResponse.ValidationError(formattedErrors));

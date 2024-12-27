@@ -66,7 +66,7 @@ public class QuestCommentService : IQuestCommentService
 
             await _unitOfWork.QuestComment.CreateAsync(comment);
 
-            return Result<int>.Success(comment.Id);
+            return Result<int>.Success(comment.QuestId);
         }
         catch (Exception ex)
         {
@@ -75,50 +75,50 @@ public class QuestCommentService : IQuestCommentService
         }
     }
 
-    public async Task<Result> EditComment(EditCommentRequestDto dto)
+    public async Task<Result<int>> EditComment(EditCommentRequestDto dto)
     {
         try
         {
             var comment = await _unitOfWork.QuestComment.GetAsync(qc => qc.Id == dto.Id);
 
             if (comment == null)
-                return Result.Failure("Comment not found.");
+                return Result<int>.Failure("Comment not found.");
 
             if (comment.UserId != dto.UserId)
-                return Result.Failure("You do not have permission to edit this comment.");
+                return Result<int>.Failure("You do not have permission to edit this comment.");
 
             comment.Content = dto.Content;
             await _unitOfWork.QuestComment.UpdateAsync(comment);
 
-            return Result.Success();
+            return Result<int>.Success(comment.QuestId);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to edit comment.");
-            return Result.Failure("An error occurred while editing the comment.");
+            return Result<int>.Failure("An error occurred while editing the comment.");
         }
     }
 
-    public async Task<Result> DeleteComment(int commentId, string userId)
+    public async Task<Result<int>> DeleteComment(int commentId, string userId)
     {
         try
         {
             var comment = await _unitOfWork.QuestComment.GetAsync(qc => qc.Id == commentId);
 
             if (comment == null)
-                return Result.Failure("Comment not found.");
+                return Result<int>.Failure("Comment not found.");
 
             if (comment.UserId != userId)
-                return Result.Failure("You do not have permission to delete this comment.");
+                return Result<int>.Failure("You do not have permission to delete this comment.");
 
             await _unitOfWork.QuestComment.RemoveAsync(comment);
 
-            return Result.Success();
+            return Result<int>.Success(comment.QuestId);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to delete comment.");
-            return Result.Failure("An error occurred while deleting the comment.");
+            return Result<int>.Failure("An error occurred while deleting the comment.");
         }
     }
 }
