@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Http;
 using CollabParty.Application.Common.Errors;
 using CollabParty.Application.Common.Models;
+using UnauthorizedException = SendGrid.Helpers.Errors.Model.UnauthorizedException;
 
 namespace CollabParty.Infrastructure.Middleware
 {
@@ -65,6 +66,18 @@ namespace CollabParty.Infrastructure.Middleware
                 await HandleExceptionAsync(context, ex.Title, ex.StatusCode, null);
             }
             catch (UnauthorizedAccessException)
+            {
+                await HandleExceptionAsync(context, "Unauthorized", StatusCodes.Status401Unauthorized,
+                    new List<ErrorField>
+                    {
+                        new ErrorField
+                        {
+                            Field = "permission",
+                            Message = "User does not have permission to access this resource."
+                        }
+                    });
+            }
+            catch (UnauthorizedException)
             {
                 await HandleExceptionAsync(context, "Unauthorized", StatusCodes.Status401Unauthorized,
                     new List<ErrorField>

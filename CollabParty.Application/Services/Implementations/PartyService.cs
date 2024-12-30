@@ -131,14 +131,14 @@ public class PartyService : IPartyService
                 p => p.Id == partyId && p.PartyMembers.Any(pm => pm.PartyId == partyId),
                 includeProperties: "PartyMembers.User.UnlockedAvatars.Avatar");
 
-            if (!EntityUtility.EntityIsNull(foundParty))
+            if (EntityUtility.EntityIsNull(foundParty))
                 throw new NotFoundException($"Party with id {partyId} not found.");
 
             var currentUserPartyMember = foundParty.PartyMembers
                 .FirstOrDefault(pm => pm.UserId == userId);
 
 
-            if (!EntityUtility.EntityIsNull(currentUserPartyMember))
+            if (EntityUtility.EntityIsNull(currentUserPartyMember))
                 throw new NotFoundException("User is not a member of this party.");
 
             var partyDto = _mapper.Map<PartyDto>(foundParty);
@@ -168,7 +168,7 @@ public class PartyService : IPartyService
             var existingParty = await _unitOfWork.Party.GetAsync(p => p.Id == partyId,
                 includeProperties: "PartyMembers");
 
-            if (!EntityUtility.EntityIsNull(existingParty))
+            if (EntityUtility.EntityIsNull(existingParty))
                 throw new NotFoundException($"Party with id {partyId} not found.");
 
             existingParty.Name = dto.Name;
@@ -203,7 +203,7 @@ public class PartyService : IPartyService
                 includeProperties:
                 "Quests.QuestAssignments,Quests.QuestFiles,Quests.QuestComments,Quests.QuestSteps,PartyMembers");
 
-            if (!EntityUtility.EntityIsNull(existingParty))
+            if (EntityUtility.EntityIsNull(existingParty))
                 throw new NotFoundException($"Party with id {partyId} not found.");
 
             foreach (var quest in existingParty.Quests.ToList())
