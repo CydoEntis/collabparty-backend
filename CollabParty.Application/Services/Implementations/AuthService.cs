@@ -20,6 +20,7 @@ using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using CollabParty.Application.Common.Errors;
 using CollabParty.Application.Common.Models;
+using CollabParty.Application.Common.Utility;
 
 namespace CollabParty.Application.Services.Implementations;
 
@@ -59,11 +60,11 @@ public class AuthService : IAuthService
     public async Task<Result<ResponseDto>> Register(RegisterRequestDto dto)
     {
         var existingUser = await _userManager.FindByEmailAsync(dto.Email);
-        if (existingUser != null)
+        if (EntityUtility.EntityExists(existingUser))
             throw new ValidationException(ErrorFields.Email, ErrorMessages.EmailInUse);
 
         var existingUserByUsername = await _userManager.FindByNameAsync(dto.Username);
-        if (existingUserByUsername != null)
+        if (EntityUtility.EntityExists(existingUserByUsername))
             throw new ValidationException(ErrorFields.UserName, ErrorMessages.UsernameInUse);
 
 
@@ -96,7 +97,7 @@ public class AuthService : IAuthService
     public async Task<Result<ResponseDto>> Login(LoginRequestDto requestDto)
     {
         var user = await _unitOfWork.User.GetAsync(u => u.Email == requestDto.Email);
-        if (user == null)
+        if (EntityUtility.EntityExists(user))
             throw new NotFoundException(ErrorMessages.UserNotFound);
 
         if (!await _userManager.CheckPasswordAsync(user, requestDto.Password))
@@ -121,7 +122,7 @@ public class AuthService : IAuthService
 
 
         var session = await _unitOfWork.Session.GetAsync(s => s.RefreshToken == refreshToken);
-        if (session == null)
+        if (EntityUtility.EntityExists(session))
             throw new NotFoundException(ErrorMessages.SessionNotFound);
 
         await _sessionService.InvalidateSession(session);
@@ -138,14 +139,14 @@ public class AuthService : IAuthService
 
 
         var session = await _unitOfWork.Session.GetAsync(s => s.RefreshToken == refreshToken);
-        if (session == null)
+        if (EntityUtility.EntityExists(session))
             throw new NotFoundException(ErrorMessages.SessionNotFound);
 
         if (_tokenService.IsRefreshTokenValid(session, refreshToken))
             throw new InvalidTokenException(ErrorMessages.TokenExpired);
 
         var user = await _unitOfWork.User.GetAsync(u => u.Id == session.UserId);
-        if (user == null)
+        if (EntityUtility.EntityExists(user))
             throw new NotFoundException(ErrorMessages.UserNotFound);
 
 
@@ -161,7 +162,7 @@ public class AuthService : IAuthService
     public async Task<string> ResetPasswordAsync(ResetPasswordRequestDto requestDto)
     {
         var user = await _userManager.FindByEmailAsync(requestDto.Email);
-        if (user == null)
+        if (EntityUtility.EntityExists(user))
             throw new NotFoundException(ErrorMessages.UserNotFound);
 
         var decodedToken = Uri.UnescapeDataString(requestDto.Token);
@@ -196,7 +197,7 @@ public class AuthService : IAuthService
     {
         var user = await _userManager.FindByEmailAsync(requestDto.Email);
 
-        if (user == null)
+        if (EntityUtility.EntityExists(user))
             throw new NotFoundException(ErrorMessages.UserNotFound);
 
         var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
@@ -218,7 +219,7 @@ public class AuthService : IAuthService
     public async Task<string> ChangePasswordAsync(string userId, ChangePasswordRequestDto requestDto)
     {
         var user = await _userManager.FindByIdAsync(userId);
-        if (user == null)
+        if (EntityUtility.EntityExists(user))
             throw new NotFoundException(ErrorMessages.UserNotFound);
 
         var isCurrentPasswordValid = await _userManager.CheckPasswordAsync(user, requestDto.CurrentPassword);
