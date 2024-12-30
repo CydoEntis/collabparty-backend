@@ -62,14 +62,6 @@ public class TokenService : ITokenService
         return new RefreshToken { Token = token, Expiry = expires };
     }
 
-    public CsrfToken CreateCsrfToken()
-    {
-        var expires = DateTime.UtcNow.AddMinutes(30);
-        var token = Guid.NewGuid().ToString();
-
-        _cookieService.Append(CookieNames.CsrfToken, token, false, expires);
-        return new CsrfToken { Token = token, Expiry = expires };
-    }
 
     public bool IsRefreshTokenValid(Session session, string refreshToken)
     {

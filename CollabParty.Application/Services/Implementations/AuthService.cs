@@ -113,7 +113,6 @@ public class AuthService : IAuthService
 
         var sessionId = $"SESS{Guid.NewGuid()}";
         var refreshToken = _tokenService.CreateRefreshToken();
-        _tokenService.CreateCsrfToken();
 
         await _sessionService.CreateSession(user.Id, sessionId, refreshToken);
         _tokenService.CreateAccessToken(user.Id, sessionId);

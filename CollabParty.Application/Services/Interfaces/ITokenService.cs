@@ -7,6 +7,5 @@ public interface ITokenService
 {
     string CreateAccessToken(string userId, string sessionId);
     RefreshToken CreateRefreshToken();
-    CsrfToken CreateCsrfToken();
     bool IsRefreshTokenValid(Session session, string refreshToken);
 }
