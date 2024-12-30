@@ -3,11 +3,10 @@ using CollabParty.Application.Common.Dtos;
 using CollabParty.Application.Common.Dtos.Party;
 using CollabParty.Application.Common.Errors;
 using CollabParty.Application.Common.Models;
+using CollabParty.Application.Common.Utility;
 using CollabParty.Application.Services.Interfaces;
 using CollabParty.Domain.Entities;
-using CollabParty.Domain.Enums;
 using CollabParty.Domain.Interfaces;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Questlog.Application.Common.Models;
 
@@ -49,7 +48,7 @@ public class PartyService : IPartyService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to assign user to party.");
-            throw new CreationException("An error occured while creating the party.");
+            throw new ResourceCreationException("An error occured while creating the party.");
         }
     }
 
@@ -132,13 +131,14 @@ public class PartyService : IPartyService
                 p => p.Id == partyId && p.PartyMembers.Any(pm => pm.PartyId == partyId),
                 includeProperties: "PartyMembers.User.UnlockedAvatars.Avatar");
 
-            if (foundParty == null)
+            if (!EntityUtility.EntityExists(foundParty))
                 throw new NotFoundException($"Party with id {partyId} not found.");
 
             var currentUserPartyMember = foundParty.PartyMembers
                 .FirstOrDefault(pm => pm.UserId == userId);
 
-            if (currentUserPartyMember == null)
+
+            if (!EntityUtility.EntityExists(currentUserPartyMember))
                 throw new NotFoundException("User is not a member of this party.");
 
             var partyDto = _mapper.Map<PartyDto>(foundParty);
@@ -161,14 +161,14 @@ public class PartyService : IPartyService
         {
             var user = await _unitOfWork.PartyMember.GetAsync(p => p.UserId == userId && p.PartyId == partyId);
 
-            if (user.Role is not UserRole.Leader)
-                throw new PermissionException("You do not have permission to update party.");
+            if (!await IsLeaderAsync(userId, partyId))
+                throw new PermissionException("You do not have permission to delete the party.");
 
 
             var existingParty = await _unitOfWork.Party.GetAsync(p => p.Id == partyId,
                 includeProperties: "PartyMembers");
 
-            if (existingParty == null)
+            if (!EntityUtility.EntityExists(existingParty))
                 throw new NotFoundException($"Party with id {partyId} not found.");
 
             existingParty.Name = dto.Name;
@@ -195,42 +195,23 @@ public class PartyService : IPartyService
             var user = await _unitOfWork.PartyMember.GetAsync(p => p.UserId == userId && p.PartyId == partyId);
 
 
-            if (user.Role is not UserRole.Leader)
-                
-            {
-                return Result<int>.Failure("You do not have permission to delete party.");
-            }
+            if (!await IsLeaderAsync(userId, partyId))
+                throw new PermissionException("You do not have permission to delete party.");
+
 
             var existingParty = await _unitOfWork.Party.GetAsync(p => p.Id == partyId && p.CreatedById == userId,
                 includeProperties:
                 "Quests.QuestAssignments,Quests.QuestFiles,Quests.QuestComments,Quests.QuestSteps,PartyMembers");
 
-            if (existingParty == null)
-            {
-                return Result<int>.Failure("Party not found or you do not have permission to delete this party.");
-            }
+            if (!EntityUtility.EntityExists(existingParty))
+                throw new NotFoundException($"Party with id {partyId} not found.");
 
             foreach (var quest in existingParty.Quests.ToList())
             {
-                foreach (var assignment in quest.QuestAssignments.ToList())
-                {
-                    await _unitOfWork.QuestAssignment.RemoveAsync(assignment);
-                }
-
-                foreach (var file in quest.QuestFiles.ToList())
-                {
-                    await _unitOfWork.QuestFile.RemoveAsync(file);
-                }
-
-                foreach (var comment in quest.QuestComments.ToList())
-                {
-                    await _unitOfWork.QuestComment.RemoveAsync(comment);
-                }
-
-                foreach (var step in quest.QuestSteps.ToList())
-                {
-                    await _unitOfWork.QuestStep.RemoveAsync(step);
-                }
+                await DeleteEntitiesAsync(quest.QuestAssignments.ToList(), _unitOfWork.QuestAssignment.RemoveAsync);
+                await DeleteEntitiesAsync(quest.QuestFiles.ToList(), _unitOfWork.QuestFile.RemoveAsync);
+                await DeleteEntitiesAsync(quest.QuestComments.ToList(), _unitOfWork.QuestComment.RemoveAsync);
+                await DeleteEntitiesAsync(quest.QuestSteps.ToList(), _unitOfWork.QuestStep.RemoveAsync);
 
                 await _unitOfWork.Quest.RemoveAsync(quest);
             }
@@ -242,12 +223,27 @@ public class PartyService : IPartyService
 
             await _unitOfWork.Party.RemoveAsync(existingParty);
 
-            return Result<int>.Success(partyId);
+            return partyId;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to delete party.");
-            return Result<int>.Failure("An error occurred while deleting the party.");
+            throw new ResourceModificationException("An error occured while deleting the party.");
         }
+    }
+
+    private async Task DeleteEntitiesAsync<T>(List<T> entities, Func<T, Task> removeMethod)
+    {
+        foreach (var entity in entities)
+        {
+            await removeMethod(entity);
+        }
+    }
+
+    private async Task<bool> IsLeaderAsync(string userId, int partyId)
+    {
+        var user = await _unitOfWork.PartyMember.GetAsync(p => p.UserId == userId && p.PartyId == partyId);
+
+        return RoleUtility.IsLeader(user);
     }
 }

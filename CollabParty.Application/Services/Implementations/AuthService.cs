@@ -81,7 +81,7 @@ public class AuthService : IAuthService
 
         var creationResult = await _userManager.CreateAsync(user, dto.Password);
         if (!creationResult.Succeeded)
-            throw new CreationException("Registration failed");
+            throw new ResourceCreationException("Registration failed");
 
         await _unlockedAvatarService.UnlockStarterAvatars(user);
         await _unlockedAvatarService.SetNewUserAvatar(user.Id, dto.AvatarId);
