@@ -1,3 +1,4 @@
+using CollabParty.Application.Common.Constants;
 using Microsoft.AspNetCore.Http;
 
 
@@ -8,7 +9,7 @@ namespace CollabParty.Application.Common.Errors
         public List<ErrorField> Errors { get; set; } = new List<ErrorField>();
 
         public AlreadyExistsException(string field, string fieldMessage)
-            : base(StatusCodes.Status409Conflict, "Already Exists", "Resource already exists.")
+            : base(StatusCodes.Status409Conflict, ErrorTitles.AlreadyExists, ErrorMessages.AlreadyExists)
         {
             Errors.Add(new ErrorField { Field = field, Message = fieldMessage });
         }

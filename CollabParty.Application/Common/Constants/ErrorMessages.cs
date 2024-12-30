@@ -1,6 +1,6 @@
 namespace CollabParty.Application.Common.Constants;
 
-public static class ErrorMessage
+public static class ErrorMessages
 {
     public const string DefaultErrorMessage = "An error has occured.";
     public const string EmailInUse = "Email is already in use.";
@@ -16,4 +16,5 @@ public static class ErrorMessage
     public const string CurrentPasswordMismatch = "Password does not match the current password.";
     public const string ChangePasswordFailed = "Password change request has failed.";
     public const string AlreadyExists = "Resource already exsists.";
+    public const string ValidationFailed = "One or more validation errors occurred.";
 }

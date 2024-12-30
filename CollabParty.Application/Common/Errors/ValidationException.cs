@@ -1,3 +1,4 @@
+using CollabParty.Application.Common.Constants;
 using Microsoft.AspNetCore.Http;
 
 
@@ -8,7 +9,7 @@ namespace CollabParty.Application.Common.Errors
         public List<ErrorField> Errors { get; set; } = new List<ErrorField>();
 
         public ValidationException(string field, string fieldMessage)
-            : base(StatusCodes.Status400BadRequest, "Validation Exception", "One or more validation errors occurred.")
+            : base(StatusCodes.Status400BadRequest, ErrorTitles.ValidationException, ErrorMessages.ValidationFailed)
         {
             Errors.Add(new ErrorField { Field = field, Message = fieldMessage });
         }

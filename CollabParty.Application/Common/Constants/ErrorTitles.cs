@@ -1,6 +1,6 @@
 namespace CollabParty.Application.Common.Constants;
 
-public static class ErrorTitle
+public static class ErrorTitles
 {
     public const string ChangePassword = "Change Password Exception";
     public const string AlreadyExists = "Resource Already Exsists";

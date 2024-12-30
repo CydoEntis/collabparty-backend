@@ -1,6 +1,6 @@
 namespace CollabParty.Application.Common.Constants;
 
-public static class SuccessMessage
+public static class SuccessMessages
 {
     public const string LoginSuccessful = "Log in succesful.";
     public const string RegistrationSuccessful = "Registration successful";
