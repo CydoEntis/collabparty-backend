@@ -11,4 +11,5 @@ public static class ErrorTitles
     public const string ResourceCreationException = "Resource Creation Exception";
     public const string ResourceModificationException = "Resource Modification Exception";
     public const string ValidationException = "Validation Exception";
+    public const string PasswordResetException = "Reset Password Exception";
 }

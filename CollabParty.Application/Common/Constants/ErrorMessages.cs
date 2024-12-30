@@ -9,7 +9,8 @@ public static class ErrorMessages
     public const string UserNotFound = "User not found.";
     public const string TokenNotFound = "Token not found.";
     public const string TokenExpired = "Token has expired.";
-    public const string SessionTokenNotFound = "Session token not found.";
+    public const string TokenInvalid = "Token is invalid.";
+    public const string SessionNotFound = "Session not found.";
 
     public const string OldPassword = "Cannot use a previous password.";
     public const string PasswordResetFailed = "Failed to reset password.";
@@ -17,4 +18,5 @@ public static class ErrorMessages
     public const string ChangePasswordFailed = "Password change request has failed.";
     public const string AlreadyExists = "Resource already exsists.";
     public const string ValidationFailed = "One or more validation errors occurred.";
+    public const string InvalidCredentials = "Email or password is incorrect.";
 }
