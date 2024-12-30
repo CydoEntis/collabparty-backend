@@ -1,7 +1,7 @@
 ﻿using CollabParty.Application.Common.Dtos.Member;
 using CollabParty.Domain.Enums;
 
-public class PartyDto
+public class PartyResponseDto
 {
     public int Id { get; set; }
     public string Name { get; set; }

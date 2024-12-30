@@ -29,11 +29,11 @@ public class PartyService : IPartyService
         _partyMemberService = partyMemberService;
     }
 
-    public async Task<PartyDto> CreateParty(string userId, CreatePartyDto dto)
+    public async Task<PartyResponseDto> CreateParty(string userId, CreatePartyRequestDto requestDto)
     {
         try
         {
-            var newParty = _mapper.Map<Party>(dto);
+            var newParty = _mapper.Map<Party>(requestDto);
             newParty.CreatedById = userId;
             Party createdParty = await _unitOfWork.Party.CreateAsync(newParty);
 
@@ -42,7 +42,7 @@ public class PartyService : IPartyService
             var foundParty = await _unitOfWork.Party.GetAsync(p => p.Id == newParty.Id,
                 includeProperties: "CreatedBy,CreatedBy.UnlockedAvatars.Avatar");
 
-            var partyDto = _mapper.Map<PartyDto>(foundParty);
+            var partyDto = _mapper.Map<PartyResponseDto>(foundParty);
             return partyDto;
         }
         catch (Exception ex)
@@ -53,7 +53,7 @@ public class PartyService : IPartyService
     }
 
 
-    public async Task<PaginatedResult<PartyDto>> GetAllPartiesForUser(string userId, QueryParamsDto dto)
+    public async Task<PaginatedResult<PartyResponseDto>> GetAllPartiesForUser(string userId, QueryParamsDto dto)
     {
         try
         {
@@ -76,7 +76,7 @@ public class PartyService : IPartyService
             var partyIds = paginatedResult.Items.Select(p => p.Id).ToList();
             var quests = await _unitOfWork.Quest.GetAllAsync(q => partyIds.Contains(q.PartyId));
 
-            var partyDto = _mapper.Map<List<PartyDto>>(paginatedResult.Items);
+            var partyDto = _mapper.Map<List<PartyResponseDto>>(paginatedResult.Items);
 
             foreach (var party in partyDto)
             {
@@ -87,7 +87,7 @@ public class PartyService : IPartyService
                 party.PastDueQuests = partyQuests.Count(q => q.DueDate < DateTime.UtcNow);
             }
 
-            var result = new PaginatedResult<PartyDto>(
+            var result = new PaginatedResult<PartyResponseDto>(
                 partyDto,
                 paginatedResult.TotalItems,
                 paginatedResult.CurrentPage,
@@ -104,7 +104,7 @@ public class PartyService : IPartyService
     }
 
 
-    public async Task<List<PartyDto>> GetRecentParties(string userId)
+    public async Task<List<PartyResponseDto>> GetRecentParties(string userId)
     {
         try
         {
@@ -113,7 +113,7 @@ public class PartyService : IPartyService
                 "PartyMembers,PartyMembers.User,PartyMembers.User.UnlockedAvatars,PartyMembers.User.UnlockedAvatars.Avatar");
 
 
-            var partyDtos = _mapper.Map<List<PartyDto>>(recentParties);
+            var partyDtos = _mapper.Map<List<PartyResponseDto>>(recentParties);
             return partyDtos;
         }
         catch (Exception ex)
@@ -123,7 +123,7 @@ public class PartyService : IPartyService
         }
     }
 
-    public async Task<PartyDto> GetParty(string userId, int partyId)
+    public async Task<PartyResponseDto> GetParty(string userId, int partyId)
     {
         try
         {
@@ -141,7 +141,7 @@ public class PartyService : IPartyService
             if (EntityUtility.EntityIsNull(currentUserPartyMember))
                 throw new NotFoundException("User is not a member of this party.");
 
-            var partyDto = _mapper.Map<PartyDto>(foundParty);
+            var partyDto = _mapper.Map<PartyResponseDto>(foundParty);
 
             partyDto.CurrentUserRole = currentUserPartyMember.Role;
 
@@ -155,7 +155,7 @@ public class PartyService : IPartyService
     }
 
 
-    public async Task<int> UpdateParty(string userId, int partyId, UpdatePartyDto dto)
+    public async Task<UpdatePartyResponseDto> UpdateParty(string userId, int partyId, UpdatePartyRequestDto requestDto)
     {
         try
         {
@@ -171,14 +171,14 @@ public class PartyService : IPartyService
             if (EntityUtility.EntityIsNull(existingParty))
                 throw new NotFoundException($"Party with id {partyId} not found.");
 
-            existingParty.Name = dto.Name;
-            existingParty.Description = dto.Description;
+            existingParty.Name = requestDto.Name;
+            existingParty.Description = requestDto.Description;
             existingParty.UpdatedAt = DateTime.UtcNow;
 
             await _unitOfWork.Party.UpdateAsync(existingParty);
 
 
-            return existingParty.Id;
+            return new UpdatePartyResponseDto() { Message = "Party updated successfully", PartyId = partyId };
         }
         catch (Exception ex)
         {
@@ -188,7 +188,7 @@ public class PartyService : IPartyService
     }
 
 
-    public async Task<int> DeleteParty(string userId, int partyId)
+    public async Task<DeletePartyResponseDto> DeleteParty(string userId, int partyId)
     {
         try
         {
@@ -223,7 +223,7 @@ public class PartyService : IPartyService
 
             await _unitOfWork.Party.RemoveAsync(existingParty);
 
-            return partyId;
+            return new DeletePartyResponseDto() { Message = "Party deleted successfully", PartyId = partyId };
         }
         catch (Exception ex)
         {

@@ -3,7 +3,7 @@ using FluentValidation;
 
 namespace CollabParty.Application.Common.Validators.Party;
 
-public class CreatePartyRequestDtoValidator : AbstractValidator<CreatePartyDto>
+public class CreatePartyRequestDtoValidator : AbstractValidator<CreatePartyRequestDto>
 {
     public CreatePartyRequestDtoValidator()
     {

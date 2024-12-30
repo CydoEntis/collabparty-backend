@@ -7,10 +7,10 @@ namespace CollabParty.Application.Services.Interfaces;
 
 public interface IPartyService
 {
-    Task<PartyDto> CreateParty(string userId, CreatePartyDto dto);
-    Task<PaginatedResult<PartyDto>> GetAllPartiesForUser(string userId, QueryParamsDto dto);
-    Task<List<PartyDto>> GetRecentParties(string userId);
-    Task<PartyDto> GetParty(string userId, int partyId);
-    Task<int> UpdateParty(string userId, int partyId, UpdatePartyDto dto);
-    Task<int> DeleteParty(string userId, int partyId);
+    Task<PartyResponseDto> CreateParty(string userId, CreatePartyRequestDto requestDto);
+    Task<PaginatedResult<PartyResponseDto>> GetAllPartiesForUser(string userId, QueryParamsDto dto);
+    Task<List<PartyResponseDto>> GetRecentParties(string userId);
+    Task<PartyResponseDto> GetParty(string userId, int partyId);
+    Task<UpdatePartyResponseDto> UpdateParty(string userId, int partyId, UpdatePartyRequestDto requestDto);
+    Task<DeletePartyResponseDto> DeleteParty(string userId, int partyId);
 }

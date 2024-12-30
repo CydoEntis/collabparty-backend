@@ -31,10 +31,10 @@ public class PartyController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> CreateParty([FromBody] CreatePartyDto dto)
+    public async Task<IActionResult> CreateParty([FromBody] CreatePartyRequestDto requestDto)
     {
         var validator = new CreatePartyRequestDtoValidator();
-        var results = validator.Validate(dto);
+        var results = validator.Validate(requestDto);
 
         if (!results.IsValid)
             return _validationHelper.HandleValidation(results.Errors);
@@ -44,7 +44,7 @@ public class PartyController : ControllerBase
             return Unauthorized("You do not have access to this resource.");
 
 
-        var result = await _partyService.CreateParty(userId, dto);
+        var result = await _partyService.CreateParty(userId, requestDto);
         return Ok(ApiResponse<object>.SuccessResponse(result));
     }
 
@@ -84,13 +84,13 @@ public class PartyController : ControllerBase
     }
 
     [HttpPut("{partyId:int}")]
-    public async Task<ActionResult> UpdateParty(int partyId, [FromBody] UpdatePartyDto dto)
+    public async Task<ActionResult> UpdateParty(int partyId, [FromBody] UpdatePartyRequestDto requestDto)
     {
         var (isValid, userId) = ClaimsHelper.TryGetUserId(User);
         if (!isValid)
             return Unauthorized("You do not have access to this resource.");
 
-        var result = await _partyService.UpdateParty(userId, partyId, dto);
+        var result = await _partyService.UpdateParty(userId, partyId, requestDto);
         return Ok(ApiResponse<object>.SuccessResponse(result));
     }
 

@@ -1,6 +1,6 @@
 ﻿namespace CollabParty.Application.Common.Dtos.Party;
 
-public class UpdatePartyDto
+public class UpdatePartyRequestDto
 {
         public int PartyId { get; set; }
         public string? Name { get; set; }
