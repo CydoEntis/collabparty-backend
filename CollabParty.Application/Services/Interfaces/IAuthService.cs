@@ -7,11 +7,11 @@ namespace CollabParty.Application.Services.Interfaces;
 
 public interface IAuthService
 {
-    Task<Result<ResponseDto>> Register(RegisterRequestDto dto);
-    Task<Result<ResponseDto>> Login(LoginRequestDto requestDto);
-    Task<string> Logout();
-    Task<string> RefreshTokens();
-    Task<string> ResetPasswordAsync(ResetPasswordRequestDto requestDto);
-    Task<string> SendForgotPasswordEmail(ForgotPasswordRequestDto requestDto);
-    Task<string> ChangePasswordAsync(string userId, ChangePasswordRequestDto requestDto);
+    Task<ResponseDto> Register(RegisterRequestDto dto);
+    Task<ResponseDto> Login(LoginRequestDto requestDto);
+    Task<ResponseDto> Logout();
+    Task<ResponseDto> RefreshTokens();
+    Task<ResponseDto> ResetPasswordAsync(ResetPasswordRequestDto requestDto);
+    Task<ResponseDto> SendForgotPasswordEmail(ForgotPasswordRequestDto requestDto);
+    Task<ResponseDto> ChangePasswordAsync(string userId, ChangePasswordRequestDto requestDto);
 }

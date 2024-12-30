@@ -32,7 +32,7 @@ public class AuthController : ControllerBase
             return _validationHelper.HandleValidation(results.Errors);
 
         var result = await _authService.Register(requestDto);
-        return Ok(ApiResponse<object>.SuccessResponse(result.Data));
+        return Ok(ApiResponse<object>.SuccessResponse(result));
     }
 
 
@@ -46,7 +46,7 @@ public class AuthController : ControllerBase
             return _validationHelper.HandleValidation(results.Errors);
 
         var result = await _authService.Login(requestDto);
-        return Ok(ApiResponse<object>.SuccessResponse(result.Data));
+        return Ok(ApiResponse<object>.SuccessResponse(result));
     }
 
 
@@ -54,7 +54,7 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> Logout()
     {
         var result = await _authService.Logout();
-        return Ok(ApiResponse<object>.SuccessResponse("Registration successful"));
+        return Ok(ApiResponse<object>.SuccessResponse(result));
     }
 
     [HttpPost("refresh")]

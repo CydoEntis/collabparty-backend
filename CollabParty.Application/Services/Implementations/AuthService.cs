@@ -57,7 +57,7 @@ public class AuthService : IAuthService
     }
 
 
-    public async Task<Result<ResponseDto>> Register(RegisterRequestDto dto)
+    public async Task<ResponseDto> Register(RegisterRequestDto dto)
     {
         var existingUser = await _userManager.FindByEmailAsync(dto.Email);
 
@@ -98,10 +98,10 @@ public class AuthService : IAuthService
 
         await Login(new LoginRequestDto() { Email = dto.Email, Password = dto.Password });
 
-        return Result<ResponseDto>.Success(new ResponseDto() { Message = SuccessMessages.RegistrationSuccessful });
+        return new ResponseDto() { Message = SuccessMessages.RegistrationSuccessful };
     }
 
-    public async Task<Result<ResponseDto>> Login(LoginRequestDto requestDto)
+    public async Task<ResponseDto> Login(LoginRequestDto requestDto)
     {
         var user = await _unitOfWork.User.GetAsync(u => u.Email == requestDto.Email);
         if (EntityUtility.EntityIsNull(user))
@@ -118,10 +118,10 @@ public class AuthService : IAuthService
         await _sessionService.CreateSession(user.Id, sessionId, refreshToken);
         _tokenService.CreateAccessToken(user.Id, sessionId);
 
-        return Result<ResponseDto>.Success(new ResponseDto() { Message = SuccessMessages.LoginSuccessful });
+        return new ResponseDto() { Message = SuccessMessages.LoginSuccessful };
     }
 
-    public async Task<string> Logout()
+    public async Task<ResponseDto> Logout()
     {
         var refreshToken = _cookieService.Get(CookieNames.RefreshToken);
         if (string.IsNullOrEmpty(refreshToken))
@@ -135,10 +135,10 @@ public class AuthService : IAuthService
         await _sessionService.InvalidateSession(session);
         _cookieService.Delete(CookieNames.RefreshToken);
         _cookieService.Delete(CookieNames.AccessToken);
-        return SuccessMessages.LogoutSuccessful;
+        return new ResponseDto() { Message = SuccessMessages.LogoutSuccessful };
     }
 
-    public async Task<string> RefreshTokens()
+    public async Task<ResponseDto> RefreshTokens()
     {
         var refreshToken = _cookieService.Get("QB-REFRESH-TOKEN");
         if (string.IsNullOrEmpty(refreshToken))
@@ -149,11 +149,11 @@ public class AuthService : IAuthService
         if (EntityUtility.EntityIsNull(session))
             throw new NotFoundException(ErrorMessages.SessionNotFound);
 
-        if (_tokenService.IsRefreshTokenValid(session, refreshToken))
+        if (!_tokenService.IsRefreshTokenValid(session, refreshToken))
             throw new InvalidTokenException(ErrorMessages.TokenExpired);
 
         var user = await _unitOfWork.User.GetAsync(u => u.Id == session.UserId);
-        if (!EntityUtility.EntityIsNull(user))
+        if (EntityUtility.EntityIsNull(user))
             throw new NotFoundException(ErrorMessages.UserNotFound);
 
 
@@ -163,10 +163,33 @@ public class AuthService : IAuthService
         session.RefreshTokenExpiry = refreshTokenModel.Expiry;
 
         await _unitOfWork.Session.UpdateAsync(session);
-        return SuccessMessages.TokenRefreshSuccessful;
+        return new ResponseDto() { Message = SuccessMessages.TokenRefreshSuccessful };
     }
 
-    public async Task<string> ResetPasswordAsync(ResetPasswordRequestDto requestDto)
+    public async Task<ResponseDto> SendForgotPasswordEmail(ForgotPasswordRequestDto requestDto)
+    {
+        var user = await _userManager.FindByEmailAsync(requestDto.Email);
+
+        if (EntityUtility.EntityIsNull(user))
+            throw new NotFoundException(ErrorMessages.UserNotFound);
+
+        var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
+        var encodedToken = Uri.EscapeDataString(resetToken);
+        var resetUrl = $"http://localhost:5173/reset-password?token={encodedToken}";
+        var placeholders = new Dictionary<string, string>
+        {
+            { "Recipient's Email", requestDto.Email },
+            { "Reset Link", resetUrl }
+        };
+
+        var emailBody = _emailTemplateService.GetEmailTemplate("ForgotPasswordTemplate", placeholders);
+
+        await _emailService.SendEmailAsync(requestDto.Email, "Password Reset Request", emailBody);
+
+        return new ResponseDto() { Message = SuccessMessages.PasswordResetEmailSent };
+    }
+
+    public async Task<ResponseDto> ResetPasswordAsync(ResetPasswordRequestDto requestDto)
     {
         var user = await _userManager.FindByEmailAsync(requestDto.Email);
         if (EntityUtility.EntityIsNull(user))
@@ -197,33 +220,11 @@ public class AuthService : IAuthService
             throw new OperationException(ErrorTitles.PasswordResetException,
                 ErrorMessages.PasswordResetFailed);
 
-        return SuccessMessages.PasswordResetSuccess;
+        return new ResponseDto() { Message = SuccessMessages.PasswordResetSuccess };
     }
 
-    public async Task<string> SendForgotPasswordEmail(ForgotPasswordRequestDto requestDto)
-    {
-        var user = await _userManager.FindByEmailAsync(requestDto.Email);
 
-        if (EntityUtility.EntityIsNull(user))
-            throw new NotFoundException(ErrorMessages.UserNotFound);
-
-        var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
-        var encodedToken = Uri.EscapeDataString(resetToken);
-        var resetUrl = $"http://localhost:5173/reset-password?token={encodedToken}";
-        var placeholders = new Dictionary<string, string>
-        {
-            { "Recipient's Email", requestDto.Email },
-            { "Reset Link", resetUrl }
-        };
-
-        var emailBody = _emailTemplateService.GetEmailTemplate("ForgotPasswordTemplate", placeholders);
-
-        await _emailService.SendEmailAsync(requestDto.Email, "Password Reset Request", emailBody);
-
-        return SuccessMessages.PasswordResetEmailSent;
-    }
-
-    public async Task<string> ChangePasswordAsync(string userId, ChangePasswordRequestDto requestDto)
+    public async Task<ResponseDto> ChangePasswordAsync(string userId, ChangePasswordRequestDto requestDto)
     {
         var user = await _userManager.FindByIdAsync(userId);
         if (EntityUtility.EntityIsNull(user))
@@ -238,6 +239,6 @@ public class AuthService : IAuthService
         if (!updateResult.Succeeded)
             throw new ResourceModificationException(ErrorMessages.ChangePasswordFailed);
 
-        return SuccessMessages.PasswordChangedSuccessfully;
+        return new ResponseDto() { Message = SuccessMessages.PasswordChangedSuccessfully };
     }
 }

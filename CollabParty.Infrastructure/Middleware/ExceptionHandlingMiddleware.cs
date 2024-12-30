@@ -27,6 +27,39 @@ namespace CollabParty.Infrastructure.Middleware
             {
                 await HandleExceptionAsync(context, ex.Title, ex.StatusCode, ex.Errors);
             }
+            catch (NotFoundException ex)
+            {
+                await HandleExceptionAsync(context, ex.Title, ex.StatusCode, new List<ErrorField>
+                {
+                    new ErrorField
+                    {
+                        Field = "not_found",
+                        Message = ex.Message
+                    }
+                });
+            }
+            catch (InvalidTokenException ex)
+            {
+                await HandleExceptionAsync(context, ex.Title, ex.StatusCode, new List<ErrorField>
+                {
+                    new ErrorField
+                    {
+                        Field = "invalid_token",
+                        Message = ex.Message
+                    }
+                });
+            }
+            catch (OperationException ex)
+            {
+                await HandleExceptionAsync(context, ex.Title, ex.StatusCode, new List<ErrorField>
+                {
+                    new ErrorField
+                    {
+                        Field = "invalid_operation",
+                        Message = ex.Message
+                    }
+                });
+            }
             catch (ServiceException ex)
             {
                 await HandleExceptionAsync(context, ex.Title, ex.StatusCode, null);
@@ -38,7 +71,7 @@ namespace CollabParty.Infrastructure.Middleware
                     {
                         new ErrorField
                         {
-                            Field = "error",
+                            Field = "permission",
                             Message = "User does not have permission to access this resource."
                         }
                     });
@@ -60,7 +93,8 @@ namespace CollabParty.Infrastructure.Middleware
         private async Task HandleExceptionAsync(HttpContext context, string title, int statusCode,
             List<ErrorField>? errors)
         {
-            var errorDictionary = errors?.ToDictionary(e => e.Field, e => e.Message) ?? new Dictionary<string, string>();
+            var errorDictionary =
+                errors?.ToDictionary(e => e.Field, e => e.Message) ?? new Dictionary<string, string>();
             var apiError = ApiResponse<object>.ErrorResponse(title, statusCode, errorDictionary);
 
             context.Response.StatusCode = statusCode;
