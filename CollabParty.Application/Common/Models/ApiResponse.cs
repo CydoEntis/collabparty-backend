@@ -1,95 +1,42 @@
-﻿using System.Net;
+using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace CollabParty.Application.Common.Models
 {
-    public class ApiResponse
+    public class ApiResponse<T>
     {
-        public HttpStatusCode StatusCode { get; set; }
-        public bool IsSuccess { get; set; }
-        public Dictionary<string, List<string>> Errors { get; set; } = new Dictionary<string, List<string>>();
-        public object Result { get; set; }
-        public string Message { get; set; }
+        [JsonPropertyName("success")]
+        public bool Success { get; set; }
 
-        // Success response
-        public static ApiResponse Success(object result = null, string message = "Operation successful", HttpStatusCode statusCode = HttpStatusCode.OK)
+        [JsonPropertyName("data")]
+        public T? Data { get; set; }
+
+        [JsonPropertyName("title")]
+        public string? Title { get; set; }
+
+        [JsonPropertyName("statusCode")]
+        public int StatusCode { get; set; }
+
+        [JsonPropertyName("errors")]
+        public Dictionary<string, string>? Errors { get; set; }
+
+        public ApiResponse(bool success, T? data, string? title, int statusCode, Dictionary<string, string>? errors = null)
         {
-            return new ApiResponse
-            {
-                IsSuccess = true,
-                StatusCode = statusCode,
-                Result = result,
-                Message = message
-            };
+            Success = success;
+            Data = data;
+            Title = title;
+            StatusCode = statusCode;
+            Errors = errors;
         }
 
-        // Error response for a single field or general error
-        public static ApiResponse Error(string field, string message, HttpStatusCode statusCode = HttpStatusCode.BadRequest)
+        public static ApiResponse<T> SuccessResponse(T data, string title = "Success", int statusCode = 200)
         {
-            return new ApiResponse
-            {
-                IsSuccess = false,
-                StatusCode = statusCode,
-                Message = message,
-                Errors = new Dictionary<string, List<string>> { { field, new List<string> { message } } }
-            };
+            return new ApiResponse<T>(true, data, title, statusCode);
         }
 
-        // Error response for multiple messages for a field
-        public static ApiResponse Error(string field, IEnumerable<string> messages, HttpStatusCode statusCode = HttpStatusCode.BadRequest)
+        public static ApiResponse<T> ErrorResponse(string title, int statusCode, Dictionary<string, string>? errors = null)
         {
-            return new ApiResponse
-            {
-                IsSuccess = false,
-                StatusCode = statusCode,
-                Message = "Validation errors occurred.",
-                Errors = new Dictionary<string, List<string>> { { field, messages.ToList() } }
-            };
-        }
-
-        // General error (non-field specific)
-        public static ApiResponse GeneralError(string message, HttpStatusCode statusCode = HttpStatusCode.BadRequest)
-        {
-            return new ApiResponse
-            {
-                IsSuccess = false,
-                StatusCode = statusCode,
-                Message = message,
-                Errors = new Dictionary<string, List<string>> { { "General", new List<string> { message } } }
-            };
-        }
-
-        // Validation errors for multiple fields
-        public static ApiResponse ValidationError(Dictionary<string, List<string>> errors, string message = "Validation failed", HttpStatusCode statusCode = HttpStatusCode.BadRequest)
-        {
-            return new ApiResponse
-            {
-                IsSuccess = false,
-                StatusCode = statusCode,
-                Errors = errors,
-                Message = message
-            };
-        }
-
-        // Adds a single error for a specific field
-        public ApiResponse AddError(string field, string error)
-        {
-            if (!Errors.ContainsKey(field))
-            {
-                Errors[field] = new List<string>();
-            }
-            Errors[field].Add(error);
-            return this;
-        }
-
-        // Adds multiple errors for a specific field
-        public ApiResponse AddErrors(string field, IEnumerable<string> errors)
-        {
-            if (!Errors.ContainsKey(field))
-            {
-                Errors[field] = new List<string>();
-            }
-            Errors[field].AddRange(errors);
-            return this;
+            return new ApiResponse<T>(false, default, title, statusCode, errors);
         }
     }
 }

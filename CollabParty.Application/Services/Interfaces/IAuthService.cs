@@ -1,19 +1,17 @@
 ﻿using CollabParty.Application.Common.Dtos;
 using CollabParty.Application.Common.Dtos.Auth;
-using CollabParty.Application.Common.Models;
+using CollabParty.Application.Common.Dtos.General;
+using CollabParty.Application.Common.Errors;
 
 namespace CollabParty.Application.Services.Interfaces;
 
 public interface IAuthService
 {
-    Task<Result> Register(RegisterRequestDto dto);
-    Task<Result> Login(LoginRequestDto requestDto);
-
-    Task<Result> Logout();
-
-    Task<Result> RefreshTokens();
-    
-    Task<Result> ResetPasswordAsync(ResetPasswordRequestDto requestDto);
-    Task<Result> SendForgotPasswordEmail(ForgotPasswordRequestDto requestDto);
-    Task<Result> ChangePasswordAsync(string userId, ChangePasswordRequestDto requestDto);
+    Task<Result<ResponseDto>> Register(RegisterRequestDto dto);
+    Task<Result<ResponseDto>> Login(LoginRequestDto requestDto);
+    Task<string> Logout();
+    Task<string> RefreshTokens();
+    Task<string> ResetPasswordAsync(ResetPasswordRequestDto requestDto);
+    Task<string> SendForgotPasswordEmail(ForgotPasswordRequestDto requestDto);
+    Task<string> ChangePasswordAsync(string userId, ChangePasswordRequestDto requestDto);
 }

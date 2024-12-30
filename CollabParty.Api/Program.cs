@@ -7,6 +7,8 @@ using CollabParty.Application.Common.Interfaces;
 using CollabParty.Application.Common.Models;
 using CollabParty.Application.Common.Validators;
 using CollabParty.Application.Common.Validators.Auth;
+using CollabParty.Application.Common.Validators.Helpers;
+// using CollabParty.Application.Common.Validators.Helpers;
 using CollabParty.Application.Common.Validators.Party;
 using CollabParty.Application.Services.Implementations;
 using CollabParty.Application.Services.Interfaces;
@@ -15,7 +17,8 @@ using CollabParty.Domain.Interfaces;
 using CollabParty.Infrastructure;
 using CollabParty.Infrastructure.Data;
 using CollabParty.Infrastructure.DependencyInjection;
-using CollabParty.Infrastructure.Emails; // Add this
+using CollabParty.Infrastructure.Emails;
+using CollabParty.Infrastructure.Middleware; // Add this
 using CollabParty.Infrastructure.Persistence.Seeders;
 using CollabParty.Infrastructure.Repositories;
 using FluentValidation;
@@ -65,20 +68,22 @@ builder.Services.AddAutoMapper(typeof(MappingConfig));
 
 // Dependency Injection for Repositories and Services
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<ValidationHelper>();
 builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<IUnlockedAvatarService, UnlockedAvatarService>();
-builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<IAvatarService, AvatarService>();
 builder.Services.AddScoped<IEmailTemplateService, EmailTemplateService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<ISessionService, SessionService>();
 builder.Services.AddScoped<ICookieService, CookieService>();
-builder.Services.AddScoped<IPartyService, PartyService>();
-builder.Services.AddScoped<IPartyMemberService, PartyMemberService>();
-builder.Services.AddScoped<IQuestService, QuestService>();
-builder.Services.AddScoped<IQuestStepService, QuestStepService>();
-builder.Services.AddScoped<IQuestAssignmentService, QuestAssignmentService>();
-builder.Services.AddScoped<IQuestCommentService, QuestCommentService>();
+builder.Services.AddScoped<IUnlockedAvatarService, UnlockedAvatarService>();
+// builder.Services.AddScoped<IUserService, UserService>();
+// builder.Services.AddScoped<IAvatarService, AvatarService>();
+
+// builder.Services.AddScoped<IPartyService, PartyService>();
+// builder.Services.AddScoped<IPartyMemberService, PartyMemberService>();
+// builder.Services.AddScoped<IQuestService, QuestService>();
+// builder.Services.AddScoped<IQuestStepService, QuestStepService>();
+// builder.Services.AddScoped<IQuestAssignmentService, QuestAssignmentService>();
+// builder.Services.AddScoped<IQuestCommentService, QuestCommentService>();
 
 // Suppress Model State Validation for Custom Filters
 builder.Services.Configure<ApiBehaviorOptions>(options =>
@@ -89,7 +94,6 @@ builder.Services.AddFluentValidationAutoValidation()
     .AddFluentValidationClientsideAdapters();
 
 // Register the CamelCaseValidationInterceptor manually
-builder.Services.AddScoped<IValidatorInterceptor, CamelCaseValidationInterceptor>();
 
 // Register Validators
 builder.Services.AddValidatorsFromAssemblyContaining<LoginCredentialsRequestDtoValidator>();
@@ -103,11 +107,14 @@ builder.Services.AddValidatorsFromAssemblyContaining<ResetPasswordRequestDtoVali
 
 // JSON and FluentValidation Configuration
 builder.Services.AddControllers()
-    .AddJsonOptions(options => { options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase; });
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+        options.JsonSerializerOptions.WriteIndented = true;
+    });
 
 // Use the DependencyInjection method for adding EmailService
 builder.Services.AddInfrastructureServices(builder.Configuration);
-
 
 // JWT Authentication Configuration
 var jwtKey = builder.Configuration[JwtNames.JwtSecret];
@@ -203,6 +210,8 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.UseStaticFiles();
+
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.MapControllers();
 

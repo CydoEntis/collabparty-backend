@@ -10,12 +10,12 @@ public static class ValidationHelpers
 
         foreach (var error in validationErrors)
         {
-            if (!errors.ContainsKey(error.Field))
+            if (!errors.ContainsKey(error.Key))
             {
-                errors[error.Field] = new List<string>();
+                errors[error.Key] = new List<string>();
             }
 
-            errors[error.Field].AddRange(error.Messages);
+            errors[error.Key].Add(error.Message); // Use Add, not AddRange since Message is a single string
         }
 
         return errors;

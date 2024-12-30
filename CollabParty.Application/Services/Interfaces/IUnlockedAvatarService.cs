@@ -6,13 +6,13 @@ namespace CollabParty.Application.Services.Interfaces;
 
 public interface IUnlockedAvatarService
 {
-    Task<Result<List<AvatarResponseDto>>> GetUnlockedAvatars(string userId);
-    Task<Result<List<LockedAvatarDto>>> GetUnlockableAvatars(string userId);
-    Task<Result<AvatarResponseDto>> SetActiveAvatar(string userId, SelectedAvatarRequestDto dto);
+    // Task<Result<List<AvatarResponseDto>>> GetUnlockedAvatars(string userId);
+    // Task<Result<List<LockedAvatarDto>>> GetUnlockableAvatars(string userId);
+    // Task<Result<AvatarResponseDto>> SetActiveAvatar(string userId, SelectedAvatarRequestDto dto);
 
     Task UnlockStarterAvatars(ApplicationUser user);
 
     Task SetNewUserAvatar(string userId, int selectedAvatarId);
 
-    Task<Result<AvatarResponseDto>> UnlockAvatar(string userId, SelectedAvatarRequestDto requestDto);
+    // Task<Result<AvatarResponseDto>> UnlockAvatar(string userId, SelectedAvatarRequestDto requestDto);
 }

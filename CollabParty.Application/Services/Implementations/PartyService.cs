@@ -1,11 +1,13 @@
 ﻿using AutoMapper;
 using CollabParty.Application.Common.Dtos;
 using CollabParty.Application.Common.Dtos.Party;
+using CollabParty.Application.Common.Errors;
 using CollabParty.Application.Common.Models;
 using CollabParty.Application.Services.Interfaces;
 using CollabParty.Domain.Entities;
 using CollabParty.Domain.Enums;
 using CollabParty.Domain.Interfaces;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Questlog.Application.Common.Models;
 
@@ -28,7 +30,7 @@ public class PartyService : IPartyService
         _partyMemberService = partyMemberService;
     }
 
-    public async Task<Result<PartyDto>> CreateParty(string userId, CreatePartyDto dto)
+    public async Task<PartyDto> CreateParty(string userId, CreatePartyDto dto)
     {
         try
         {
@@ -42,17 +44,17 @@ public class PartyService : IPartyService
                 includeProperties: "CreatedBy,CreatedBy.UnlockedAvatars.Avatar");
 
             var partyDto = _mapper.Map<PartyDto>(foundParty);
-            return Result<PartyDto>.Success(partyDto);
+            return partyDto;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to assign user to party.");
-            return Result<PartyDto>.Failure("An error occurred while creating the party.");
+            throw new CreationException("An error occured while creating the party.");
         }
     }
 
 
-    public async Task<Result<PaginatedResult<PartyDto>>> GetAllPartiesForUser(string userId, QueryParamsDto dto)
+    public async Task<PaginatedResult<PartyDto>> GetAllPartiesForUser(string userId, QueryParamsDto dto)
     {
         try
         {
@@ -93,17 +95,17 @@ public class PartyService : IPartyService
                 queryParams.PageSize
             );
 
-            return Result<PaginatedResult<PartyDto>>.Success(result);
+            return result;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to fetch user parties.");
-            return Result<PaginatedResult<PartyDto>>.Failure("An error occurred while fetching parties.");
+            throw new FetchException("Failed to fetch user parties.");
         }
     }
 
 
-    public async Task<Result<List<PartyDto>>> GetRecentParties(string userId)
+    public async Task<List<PartyDto>> GetRecentParties(string userId)
     {
         try
         {
@@ -112,17 +114,17 @@ public class PartyService : IPartyService
                 "PartyMembers,PartyMembers.User,PartyMembers.User.UnlockedAvatars,PartyMembers.User.UnlockedAvatars.Avatar");
 
 
-            var partyDto = _mapper.Map<List<PartyDto>>(recentParties);
-            return Result<List<PartyDto>>.Success(partyDto);
+            var partyDtos = _mapper.Map<List<PartyDto>>(recentParties);
+            return partyDtos;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to assign user to party.");
-            return Result<List<PartyDto>>.Failure("An error occurred while creating party.");
+            throw new FetchException("Failed to fetch recent parties.");
         }
     }
 
-    public async Task<Result<PartyDto>> GetParty(string userId, int partyId)
+    public async Task<PartyDto> GetParty(string userId, int partyId)
     {
         try
         {
@@ -131,49 +133,43 @@ public class PartyService : IPartyService
                 includeProperties: "PartyMembers.User.UnlockedAvatars.Avatar");
 
             if (foundParty == null)
-                return Result<PartyDto>.Failure($"No party with the {partyId} exists");
+                throw new NotFoundException($"Party with id {partyId} not found.");
 
-            // Retrieve the current user's role
             var currentUserPartyMember = foundParty.PartyMembers
                 .FirstOrDefault(pm => pm.UserId == userId);
 
             if (currentUserPartyMember == null)
-                return Result<PartyDto>.Failure("User is not a member of the party.");
+                throw new NotFoundException("User is not a member of this party.");
 
             var partyDto = _mapper.Map<PartyDto>(foundParty);
 
-            // Map the current user's role to the DTO
-            partyDto.CurrentUserRole = currentUserPartyMember.Role; // Assuming "Role" is a property in PartyMember
+            partyDto.CurrentUserRole = currentUserPartyMember.Role;
 
-            return Result<PartyDto>.Success(partyDto);
+            return partyDto;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to get party with id");
-            return Result<PartyDto>.Failure("An error occurred while fetching party.");
+            throw new FetchException("Failed to fetch party");
         }
     }
 
 
-    public async Task<Result<int>> UpdateParty(string userId, int partyId, UpdatePartyDto dto)
+    public async Task<int> UpdateParty(string userId, int partyId, UpdatePartyDto dto)
     {
         try
         {
             var user = await _unitOfWork.PartyMember.GetAsync(p => p.UserId == userId && p.PartyId == partyId);
 
             if (user.Role is not UserRole.Leader)
-            {
-                return Result<int>.Failure("You do not have permission to update party.");
-            }
+                throw new PermissionException("You do not have permission to update party.");
 
 
             var existingParty = await _unitOfWork.Party.GetAsync(p => p.Id == partyId,
                 includeProperties: "PartyMembers");
 
             if (existingParty == null)
-            {
-                return Result<int>.Failure("Party not found or you do not have permission to update this party.");
-            }
+                throw new NotFoundException($"Party with id {partyId} not found.");
 
             existingParty.Name = dto.Name;
             existingParty.Description = dto.Description;
@@ -182,16 +178,17 @@ public class PartyService : IPartyService
             await _unitOfWork.Party.UpdateAsync(existingParty);
 
 
-            return Result<int>.Success(existingParty.Id);
+            return existingParty.Id;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to update party.");
-            return Result<int>.Failure("An error occurred while updating the party.");
+            throw new ResourceModificationException("An error occured while updating the party.");
         }
     }
 
-    public async Task<Result<int>> DeleteParty(string userId, int partyId)
+
+    public async Task<int> DeleteParty(string userId, int partyId)
     {
         try
         {
@@ -199,6 +196,7 @@ public class PartyService : IPartyService
 
 
             if (user.Role is not UserRole.Leader)
+                
             {
                 return Result<int>.Failure("You do not have permission to delete party.");
             }

@@ -2,7 +2,6 @@
 using System.Text;
 using CollabParty.Application.Common.Dtos;
 using CollabParty.Application.Common.Dtos.Avatar;
-using CollabParty.Application.Common.Models;
 using CollabParty.Application.Services.Interfaces;
 using CollabParty.Domain.Interfaces;
 using Microsoft.AspNetCore.Identity;
@@ -11,12 +10,16 @@ using System.Security.Claims;
 using AutoMapper;
 using CollabParty.Application.Common.Constants;
 using CollabParty.Application.Common.Dtos.Auth;
+using CollabParty.Application.Common.Dtos.General;
+using CollabParty.Application.Common.Errors;
 using CollabParty.Application.Common.Interfaces;
 using CollabParty.Application.Common.Mappings;
 using CollabParty.Domain.Entities;
 using Microsoft.AspNetCore.Http;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
+using CollabParty.Application.Common.Errors;
+using CollabParty.Application.Common.Models;
 
 namespace CollabParty.Application.Services.Implementations;
 
@@ -38,7 +41,8 @@ public class AuthService : IAuthService
         IEmailService emailService,
         IMapper mapper,
         ITokenService tokenService,
-        ISessionService sessionService, ICookieService cookieService, IEmailTemplateService emailTemplateService, IUnlockedAvatarService unlockedAvatarService)
+        ISessionService sessionService, ICookieService cookieService, IEmailTemplateService emailTemplateService,
+        IUnlockedAvatarService unlockedAvatarService)
     {
         _unitOfWork = unitOfWork;
         _userManager = userManager;
@@ -52,36 +56,16 @@ public class AuthService : IAuthService
     }
 
 
-    public async Task<Result> Login(LoginRequestDto requestDto)
-    {
-        var user = await _unitOfWork.User.GetAsync(u => u.Email == requestDto.Email);
-        if (user == null || !await _userManager.CheckPasswordAsync(user, requestDto.Password))
-            return Result.Failure("email", new[] { "Invalid username or password" });
-
-        var sessionId = $"SESS{Guid.NewGuid()}";
-        var refreshToken = _tokenService.CreateRefreshToken();
-        _tokenService.CreateCsrfToken();
-
-        await _sessionService.CreateSession(user.Id, sessionId, refreshToken);
-
-        _tokenService.CreateAccessToken(user.Id, sessionId);
-        return Result.Success("Login successful");
-    }
-
-
-    public async Task<Result> Register(RegisterRequestDto dto)
+    public async Task<Result<ResponseDto>> Register(RegisterRequestDto dto)
     {
         var existingUser = await _userManager.FindByEmailAsync(dto.Email);
         if (existingUser != null)
-        {
-            return Result.Failure("email", new[] { "A user with this email already exists" });
-        }
+            throw new ValidationException("email", "Email already in use");
 
         var existingUserByUsername = await _userManager.FindByNameAsync(dto.Username);
         if (existingUserByUsername != null)
-        {
-            return Result.Failure("username", new[] { "A user with this username already exists" });
-        }
+            throw new ValidationException("username", "Username already in use");
+
 
         ApplicationUser user = new()
         {
@@ -97,12 +81,7 @@ public class AuthService : IAuthService
 
         var creationResult = await _userManager.CreateAsync(user, dto.Password);
         if (!creationResult.Succeeded)
-        {
-            var errors = creationResult.Errors
-                .Select(e => new ValidationError("user", new[] { e.Description }))
-                .ToList();
-            return Result.Failure(errors);
-        }
+            throw new CreationException("Registration failed");
 
         await _unlockedAvatarService.UnlockStarterAvatars(user);
         await _unlockedAvatarService.SetNewUserAvatar(user.Id, dto.AvatarId);
@@ -110,65 +89,79 @@ public class AuthService : IAuthService
         var loginCredentialsDto = _mapper.Map<LoginRequestDto>(dto);
 
         var loginResult = await Login(loginCredentialsDto);
-        if (!loginResult.IsSuccess)
-        {
-            return Result.Failure("Failed to register");
-        }
 
-        return Result.Success("Registration successful, you are now logged in");
+        return Result<ResponseDto>.Success(new ResponseDto() { Message = "Registration Successful" });
     }
 
-    public async Task<Result> Logout()
+    public async Task<Result<ResponseDto>> Login(LoginRequestDto requestDto)
+    {
+        var user = await _unitOfWork.User.GetAsync(u => u.Email == requestDto.Email);
+        if (user == null)
+            throw new NotFoundException("User not found");
+
+        if (!await _userManager.CheckPasswordAsync(user, requestDto.Password))
+            throw new ValidationException("username", "Username or password is incorrect");
+
+
+        var sessionId = $"SESS{Guid.NewGuid()}";
+        var refreshToken = _tokenService.CreateRefreshToken();
+        _tokenService.CreateCsrfToken();
+
+        await _sessionService.CreateSession(user.Id, sessionId, refreshToken);
+        _tokenService.CreateAccessToken(user.Id, sessionId);
+
+        return Result<ResponseDto>.Success(new ResponseDto() { Message = "Login Successful" });
+    }
+
+    public async Task<string> Logout()
     {
         var refreshToken = _cookieService.Get("QB-REFRESH-TOKEN");
         if (string.IsNullOrEmpty(refreshToken))
-            return Result.Failure("refreshToken", new[] { "Refresh token not found." });
+            throw new NotFoundException("Refresh token not found");
+
 
         var session = await _unitOfWork.Session.GetAsync(s => s.RefreshToken == refreshToken);
         if (session == null)
-            return Result.Failure("session", new[] { "Session not found or invalidated." });
+            throw new NotFoundException("Session not found");
 
         await _sessionService.InvalidateSession(session);
-
         _cookieService.Delete(CookieNames.RefreshToken);
         _cookieService.Delete(CookieNames.AccessToken);
-        _cookieService.Delete(CookieNames.CsrfToken);
-
-        return Result.Success("Logged out successfully.");
+        return "Logout successful";
     }
 
-
-    public async Task<Result> RefreshTokens()
+    public async Task<string> RefreshTokens()
     {
         var refreshToken = _cookieService.Get("QB-REFRESH-TOKEN");
         if (string.IsNullOrEmpty(refreshToken))
-            return Result.Failure("refreshToken", new[] { "Refresh token not found." });
+            throw new NotFoundException("Refresh token not found");
+
 
         var session = await _unitOfWork.Session.GetAsync(s => s.RefreshToken == refreshToken);
-        if (session == null || !_tokenService.IsRefreshTokenValid(session, refreshToken))
-            return Result.Failure("refreshToken", new[] { "Invalid or expired refresh token." });
+        if (session == null)
+            throw new NotFoundException("Session not found");
+
+        if (_tokenService.IsRefreshTokenValid(session, refreshToken))
+            throw new InvalidTokenException("Refresh token expired");
 
         var user = await _unitOfWork.User.GetAsync(u => u.Id == session.UserId);
         if (user == null)
-            return Result.Failure("user", new[] { "User not found." });
+            throw new NotFoundException("User not found");
 
         var accessToken = _tokenService.CreateAccessToken(user.Id, session.SessionId);
         var refreshTokenModel = _tokenService.CreateRefreshToken();
-
         session.RefreshToken = refreshTokenModel.Token;
         session.RefreshTokenExpiry = refreshTokenModel.Expiry;
-        await _unitOfWork.Session.UpdateAsync(session);
 
-        return Result.Success();
+        await _unitOfWork.Session.UpdateAsync(session);
+        return "Tokens refreshed successfully";
     }
 
-    public async Task<Result> ResetPasswordAsync(ResetPasswordRequestDto requestDto)
+    public async Task<string> ResetPasswordAsync(ResetPasswordRequestDto requestDto)
     {
         var user = await _userManager.FindByEmailAsync(requestDto.Email);
         if (user == null)
-        {
-            return Result.Failure("email", new[] { "No user found with that email address." });
-        }
+            throw new NotFoundException("User not found");
 
         var decodedToken = Uri.UnescapeDataString(requestDto.Token);
 
@@ -180,9 +173,7 @@ public class AuthService : IAuthService
         );
 
         if (!tokenIsValid)
-        {
-            return Result.Failure("token", new[] { "Token is no longer valid." });
-        }
+            throw new InvalidTokenException("Password reset token is invalid token");
 
         var currentPasswordHash = user.PasswordHash;
         var passwordHasher = new PasswordHasher<ApplicationUser>();
@@ -190,75 +181,55 @@ public class AuthService : IAuthService
             passwordHasher.VerifyHashedPassword(user, currentPasswordHash, requestDto.NewPassword);
 
         if (passwordVerificationResult == PasswordVerificationResult.Success)
-        {
-            return Result.Failure("newPassword", new[] { "New password cannot be the same as a previous password." });
-        }
+            throw new DuplicateException("newPassword", "Cannot use a previous password.");
 
         var resetPasswordResult = await _userManager.ResetPasswordAsync(user, decodedToken, requestDto.NewPassword);
         if (!resetPasswordResult.Succeeded)
-        {
-            var errors = resetPasswordResult.Errors
-                .Select(e => new ValidationError("newPassword", new[] { e.Description }))
-                .ToList();
-            return Result.Failure(errors);
-        }
+            throw new ServiceException(StatusCodes.Status400BadRequest, "Reset Password Error",
+                "Password reset failed");
 
-        return Result.Success("Password has been successfully reset.");
+        return "Password has been successfully reset.";
     }
 
-
-    public async Task<Result> SendForgotPasswordEmail(ForgotPasswordRequestDto requestDto)
+    public async Task<string> SendForgotPasswordEmail(ForgotPasswordRequestDto requestDto)
     {
         var user = await _userManager.FindByEmailAsync(requestDto.Email);
 
-        if (user != null)
+        if (user == null)
+            throw new NotFoundException("User not found");
+
+        var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
+        var encodedToken = Uri.EscapeDataString(resetToken);
+        var resetUrl = $"http://localhost:5173/reset-password?token={encodedToken}";
+        var placeholders = new Dictionary<string, string>
         {
-            var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
-            Debug.WriteLine(resetToken);
+            { "Recipient's Email", requestDto.Email },
+            { "Reset Link", resetUrl }
+        };
 
-            var encodedToken = Uri.EscapeDataString(resetToken);
+        var emailBody = _emailTemplateService.GetEmailTemplate("ForgotPasswordTemplate", placeholders);
 
-            var resetUrl = $"http://localhost:5173/reset-password?token={encodedToken}";
+        await _emailService.SendEmailAsync(requestDto.Email, "Password Reset Request", emailBody);
 
-            var placeholders = new Dictionary<string, string>
-            {
-                { "Recipient's Email", requestDto.Email },
-                { "Reset Link", resetUrl }
-            };
-
-            var emailBody = _emailTemplateService.GetEmailTemplate("ForgotPasswordTemplate", placeholders);
-
-            await _emailService.SendEmailAsync(requestDto.Email, "Password Reset Request", emailBody);
-        }
-
-        return Result.Success("If an account with that email exists, a password reset link will be sent.");
+        return "If an account with that email exists, a password reset link will be sent.";
     }
 
-
-    public async Task<Result> ChangePasswordAsync(string userId, ChangePasswordRequestDto requestDto)
+    public async Task<string> ChangePasswordAsync(string userId, ChangePasswordRequestDto requestDto)
     {
         var user = await _userManager.FindByIdAsync(userId);
         if (user == null)
-        {
-            return Result.Failure("user", new[] { "User not found" });
-        }
+            throw new NotFoundException("User not found");
 
         var isCurrentPasswordValid = await _userManager.CheckPasswordAsync(user, requestDto.CurrentPassword);
         if (!isCurrentPasswordValid)
-        {
-            return Result.Failure("currentPassword", new[] { "Current password is incorrect" });
-        }
+            throw new ValidationException("currentPassword", "Current password is incorrect.");
 
         var updateResult =
             await _userManager.ChangePasswordAsync(user, requestDto.CurrentPassword, requestDto.NewPassword);
         if (!updateResult.Succeeded)
-        {
-            var errors = updateResult.Errors
-                .Select(e => new ValidationError("password", new[] { e.Description }))
-                .ToList();
-            return Result.Failure(errors);
-        }
+            throw new ServiceException(StatusCodes.Status400BadRequest, "Change Password Error",
+                "Changing password failed");
 
-        return Result.Success("Password changed successfully");
+        return "Password changed successfully";
     }
 }
