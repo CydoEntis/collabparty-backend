@@ -196,7 +196,7 @@ public class AuthService : IAuthService
         var user = await _userManager.FindByEmailAsync(requestDto.Email);
 
         if (user == null)
-            throw new NotFoundException("User not found");
+            throw new NotFoundException(ErrorMessages.UserNotFound);
 
         var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
         var encodedToken = Uri.EscapeDataString(resetToken);
@@ -218,17 +218,17 @@ public class AuthService : IAuthService
     {
         var user = await _userManager.FindByIdAsync(userId);
         if (user == null)
-            throw new NotFoundException("User not found");
+            throw new NotFoundException(ErrorMessages.UserNotFound);
 
         var isCurrentPasswordValid = await _userManager.CheckPasswordAsync(user, requestDto.CurrentPassword);
         if (!isCurrentPasswordValid)
-            throw new ValidationException("currentPassword", "Current password is incorrect.");
+            throw new ValidationException("currentPassword", ErrorMessages.CurrentPasswordMismatch);
 
         var updateResult =
             await _userManager.ChangePasswordAsync(user, requestDto.CurrentPassword, requestDto.NewPassword);
         if (!updateResult.Succeeded)
-            throw new ResourceModificationException(ErrorMessageConstants.ChangePasswordFailed);
+            throw new ResourceModificationException(ErrorMessages.ChangePasswordFailed);
 
-        return "Password changed successfully";
+        return SuccessMessages.PasswordChangedSuccessfully;
     }
 }
