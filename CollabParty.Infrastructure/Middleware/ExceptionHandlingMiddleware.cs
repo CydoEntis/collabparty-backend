@@ -19,7 +19,7 @@ namespace CollabParty.Infrastructure.Middleware
             {
                 await _next(context);
             }
-            catch (DuplicateException ex)
+            catch (AlreadyExistsException ex)
             {
                 await HandleExceptionAsync(context, ex.Title, ex.StatusCode, ex.Errors);
             }

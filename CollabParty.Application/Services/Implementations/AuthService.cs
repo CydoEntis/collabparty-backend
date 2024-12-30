@@ -181,7 +181,7 @@ public class AuthService : IAuthService
             passwordHasher.VerifyHashedPassword(user, currentPasswordHash, requestDto.NewPassword);
 
         if (passwordVerificationResult == PasswordVerificationResult.Success)
-            throw new DuplicateException("newPassword", "Cannot use a previous password.");
+            throw new AlreadyExistsException("newPassword", "Cannot use a previous password.");
 
         var resetPasswordResult = await _userManager.ResetPasswordAsync(user, decodedToken, requestDto.NewPassword);
         if (!resetPasswordResult.Succeeded)
@@ -227,8 +227,7 @@ public class AuthService : IAuthService
         var updateResult =
             await _userManager.ChangePasswordAsync(user, requestDto.CurrentPassword, requestDto.NewPassword);
         if (!updateResult.Succeeded)
-            throw new ServiceException(StatusCodes.Status400BadRequest, "Change Password Error",
-                "Changing password failed");
+            throw new ResourceModificationException(ErrorMessageConstants.ChangePasswordFailed);
 
         return "Password changed successfully";
     }
