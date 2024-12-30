@@ -23,18 +23,16 @@ public class AuthController : ControllerBase
 
 
     [HttpPost("register")]
-    public async Task<IActionResult> Register([FromBody] RegisterRequestDto dto)
+    public async Task<IActionResult> Register([FromBody] RegisterRequestDto requestDto)
     {
         var validator = new RegisterCredentialsRequestDtoValidator();
-        var results = validator.Validate(dto);
+        var results = validator.Validate(requestDto);
 
-        // if (!results.IsValid)
-        //     return _validationHelper.HandleValidation(results.Errors);
+        if (!results.IsValid)
+            return _validationHelper.HandleValidation(results.Errors);
 
-
-        var result = await _authService.Register(dto);
-        return result.Map();
-        // return Ok(ApiResponse<object>.SuccessResponse(result.Value));
+        var result = await _authService.Register(requestDto);
+        return Ok(ApiResponse<object>.SuccessResponse(result.Data));
     }
 
 

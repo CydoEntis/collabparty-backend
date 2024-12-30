@@ -19,5 +19,8 @@ public class RegisterCredentialsRequestDtoValidator : AbstractValidator<Register
             .MinimumLength(6).WithMessage("Password must be at least 6 characters long.")
             .Matches(@"[A-Z]").WithMessage("Password must contain at least one uppercase letter.")
             .Matches(@"[\W_]").WithMessage("Password must contain at least one special character.");
+
+        RuleFor(x => x.AvatarId) 
+            .InclusiveBetween(1, 3).WithMessage("Can only select a starter Avatar between 1 and 3");
     }
 }
