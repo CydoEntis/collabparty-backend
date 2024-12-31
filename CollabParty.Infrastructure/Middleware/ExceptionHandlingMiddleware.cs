@@ -61,6 +61,17 @@ namespace CollabParty.Infrastructure.Middleware
                     }
                 });
             }
+            catch (RequirementNotMetException ex)
+            {
+                await HandleExceptionAsync(context, ex.Title, ex.StatusCode, new List<ErrorField>
+                {
+                    new ErrorField
+                    {
+                        Field = "requirement_not_met",
+                        Message = ex.Message
+                    }
+                });
+            }
             catch (OperationException ex)
             {
                 await HandleExceptionAsync(context, ex.Title, ex.StatusCode, new List<ErrorField>
