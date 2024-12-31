@@ -1,7 +1,9 @@
 using AutoMapper;
 using CollabParty.Application.Common.Dtos.Quest;
 using CollabParty.Application.Common.Dtos.QuestSteps;
+using CollabParty.Application.Common.Errors;
 using CollabParty.Application.Common.Models;
+using CollabParty.Application.Common.Utility;
 using CollabParty.Application.Services.Interfaces;
 using CollabParty.Domain.Entities;
 using CollabParty.Domain.Interfaces;
@@ -43,12 +45,12 @@ public class QuestStepService : IQuestStepService
                 await _unitOfWork.QuestStep.CreateAsync(questStep);
             }
 
-            return Result.Success("Quest steps created successfully.");
+            return new CreateQuestStepResponseDto() { Message = "Created quest steps", QuestId = questId };
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to assign user to party.");
-            return Result.Failure("An error occurred while creating the party.");
+            throw new ResourceCreationException("An error occured while trying to create quest steps");
         }
     }
 
@@ -57,31 +59,27 @@ public class QuestStepService : IQuestStepService
         try
         {
             var questStep = await _unitOfWork.QuestStep.GetAsync(qs => qs.Id == dto.QuestStepId);
-            if (questStep == null)
-            {
-                return Result<int>.Failure($"Quest step with ID {dto.QuestStepId} not found.");
-            }
+            if (EntityUtility.EntityIsNull(questStep))
+                throw new NotFoundException("Quest step could not be found");
+
 
             if (questStep.IsCompleted)
-            {
                 questStep.CompletedAt = DateTime.UtcNow;
-            }
             else
-            {
                 questStep.CompletedAt = null;
-            }
 
             questStep.IsCompleted = dto.IsCompleted;
             questStep.UpdatedAt = DateTime.UtcNow;
 
             await _unitOfWork.QuestStep.UpdateAsync(questStep);
 
-            return Result<int>.Success(questStep.QuestId);
+            return new UpdateQuestStepResponseDto()
+                { Message = "Quest step status updated", QuestId = questStep.QuestId };
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, $"Failed to update quest step with ID {dto.QuestStepId}.");
-            return Result<int>.Failure("An error occurred while updating the quest step.");
+            throw new ResourceModificationException("An error occured while trying to update quest step status");
         }
     }
 
@@ -90,10 +88,8 @@ public class QuestStepService : IQuestStepService
         try
         {
             var existingSteps = await _unitOfWork.QuestStep.GetAllAsync(qs => qs.QuestId == questId);
-            if (existingSteps == null)
-            {
-                return Result.Failure($"No quest steps found for quest ID {questId}.");
-            }
+            if (EntityUtility.EntityIsNull(existingSteps))
+                throw new NotFoundException("Quest steps not found.");
 
             var stepsToAdd = new List<QuestStep>();
             var stepsToUpdate = new List<QuestStep>();
@@ -139,12 +135,12 @@ public class QuestStepService : IQuestStepService
                 await _unitOfWork.QuestStep.RemoveAsync(step);
             }
 
-            return Result.Success("Quest steps updated successfully.");
+            return new UpdateQuestStepResponseDto() { Message = "Quest steps updated", QuestId = questId };
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to update quest steps.");
-            return Result.Failure("An error occurred while updating quest steps.");
+            throw new ResourceModificationException("An error occured while trying to update quest steps.");
         }
     }
 
@@ -155,29 +151,26 @@ public class QuestStepService : IQuestStepService
         {
             var existingSteps = await _unitOfWork.QuestStep.GetAllAsync(qs => qs.QuestId == questId);
 
-            if (existingSteps == null || !existingSteps.Any())
-            {
-                return Result.Failure($"No quest steps found for quest ID {questId}.");
-            }
+            if (EntityUtility.EntityIsNull(existingSteps) || !existingSteps.Any())
+                throw new NotFoundException("Quest steps not found.");
 
             var stepsToDelete = existingSteps.Where(qs => stepIdsToRemove.Contains(qs.Id)).ToList();
 
             if (!stepsToDelete.Any())
-            {
-                return Result.Failure("No matching quest steps found to remove.");
-            }
+                throw new NotFoundException("No quest steps to delete.");
+
 
             foreach (var step in stepsToDelete)
             {
                 await _unitOfWork.QuestStep.RemoveAsync(step);
             }
 
-            return Result.Success("Quest steps removed successfully.");
+            return new DeleteQuestStepResponseDto() { Message = "Quest steps removed", QuestId = questId };
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to remove quest steps.");
-            return Result.Failure("An error occurred while removing quest steps.");
+            throw new ResourceModificationException("An error occured while trying to delete quest steps.");
         }
     }
 }
