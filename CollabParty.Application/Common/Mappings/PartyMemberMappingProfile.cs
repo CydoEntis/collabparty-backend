@@ -15,5 +15,7 @@ public class PartyMemberMappingProfile : Profile
             .ForMember(dest => dest.Role, opt => opt.MapFrom(src => src.Role))
             .ForMember(dest => dest.Avatar, opt => opt.MapFrom(src =>
                 src.User.UnlockedAvatars.Where(ua => ua.IsActive).Select(ua => ua).FirstOrDefault()));
+
+        CreateMap<AddPartyMemberResponseDto, PartyMember>().ReverseMap();
     }
 }

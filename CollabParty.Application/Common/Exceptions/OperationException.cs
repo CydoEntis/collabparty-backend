@@ -3,5 +3,5 @@ using Microsoft.AspNetCore.Http;
 
 namespace CollabParty.Application.Common.Errors;
 
-public class OperationException(string message, string title)
+public class OperationException(string title, string message)
     : ServiceException(StatusCodes.Status400BadRequest, title, message);

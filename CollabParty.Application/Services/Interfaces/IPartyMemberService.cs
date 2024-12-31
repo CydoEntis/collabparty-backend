@@ -6,13 +6,14 @@ namespace CollabParty.Application.Services.Interfaces;
 
 public interface IPartyMemberService
 {
-    Task AddPartyMember(string userId, int partyId);
-    Task AddPartyLeader(string userId, int partyId);
+    Task<AddPartyMemberResponseDto> AddPartyMember(string userId, int partyId);
+    Task<AddPartyMemberResponseDto> AddPartyLeader(string userId, int partyId);
 
     Task<List<PartyMemberResponseDto>> GetPartyMembers(string userId, int partyId);
 
-    Task<int> UpdatePartyMembers(int partyId, List<MemberUpdateDto> membersToUpdate);
-    Task LeaveParty(string userId, int partyId);
+    Task<UpdatePartyMemberResponseDto> ChangePartyLeader(int partyId, ChangePartyLeaderRequestDto dto);
+    Task<UpdatePartyMemberResponseDto> UpdatePartyMembers(int partyId,
+        List<MemberUpdateDto> membersToUpdate);
+    Task<UpdatePartyMemberResponseDto> LeaveParty(string userId, int partyId);
 
-    Task<int> ChangePartyLeader(int partyId, ChangePartyLeaderRequestDto dto);
 }
