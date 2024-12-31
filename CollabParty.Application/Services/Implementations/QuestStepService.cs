@@ -24,7 +24,7 @@ public class QuestStepService : IQuestStepService
     }
 
 
-    public async Task<Result> CreateQuestSteps(int questId, string[] steps)
+    public async Task<CreateQuestStepResponseDto> CreateQuestSteps(int questId, string[] steps)
     {
         try
         {
@@ -52,7 +52,7 @@ public class QuestStepService : IQuestStepService
         }
     }
 
-    public async Task<Result<int>> UpdateStepStatus(QuestStepStatusDto dto)
+    public async Task<UpdateQuestStepResponseDto> UpdateStepStatus(QuestStepStatusDto dto)
     {
         try
         {
@@ -85,7 +85,7 @@ public class QuestStepService : IQuestStepService
         }
     }
 
-    public async Task<Result> UpdateQuestSteps(int questId, List<UpdateQuestStepDto> updatedSteps)
+    public async Task<UpdateQuestStepResponseDto> UpdateQuestSteps(int questId, List<UpdateQuestStepDto> updatedSteps)
     {
         try
         {
@@ -149,7 +149,7 @@ public class QuestStepService : IQuestStepService
     }
 
 
-    public async Task<Result> RemoveQuestSteps(int questId, List<int> stepIdsToRemove)
+    public async Task<DeleteQuestStepResponseDto> RemoveQuestSteps(int questId, List<int> stepIdsToRemove)
     {
         try
         {
