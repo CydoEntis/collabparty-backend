@@ -8,7 +8,7 @@ namespace CollabParty.Application.Services.Interfaces;
 public interface IUserService
 {
     Task<UserDtoResponse> GetUserDetails(string userId);
-    Task<UpdateUserResponseDto> UpdateUserDetails(string userId, UpdateUserRequestDto dto);
-    Task AddGold(string userId, int amount);
-    Task AddExperience(string userId, int amount);
+    Task<UpdateUserDetailsResponseDto> UpdateUserDetails(string userId, UpdateUserRequestDto dto);
+    Task<AddGoldResponseDto> AddGold(string userId, int amount);
+    Task<AddExpResponseDto> AddExperience(string userId, int amount);
 }

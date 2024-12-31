@@ -20,7 +20,7 @@ public class UserMappingProfile : Profile
             .ForMember(dest => dest.ExpToNextLevel, opt => opt.MapFrom(src => src.ExpToNextLevel))
             .ForMember(dest => dest.Avatar,
                 opt => opt.MapFrom(src => src.UnlockedAvatars.FirstOrDefault(ua => ua.IsActive).Avatar));
-        CreateMap<ApplicationUser, UpdateUserResponseDto>();
+        CreateMap<ApplicationUser, UpdateUserDetailsResponseDto>();
 
         CreateMap<ApplicationUser, PartyMemberResponseDto>()
             .ForMember(dest => dest.UserId, opt => opt.MapFrom(src => src.Id))
