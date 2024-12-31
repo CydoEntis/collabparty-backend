@@ -61,7 +61,7 @@ namespace CollabParty.Infrastructure.Middleware
                     }
                 });
             }
-            catch (RequirementNotMetException ex)
+            catch (ConflictException ex)
             {
                 await HandleExceptionAsync(context, ex.Title, ex.StatusCode, new List<ErrorField>
                 {
