@@ -86,7 +86,7 @@ public class QuestAssignmentService : IQuestAssignmentService
             }
 
             return new UpdateAssignedPartyMembersResponseDto()
-                { Message = "Quest assignments updated", QuestId = questId };
+                { Message = "Quest assignments updated", QuestId = questId, IsSuccess = true};
         }
         catch (Exception ex)
         {

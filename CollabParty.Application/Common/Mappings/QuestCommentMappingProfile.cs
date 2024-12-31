@@ -12,7 +12,7 @@ public class QuestCommentMappingProfile : Profile
             .ForMember(dest => dest.PartyMember, opt => opt.MapFrom(src => src.User));
 
         // Mapping AddCommentRequestDto to QuestComment
-        CreateMap<AddCommentRequestDto, QuestComment>()
+        CreateMap<AddQuestCommentRequestDto, QuestComment>()
             .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
             .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore());
     }

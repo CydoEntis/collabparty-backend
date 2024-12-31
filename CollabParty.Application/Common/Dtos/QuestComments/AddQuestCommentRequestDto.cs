@@ -1,8 +1,8 @@
 namespace CollabParty.Application.Common.Dtos.QuestComments;
 
-public class EditCommentRequestDto
+public class AddQuestCommentRequestDto
 {
-    public int Id { get; set; }
+    public int QuestId { get; set; }
     public string UserId { get; set; }
     public string Content { get; set; }
 }
