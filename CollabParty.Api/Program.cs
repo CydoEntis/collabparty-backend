@@ -79,9 +79,8 @@ builder.Services.AddScoped<IUnlockedAvatarService, UnlockedAvatarService>();
 builder.Services.AddScoped<IAvatarService, AvatarService>();
 builder.Services.AddScoped<IPartyService, PartyService>();
 builder.Services.AddScoped<IPartyMemberService, PartyMemberService>();
+builder.Services.AddScoped<IQuestService, QuestService>();
 
-
-// builder.Services.AddScoped<IQuestService, QuestService>();
 // builder.Services.AddScoped<IQuestStepService, QuestStepService>();
 // builder.Services.AddScoped<IQuestAssignmentService, QuestAssignmentService>();
 // builder.Services.AddScoped<IQuestCommentService, QuestCommentService>();
