@@ -36,7 +36,7 @@ public class UserService : IUserService
         try
         {
             if (string.IsNullOrWhiteSpace(userId))
-                throw new IsRequiredException("User id is required");
+                throw new IsRequiredException("User id is required.");
 
             var foundUser = await _unitOfWork.User.GetAsync(u => u.Id == userId,
                 includeProperties: "UnlockedAvatars,UnlockedAvatars.Avatar");
@@ -58,7 +58,7 @@ public class UserService : IUserService
         try
         {
             if (string.IsNullOrWhiteSpace(userId))
-                throw new IsRequiredException("User id is required");
+                throw new IsRequiredException("User id is required.");
 
             var foundUser = await _unitOfWork.User.GetAsync(u => u.Id == userId);
 
@@ -92,7 +92,7 @@ public class UserService : IUserService
         try
         {
             if (string.IsNullOrWhiteSpace(userId))
-                throw new IsRequiredException("User id is required");
+                throw new IsRequiredException("User id is required.");
 
             var user = await _unitOfWork.User.GetAsync(u => u.Id == userId);
 
@@ -116,7 +116,7 @@ public class UserService : IUserService
         try
         {
             if (string.IsNullOrWhiteSpace(userId))
-                throw new IsRequiredException("User id is required");
+                throw new IsRequiredException("User id is required.");
 
             var user = await _unitOfWork.User.GetAsync(u => u.Id == userId);
 
