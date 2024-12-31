@@ -74,12 +74,13 @@ builder.Services.AddScoped<IEmailTemplateService, EmailTemplateService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<ISessionService, SessionService>();
 builder.Services.AddScoped<ICookieService, CookieService>();
-builder.Services.AddScoped<IUnlockedAvatarService, UnlockedAvatarService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IUnlockedAvatarService, UnlockedAvatarService>();
+builder.Services.AddScoped<IAvatarService, AvatarService>();
 builder.Services.AddScoped<IPartyService, PartyService>();
 builder.Services.AddScoped<IPartyMemberService, PartyMemberService>();
 
-// builder.Services.AddScoped<IAvatarService, AvatarService>();
+
 // builder.Services.AddScoped<IQuestService, QuestService>();
 // builder.Services.AddScoped<IQuestStepService, QuestStepService>();
 // builder.Services.AddScoped<IQuestAssignmentService, QuestAssignmentService>();

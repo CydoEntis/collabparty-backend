@@ -14,5 +14,5 @@ public static class ErrorTitles
     public const string PasswordResetException = "Reset Password Exception";
     public const string UnauthorizedException = "Unauthorized Exception";
     public const string RequiredException = "Required Exception";
-    public const string RequirementNotMet = "Requirement Not Met Exception";
+    public const string Conflict = "Conflict Exception";
 }

@@ -9,4 +9,10 @@ public static class RoleUtility
     {
         return user?.Role == UserRole.Leader;
     }
+
+
+    public static bool IsLeaderOrCaptain(PartyMember user)
+    {
+        return user?.Role is UserRole.Leader or UserRole.Captain;
+    }
 }
