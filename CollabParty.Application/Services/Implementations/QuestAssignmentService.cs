@@ -1,6 +1,8 @@
 using AutoMapper;
 using CollabParty.Application.Common.Dtos.QuestAssignment;
+using CollabParty.Application.Common.Errors;
 using CollabParty.Application.Common.Models;
+using CollabParty.Application.Common.Utility;
 using CollabParty.Application.Services.Interfaces;
 using CollabParty.Domain.Interfaces;
 using Microsoft.Extensions.Logging;
@@ -38,12 +40,13 @@ public class QuestAssignmentService : IQuestAssignmentService
                 await _unitOfWork.QuestAssignment.CreateAsync(partyMember);
             }
 
-            return Result.Success("Party members assigned to quest");
+            return new AssignPartyMembersResponseDto()
+                { Message = "Party members assigned to quest", QuestId = questId };
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to assign members to quest.");
-            return Result.Failure("An error occurred while assigning members to the quest.");
+            throw new ResourceCreationException("An error occured while assigning members to quest.");
         }
     }
 
@@ -54,10 +57,8 @@ public class QuestAssignmentService : IQuestAssignmentService
         {
             var existingAssignments = await _unitOfWork.QuestAssignment.GetAllAsync(qa => qa.QuestId == questId);
 
-            if (existingAssignments == null)
-            {
-                return Result.Failure($"No quest assignments found for quest ID {questId}.");
-            }
+            if (EntityUtility.EntityIsNull(existingAssignments))
+                throw new NotFoundException("Quest assignments not found");
 
             var assignmentsToDelete = existingAssignments
                 .Where(assignment => !updatedPartyMemberIds.Contains(assignment.UserId))
@@ -84,12 +85,13 @@ public class QuestAssignmentService : IQuestAssignmentService
                 await _unitOfWork.QuestAssignment.CreateAsync(newAssignment);
             }
 
-            return Result.Success("Quest assignments updated successfully.");
+            return new UpdateAssignedPartyMembersResponseDto()
+                { Message = "Quest assignments updated", QuestId = questId };
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to update quest assignments.");
-            return Result.Failure("An error occurred while updating quest assignments.");
+            throw new ResourceModificationException("An error occured while updating quest assignments.");
         }
     }
 
@@ -101,30 +103,29 @@ public class QuestAssignmentService : IQuestAssignmentService
             var existingAssignments = await _unitOfWork.QuestAssignment.GetAllAsync(qa => qa.QuestId == questId);
 
             if (existingAssignments == null || !existingAssignments.Any())
-            {
-                return Result.Failure($"No quest assignments found for quest ID {questId}.");
-            }
+                throw new NotFoundException("Quest assignments not found");
+
 
             var assignmentsToDelete = existingAssignments
                 .Where(assignment => partyMemberIdsToDelete.Contains(assignment.UserId))
                 .ToList();
 
             if (!assignmentsToDelete.Any())
-            {
-                return Result.Failure("No matching quest assignments found to delete.");
-            }
+                throw new NotFoundException("No quest assignments for deletion could be found.");
+
 
             foreach (var assignment in assignmentsToDelete)
             {
                 await _unitOfWork.QuestAssignment.RemoveAsync(assignment);
             }
 
-            return Result.Success("Quest assignments deleted successfully.");
+            return new DeleteAssignedPartyMembersResponseDto()
+                { Message = "Quest assignments deleted", QuestId = questId };
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to delete quest assignments.");
-            return Result.Failure("An error occurred while deleting quest assignments.");
+            throw new ResourceModificationException("An error occured while deleting quest assignments.");
         }
     }
 }
