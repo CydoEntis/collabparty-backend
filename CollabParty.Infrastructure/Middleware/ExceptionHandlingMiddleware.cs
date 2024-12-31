@@ -50,6 +50,17 @@ namespace CollabParty.Infrastructure.Middleware
                     }
                 });
             }
+            catch (IsRequiredException ex)
+            {
+                await HandleExceptionAsync(context, ex.Title, ex.StatusCode, new List<ErrorField>
+                {
+                    new ErrorField
+                    {
+                        Field = "required",
+                        Message = ex.Message
+                    }
+                });
+            }
             catch (OperationException ex)
             {
                 await HandleExceptionAsync(context, ex.Title, ex.StatusCode, new List<ErrorField>

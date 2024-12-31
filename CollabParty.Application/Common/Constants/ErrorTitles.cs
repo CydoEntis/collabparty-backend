@@ -13,4 +13,5 @@ public static class ErrorTitles
     public const string ValidationException = "Validation Exception";
     public const string PasswordResetException = "Reset Password Exception";
     public const string UnauthorizedException = "Unauthorized Exception";
+    public const string RequiredException = "Required Exception";
 }
