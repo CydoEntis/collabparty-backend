@@ -59,15 +59,17 @@ public class AuthService : IAuthService
 
     public async Task<ResponseDto> Register(RegisterRequestDto dto)
     {
-        var existingUser = await _userManager.FindByEmailAsync(dto.Email);
+        var existingUserByEmail = await _userManager.FindByEmailAsync(dto.Email);
+        var existingUserByUsername = await _userManager.FindByNameAsync(dto.Username);
 
-        if (!EntityUtility.EntityIsNull(existingUser))
+        if (existingUserByEmail != null && existingUserByEmail.Email.ToUpper() == dto.Email.ToUpper())
         {
-            if (existingUser.Email == dto.Email)
-                throw new ValidationException(ErrorFields.Email, ErrorMessages.EmailInUse);
+            throw new ValidationException(ErrorFields.Email, ErrorMessages.EmailInUse);
+        }
 
-            if (existingUser.UserName == dto.Username)
-                throw new ValidationException(ErrorFields.UserName, ErrorMessages.UsernameInUse);
+        if (existingUserByUsername != null && existingUserByUsername.UserName.ToUpper() == dto.Username.ToUpper())
+        {
+            throw new ValidationException(ErrorFields.UserName, ErrorMessages.UsernameInUse);
         }
 
         ApplicationUser user = new()
@@ -87,14 +89,14 @@ public class AuthService : IAuthService
         {
             if (creationResult.Errors.Any(e => e.Code == "DuplicateUserName"))
                 throw new AlreadyExistsException("username", ErrorMessages.UsernameInUse);
+            else if (creationResult.Errors.Any(e => e.Code == "DuplicateEmail"))
+                throw new AlreadyExistsException("email", ErrorMessages.EmailInUse);
             else
                 throw new ResourceCreationException(ErrorMessages.RegistrationFailed);
         }
 
-
         await _unlockedAvatarService.UnlockStarterAvatars(user);
         await _unlockedAvatarService.SetNewUserAvatar(user.Id, dto.AvatarId);
-
 
         await Login(new LoginRequestDto() { Email = dto.Email, Password = dto.Password });
 
