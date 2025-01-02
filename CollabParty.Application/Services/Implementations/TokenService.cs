@@ -31,7 +31,6 @@ public class TokenService : ITokenService
         var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
         var expires = DateTime.UtcNow.AddMinutes(30);
-        // var expires = DateTime.UtcNow.AddMinutes(30);
 
         var tokenDescriptor = new SecurityTokenDescriptor
         {
