@@ -68,17 +68,25 @@ public class UserService : IUserService
         {
             var usernameExists = await _unitOfWork.User.GetAsync(u => u.UserName == dto.Username && u.Id != userId);
             if (usernameExists != null)
-                // throw new ValidationException(ErrorFields.UserName, "Username is already taken.");
-                throw new NotFoundException("User not found.");
+                throw new ValidationException(ErrorFields.UserName, "Username is already taken.");
         }
 
         foundUser.Email = dto.Email ?? foundUser.Email;
+        foundUser.NormalizedEmail = Normalize(dto.Email) ?? foundUser.NormalizedEmail;
+
         foundUser.UserName = dto.Username ?? foundUser.UserName;
+        foundUser.NormalizedUserName = Normalize(dto.Username) ?? foundUser.NormalizedUserName;
 
         await _unitOfWork.User.UpdateAsync(foundUser);
 
         return _mapper.Map<UpdateUserDetailsResponseDto>(foundUser);
     }
+
+    private string Normalize(string value)
+    {
+        return value?.ToUpperInvariant();
+    }
+
 
     public async Task<AddGoldResponseDto> AddGold(string userId, int amount)
     {

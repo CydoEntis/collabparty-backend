@@ -176,7 +176,7 @@ public class AuthService : IAuthService
 
         var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
         var encodedToken = Uri.EscapeDataString(resetToken);
-        var resetUrl = $"http://localhost:5173/reset-password?token={encodedToken}";
+        var resetUrl = $"https://localhost:5173/reset-password?token={encodedToken}";
         var placeholders = new Dictionary<string, string>
         {
             { "Recipient's Email", requestDto.Email },
@@ -185,7 +185,7 @@ public class AuthService : IAuthService
 
         var emailBody = _emailTemplateService.GetEmailTemplate("ForgotPasswordTemplate", placeholders);
 
-        await _emailService.SendEmailAsync(requestDto.Email, "Password Reset Request", emailBody);
+        await _emailService.SendEmailAsync("Questbound", requestDto.Email, "Password Reset Request", emailBody);
 
         return new ResponseDto() { Message = SuccessMessages.PasswordResetEmailSent };
     }

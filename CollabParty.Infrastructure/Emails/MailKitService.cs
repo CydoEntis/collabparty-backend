@@ -21,10 +21,10 @@ public class MailKitService : IEmailService
     }
 
 
-    public async Task SendEmailAsync(string toEmail, string subject, string body)
+    public async Task SendEmailAsync(string preview, string toEmail, string subject, string body)
     {
         var message = new MimeMessage();
-        message.From.Add(new MailboxAddress("Your Name", _email));
+        message.From.Add(new MailboxAddress(preview, _email));
         message.To.Add(new MailboxAddress("", toEmail));
         message.Subject = subject;
 
