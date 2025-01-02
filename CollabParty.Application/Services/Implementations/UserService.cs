@@ -19,133 +19,110 @@ public class UserService : IUserService
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
-    private readonly ILogger<UserService> _logger;
     private readonly UserManager<ApplicationUser> _userManager;
 
-    public UserService(IUnitOfWork unitOfWork, IMapper mapper, ILogger<UserService> logger,
+    public UserService(IUnitOfWork unitOfWork, IMapper mapper,
         UserManager<ApplicationUser> userManager)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
-        _logger = logger;
         _userManager = userManager;
     }
 
     public async Task<UserDtoResponse> GetUserDetails(string userId)
     {
-        try
+        if (string.IsNullOrWhiteSpace(userId))
+            throw new IsRequiredException("User id is required.");
+
+        var foundUser = await _unitOfWork.User.GetAsync(u => u.Id == userId,
+            includeProperties: "UnlockedAvatars,UnlockedAvatars.Avatar");
+
+        if (EntityUtility.EntityIsNull(foundUser))
         {
-            if (string.IsNullOrWhiteSpace(userId))
-                throw new IsRequiredException("User id is required.");
-
-            var foundUser = await _unitOfWork.User.GetAsync(u => u.Id == userId,
-                includeProperties: "UnlockedAvatars,UnlockedAvatars.Avatar");
-
-            if (EntityUtility.EntityIsNull(foundUser))
-                throw new NotFoundException("User not found.");
-
-            return _mapper.Map<UserDtoResponse>(foundUser);
+            throw new NotFoundException("User not found.");
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to update user details");
-            throw new ResourceModificationException("An error occured while updating the user.");
-        }
+
+        return _mapper.Map<UserDtoResponse>(foundUser);
     }
+
 
     public async Task<UpdateUserDetailsResponseDto> UpdateUserDetails(string userId, UpdateUserRequestDto dto)
     {
-        try
+        if (string.IsNullOrWhiteSpace(userId))
+            throw new IsRequiredException("User ID is required.");
+
+        var foundUser = await _unitOfWork.User.GetAsync(u => u.Id == userId);
+        if (foundUser == null)
+            throw new NotFoundException("User not found.");
+
+        if (!string.IsNullOrWhiteSpace(dto.Email) &&
+            !dto.Email.Equals(foundUser.Email, StringComparison.OrdinalIgnoreCase))
         {
-            if (string.IsNullOrWhiteSpace(userId))
-                throw new IsRequiredException("User id is required.");
+            var emailExists = await _unitOfWork.User.GetAsync(u => u.Email == dto.Email && u.Id != userId);
+            if (emailExists != null)
+                throw new ValidationException(ErrorFields.Email, "Email is already taken.");
+        }
 
-            var foundUser = await _unitOfWork.User.GetAsync(u => u.Id == userId);
-
-            if (EntityUtility.EntityIsNull(foundUser))
+        if (!string.IsNullOrWhiteSpace(dto.Username) &&
+            !dto.Username.Equals(foundUser.UserName, StringComparison.OrdinalIgnoreCase))
+        {
+            var usernameExists = await _unitOfWork.User.GetAsync(u => u.UserName == dto.Username && u.Id != userId);
+            if (usernameExists != null)
+                // throw new ValidationException(ErrorFields.UserName, "Username is already taken.");
                 throw new NotFoundException("User not found.");
-
-            var user = await _unitOfWork.User.GetAsync(u => u.Email == dto.Email && u.Id != userId);
-            if (!EntityUtility.EntityIsNull(user.Email))
-                throw new ValidationException(ErrorFields.Email, "Email is already taken");
-
-
-            if (!EntityUtility.EntityIsNull(user.UserName))
-                throw new ValidationException(ErrorFields.UserName, "Username is already taken");
-
-            foundUser.Email = dto.Email;
-            foundUser.UserName = dto.Username;
-
-            await _unitOfWork.User.UpdateAsync(foundUser);
-
-            return _mapper.Map<UpdateUserDetailsResponseDto>(foundUser);
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to update user details");
-            throw new ResourceModificationException("An error occured while updating the user.");
-        }
+
+        foundUser.Email = dto.Email ?? foundUser.Email;
+        foundUser.UserName = dto.Username ?? foundUser.UserName;
+
+        await _unitOfWork.User.UpdateAsync(foundUser);
+
+        return _mapper.Map<UpdateUserDetailsResponseDto>(foundUser);
     }
 
     public async Task<AddGoldResponseDto> AddGold(string userId, int amount)
     {
-        try
-        {
-            if (string.IsNullOrWhiteSpace(userId))
-                throw new IsRequiredException("User id is required.");
+        if (string.IsNullOrWhiteSpace(userId))
+            throw new IsRequiredException("User id is required.");
 
-            var user = await _unitOfWork.User.GetAsync(u => u.Id == userId);
+        var user = await _unitOfWork.User.GetAsync(u => u.Id == userId);
 
-            if (EntityUtility.EntityIsNull(user))
-                throw new NotFoundException("User not found.");
+        if (EntityUtility.EntityIsNull(user))
+            throw new NotFoundException("User not found.");
 
-            user.Gold += amount;
-            await _unitOfWork.User.UpdateAsync(user);
+        user.Gold += amount;
+        await _unitOfWork.User.UpdateAsync(user);
 
-            return new AddGoldResponseDto { Message = "Gold awarded to user", Gold = user.Gold, UserId = user.Id };
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, $"Failed to add gold to user with ID {userId}");
-            throw new ResourceModificationException("An error occured while awarding the user gold.");
-        }
+        return new AddGoldResponseDto { Message = "Gold awarded to user", Gold = user.Gold, UserId = user.Id };
     }
 
     public async Task<AddExpResponseDto> AddExperience(string userId, int amount)
     {
-        try
+        if (string.IsNullOrWhiteSpace(userId))
+            throw new IsRequiredException("User id is required.");
+
+        var user = await _unitOfWork.User.GetAsync(u => u.Id == userId);
+
+        if (EntityUtility.EntityIsNull(user))
+            throw new NotFoundException("User not found.");
+
+        user.CurrentExp += amount;
+
+        var leveledUp = false;
+        while (user.CurrentExp >= GetExperienceThreshold(user.CurrentLevel))
         {
-            if (string.IsNullOrWhiteSpace(userId))
-                throw new IsRequiredException("User id is required.");
-
-            var user = await _unitOfWork.User.GetAsync(u => u.Id == userId);
-
-            if (EntityUtility.EntityIsNull(user))
-                throw new NotFoundException("User not found.");
-
-            user.CurrentExp += amount;
-
-            var leveledUp = false;
-            while (user.CurrentExp >= GetExperienceThreshold(user.CurrentLevel))
-            {
-                user.CurrentExp -= GetExperienceThreshold(user.CurrentLevel);
-                user.CurrentExp++;
-                leveledUp = true;
-            }
-
-            await _unitOfWork.User.UpdateAsync(user);
-
-            var message = leveledUp
-                ? $"User with id {userId} leveled up to level {user.CurrentLevel}"
-                : $"Successfully added {amount} experience to user with ID {userId}";
-
-            return new AddExpResponseDto { Message = message, NewCurrentExp = user.CurrentExp, UserId = user.Id };
+            user.CurrentExp -= GetExperienceThreshold(user.CurrentLevel);
+            user.CurrentExp++;
+            leveledUp = true;
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, $"Failed to add experience to user with ID {userId}");
-            throw new ResourceModificationException("An error occured while awarding experience.");
-        }
+
+        await _unitOfWork.User.UpdateAsync(user);
+
+        var message = leveledUp
+            ? $"User with id {userId} leveled up to level {user.CurrentLevel}"
+            : $"Successfully added {amount} experience to user with ID {userId}";
+
+        return new AddExpResponseDto { Message = message, NewCurrentExp = user.CurrentExp, UserId = user.Id };
     }
 
     private int GetExperienceThreshold(int level)

@@ -6,7 +6,7 @@ public class QueryParamsDto
 {
     public string? Search { get; set; }
     public string? OrderBy { get; set; } = Domain.Enums.OrderByOption.Desc;
-    public string? SortBy { get; set; } = Domain.Enums.SortByOption.Name;
+    public string? SortBy { get; set; } = Domain.Enums.SortByOption.CreatedAt;
     public string? DateFilter { get; set; } = DateFilterOption.CreatedAt; 
     public PriorityLevelOption PriorityLevelOption { get; set; } 
     public int PageNumber { get; set; } = 1; 

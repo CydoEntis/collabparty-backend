@@ -35,6 +35,7 @@ public class PartyService : IPartyService
         {
             var newParty = _mapper.Map<Party>(requestDto);
             newParty.CreatedById = userId;
+            newParty.CreatedAt = DateTime.UtcNow;
             Party createdParty = await _unitOfWork.Party.CreateAsync(newParty);
 
             await _partyMemberService.AddPartyLeader(userId, createdParty.Id);
