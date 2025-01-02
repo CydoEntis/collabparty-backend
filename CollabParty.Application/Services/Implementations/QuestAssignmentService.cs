@@ -26,6 +26,13 @@ public class QuestAssignmentService : IQuestAssignmentService
     {
         try
         {
+            var validUserIds = await _unitOfWork.User.GetAllAsync(u => partyMemberIds.Contains(u.Id));
+
+            if (validUserIds.Count() != partyMemberIds.Length)
+            {
+                throw new ResourceCreationException("Some party members are invalid or do not exist.");
+            }
+
             var partyMembers = partyMemberIds.Select(partyMemberId => new QuestAssignment()
             {
                 QuestId = questId,
@@ -34,21 +41,24 @@ public class QuestAssignmentService : IQuestAssignmentService
                 IsCompleted = false,
             }).ToList();
 
-
             foreach (var partyMember in partyMembers)
             {
                 await _unitOfWork.QuestAssignment.CreateAsync(partyMember);
             }
 
             return new AssignPartyMembersResponseDto()
-                { Message = "Party members assigned to quest", QuestId = questId };
+            {
+                Message = "Party members assigned to quest",
+                QuestId = questId
+            };
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to assign members to quest.");
-            throw new ResourceCreationException("An error occured while assigning members to quest.");
+            throw new ResourceCreationException("An error occurred while assigning members to the quest.");
         }
     }
+
 
     public async Task<UpdateAssignedPartyMembersResponseDto> UpdateQuestAssignments(int questId,
         string[] updatedPartyMemberIds)
@@ -86,7 +96,7 @@ public class QuestAssignmentService : IQuestAssignmentService
             }
 
             return new UpdateAssignedPartyMembersResponseDto()
-                { Message = "Quest assignments updated", QuestId = questId, IsSuccess = true};
+                { Message = "Quest assignments updated", QuestId = questId, IsSuccess = true };
         }
         catch (Exception ex)
         {

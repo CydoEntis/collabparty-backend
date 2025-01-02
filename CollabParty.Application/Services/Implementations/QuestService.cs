@@ -61,7 +61,6 @@ public class QuestService : IQuestService
     {
         try
         {
-            // Fetch user's role in the party
             var partyMember = await _unitOfWork.PartyMember
                 .GetAsync(pm => pm.UserId == userId && pm.PartyId == partyId);
 
