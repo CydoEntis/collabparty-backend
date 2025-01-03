@@ -29,7 +29,7 @@ public class QuestAssignmentService : IQuestAssignmentService
             var validUserIds = await _unitOfWork.User.GetAllAsync(u => partyMemberIds.Contains(u.Id));
 
             if (validUserIds.Count() != partyMemberIds.Length)
-            {
+            { 
                 throw new ResourceCreationException("Some party members are invalid or do not exist.");
             }
 

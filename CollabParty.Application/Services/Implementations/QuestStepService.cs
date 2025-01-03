@@ -97,7 +97,7 @@ public class QuestStepService : IQuestStepService
 
             foreach (var stepDto in updatedSteps)
             {
-                if (stepDto.Id == 0)
+                if (stepDto.Id == 0 || stepDto.Id == null)
                 {
                     stepsToAdd.Add(new QuestStep
                     {
@@ -135,7 +135,7 @@ public class QuestStepService : IQuestStepService
                 await _unitOfWork.QuestStep.RemoveAsync(step);
             }
 
-            return new UpdateQuestStepResponseDto() { Message = "Quest steps updated", QuestId = questId };
+            return new UpdateQuestStepResponseDto() { Message = "Quest steps updated", QuestId = questId, IsSuccess = true};
         }
         catch (Exception ex)
         {
