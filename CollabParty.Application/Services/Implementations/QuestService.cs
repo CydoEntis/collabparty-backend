@@ -80,7 +80,7 @@ public class QuestService : IQuestService
                 PageNumber = dto.PageNumber,
                 PageSize = dto.PageSize,
                 IncludeProperties =
-                    "QuestAssignments.User.UnlockedAvatars.Avatar,QuestSteps",
+                    "QuestAssignments.User.UnlockedAvatars.Avatar,QuestSteps,QuestComments",
                 Filter = q =>
                     q.PartyId == partyId && !q.IsCompleted &&
                     (isLeaderOrCaptain || q.QuestAssignments.Any(qa => qa.UserId == userId)),
@@ -232,14 +232,19 @@ public class QuestService : IQuestService
             if (RoleUtility.IsLeaderOrCaptain(user))
                 throw new PermissionException("You do not have permission to delete this quest.");
 
-
             var existingQuest = await _unitOfWork.Quest.GetAsync(
                 q => q.Id == questId,
-                includeProperties: "QuestSteps,QuestAssignments"
+                includeProperties: "QuestSteps,QuestAssignments,QuestComments"
             );
 
             if (EntityUtility.EntityIsNull(existingQuest))
                 throw new NotFoundException("Quest does not exist.");
+
+            var commentsToDelete = await _unitOfWork.QuestComment.GetAllAsync(qc => qc.QuestId == questId);
+            foreach (var comment in commentsToDelete)
+            {
+                await _unitOfWork.QuestComment.RemoveAsync(comment);
+            }
 
             foreach (var step in existingQuest.QuestSteps.ToList())
             {
@@ -254,12 +259,16 @@ public class QuestService : IQuestService
             await _unitOfWork.Quest.RemoveAsync(existingQuest);
 
             return new DeleteQuestResponseDto()
-                { Message = "Quest deleted successfully", QuestId = existingQuest.Id, PartyId = existingQuest.PartyId };
+            {
+                Message = "Quest deleted successfully",
+                QuestId = existingQuest.Id,
+                PartyId = existingQuest.PartyId
+            };
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to delete quest.");
-            throw new ResourceModificationException("An error occured while deleting quest.");
+            throw new ResourceModificationException("An error occurred while deleting the quest.");
         }
     }
 

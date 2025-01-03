@@ -57,7 +57,7 @@ public class AuthService : IAuthService
     }
 
 
-    public async Task<ResponseDto> Register(RegisterRequestDto dto)
+    public async Task<AuthenticatedResponseDto> Register(RegisterRequestDto dto)
     {
         var existingUserByEmail = await _userManager.FindByEmailAsync(dto.Email);
         var existingUserByUsername = await _userManager.FindByNameAsync(dto.Username);
@@ -100,10 +100,10 @@ public class AuthService : IAuthService
 
         await Login(new LoginRequestDto() { Email = dto.Email, Password = dto.Password });
 
-        return new ResponseDto() { Message = SuccessMessages.RegistrationSuccessful };
+        return new AuthenticatedResponseDto() { Message = SuccessMessages.RegistrationSuccessful, UserId = user.Id };
     }
 
-    public async Task<ResponseDto> Login(LoginRequestDto requestDto)
+    public async Task<AuthenticatedResponseDto> Login(LoginRequestDto requestDto)
     {
         var user = await _unitOfWork.User.GetAsync(u => u.Email == requestDto.Email);
         if (EntityUtility.EntityIsNull(user))
@@ -119,7 +119,7 @@ public class AuthService : IAuthService
         await _sessionService.CreateSession(user.Id, sessionId, refreshToken);
         _tokenService.CreateAccessToken(user.Id, sessionId);
 
-        return new ResponseDto() { Message = SuccessMessages.LoginSuccessful };
+        return new AuthenticatedResponseDto() { Message = SuccessMessages.LoginSuccessful, UserId = user.Id };
     }
 
     public async Task<ResponseDto> Logout()

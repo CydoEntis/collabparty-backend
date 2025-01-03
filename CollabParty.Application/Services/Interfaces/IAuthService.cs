@@ -7,8 +7,8 @@ namespace CollabParty.Application.Services.Interfaces;
 
 public interface IAuthService
 {
-    Task<ResponseDto> Register(RegisterRequestDto dto);
-    Task<ResponseDto> Login(LoginRequestDto requestDto);
+    Task<AuthenticatedResponseDto> Register(RegisterRequestDto dto);
+    Task<AuthenticatedResponseDto> Login(LoginRequestDto requestDto);
     Task<ResponseDto> Logout();
     Task<ResponseDto> RefreshTokens();
     Task<ResponseDto> ResetPasswordAsync(ResetPasswordRequestDto requestDto);

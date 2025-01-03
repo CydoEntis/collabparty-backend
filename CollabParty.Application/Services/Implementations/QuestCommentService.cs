@@ -87,8 +87,9 @@ public class QuestCommentService : IQuestCommentService
             if (EntityUtility.EntityIsNull(comment))
                 throw new NotFoundException("Comment not found.");
 
-            if (comment.UserId != userId && RoleUtility.IsLeaderOrCaptain(partyMember))
+            if (comment.UserId != userId && !RoleUtility.IsLeaderOrCaptain(partyMember))
                 throw new PermissionException("You do not have permission to delete this comment.");
+
 
             await _unitOfWork.QuestComment.RemoveAsync(comment);
 

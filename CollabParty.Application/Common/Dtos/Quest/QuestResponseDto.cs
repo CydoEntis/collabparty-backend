@@ -22,4 +22,5 @@ public class QuestResponseDto
     public string CompletedBy { get; set; }
     public int ExpReward { get; set; }
     public int GoldReward { get; set; }
+    public int CommentCount { get; set; }
 }

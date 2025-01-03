@@ -45,7 +45,9 @@ namespace CollabParty.Application.Common.Mappings
                     opt.MapFrom(src => src.QuestSteps.Count(q => q.IsCompleted)))
                 .ForMember(dest => dest.CompletedBy, opt =>
                     opt.MapFrom(src => src.CompletedBy != null ? src.CompletedBy.UserName : null))
-                .ForMember(dest => dest.DueDate, opt => opt.MapFrom(src => src.DueDate));
+                .ForMember(dest => dest.DueDate, opt => opt.MapFrom(src => src.DueDate))
+                .ForMember(dest => dest.CommentCount, opt =>
+                    opt.MapFrom(src => src.QuestComments.Count));
 
 
             CreateMap<Quest, QuestDetailResponseDto>()
