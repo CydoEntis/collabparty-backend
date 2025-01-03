@@ -120,7 +120,7 @@ public class UserService : IUserService
         while (user.CurrentExp >= GetExperienceThreshold(user.CurrentLevel))
         {
             user.CurrentExp -= GetExperienceThreshold(user.CurrentLevel);
-            user.CurrentExp++;
+            user.CurrentLevel++;
             leveledUp = true;
         }
 

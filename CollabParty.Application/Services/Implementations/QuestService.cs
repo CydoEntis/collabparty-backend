@@ -135,8 +135,7 @@ public class QuestService : IQuestService
         {
             var foundQuest = await _unitOfWork.Quest.GetAsync(
                 q => q.Id == questId,
-                includeProperties:
-                "Party.PartyMembers.User.UnlockedAvatars.Avatar,QuestSteps,QuestComments,QuestFiles");
+                includeProperties: "Party.PartyMembers.User.UnlockedAvatars.Avatar,QuestSteps,QuestComments,QuestFiles");
 
             if (EntityUtility.EntityIsNull(foundQuest))
                 throw new NotFoundException("Quest does not exist.");
@@ -151,17 +150,22 @@ public class QuestService : IQuestService
             }
 
             await _userService.AddExperience(userId, foundQuest.ExpReward);
+
             await _userService.AddGold(userId, foundQuest.GoldReward);
 
             await _unitOfWork.Quest.UpdateAsync(foundQuest);
 
             return new CompleteQuestResponseDto()
-                { Message = "Quest created successfully.", QuestId = foundQuest.Id, PartyId = foundQuest.PartyId };
+            { 
+                Message = "Quest completed successfully.", 
+                QuestId = foundQuest.Id, 
+                PartyId = foundQuest.PartyId 
+            };
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to get party with id");
-            throw new OperationException("Quest Completion Exception", "An error occured while completing quest.");
+            _logger.LogError(ex, "Failed to complete quest.");
+            throw new OperationException("Quest Completion Exception", "An error occurred while completing the quest.");
         }
     }
 
