@@ -12,8 +12,12 @@ public interface IPartyMemberService
     Task<List<PartyMemberResponseDto>> GetPartyMembers(string userId, int partyId);
 
     Task<UpdatePartyMemberResponseDto> ChangePartyLeader(int partyId, ChangePartyLeaderRequestDto dto);
+
     Task<UpdatePartyMemberResponseDto> UpdatePartyMembers(int partyId,
         List<MemberUpdateDto> membersToUpdate);
+
     Task<UpdatePartyMemberResponseDto> LeaveParty(string userId, int partyId);
 
+    Task<InvitePartyMemberResponseDto> InvitePartyMember(string userId, int partyId, string inviteeEmail);
+    Task<AcceptInviteResponseDto> AcceptInvite(string token);
 }

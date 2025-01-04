@@ -6,6 +6,7 @@ using CollabParty.Application.Common.Models;
 using CollabParty.Application.Common.Utility;
 using CollabParty.Application.Common.Validators.Helpers;
 using CollabParty.Application.Services.Interfaces;
+using CollabParty.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -76,5 +77,27 @@ public class PartyMemberController : ControllerBase
 
         var result = await _partyMemberService.LeaveParty(userId, partyId);
         return Ok(ApiResponse<object>.SuccessResponse(result));
+    }
+
+    [HttpPost("{partyId}/invite")]
+    public async Task<ActionResult> InvitePartyMember(int partyId, [FromBody] PartyInviteRequestDto dto)
+    {
+        var (isValid, userId) = ClaimsHelper.TryGetUserId(User);
+        if (!isValid)
+            return Unauthorized("You do not have permission to access this resource.");
+
+        var result = await _partyMemberService.InvitePartyMember(userId, partyId, dto.InviteeEmail);
+
+
+        return Ok(ApiResponse<string>.SuccessResponse(result.Message));
+    }
+
+    [HttpPost("accept-invite")]
+    public async Task<ActionResult> AcceptInvite([FromBody] AcceptInviteRequestDto dto)
+    {
+        var result = await _partyMemberService.AcceptInvite(dto.Token);
+
+
+        return Ok(ApiResponse<string>.SuccessResponse(result.Message));
     }
 }
