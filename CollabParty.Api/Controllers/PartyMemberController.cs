@@ -92,12 +92,16 @@ public class PartyMemberController : ControllerBase
         return Ok(ApiResponse<string>.SuccessResponse(result.Message));
     }
 
-    // [HttpPost("accept-invite")]
-    // public async Task<ActionResult> AcceptInvite([FromBody] AcceptInviteRequestDto dto)
-    // {
-    //     var result = await _partyMemberService.AcceptInvite(dto.Token);
-    //
-    //
-    //     return Ok(ApiResponse<string>.SuccessResponse(result.Message));
-    // }
+    [HttpPost("accept-invite")]
+    public async Task<ActionResult> AcceptInvite([FromBody] AcceptInviteRequestDto dto)
+    {
+        var (isValid, userId) = ClaimsHelper.TryGetUserId(User);
+        if (!isValid)
+            return Unauthorized("You do not have permission to access this resource.");
+
+        var result = await _partyMemberService.AcceptInvite(userId, dto.Token);
+
+
+        return Ok(ApiResponse<string>.SuccessResponse(result.Message));
+    }
 }

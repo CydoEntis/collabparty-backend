@@ -19,5 +19,5 @@ public interface IPartyMemberService
     Task<UpdatePartyMemberResponseDto> LeaveParty(string userId, int partyId);
 
     Task<InvitePartyMemberResponseDto> InvitePartyMember(string userId, int partyId, string inviteeEmail);
-    // Task<AcceptInviteResponseDto> AcceptInvite(string token);
+    Task<AcceptInviteResponseDto> AcceptInvite(string userId, string token);
 }
