@@ -92,12 +92,12 @@ public class PartyMemberController : ControllerBase
         return Ok(ApiResponse<string>.SuccessResponse(result.Message));
     }
 
-    [HttpPost("accept-invite")]
-    public async Task<ActionResult> AcceptInvite([FromBody] AcceptInviteRequestDto dto)
-    {
-        var result = await _partyMemberService.AcceptInvite(dto.Token);
-
-
-        return Ok(ApiResponse<string>.SuccessResponse(result.Message));
-    }
+    // [HttpPost("accept-invite")]
+    // public async Task<ActionResult> AcceptInvite([FromBody] AcceptInviteRequestDto dto)
+    // {
+    //     var result = await _partyMemberService.AcceptInvite(dto.Token);
+    //
+    //
+    //     return Ok(ApiResponse<string>.SuccessResponse(result.Message));
+    // }
 }

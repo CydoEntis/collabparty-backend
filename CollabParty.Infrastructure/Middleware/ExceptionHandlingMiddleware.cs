@@ -124,12 +124,27 @@ namespace CollabParty.Infrastructure.Middleware
 
         private void LogException(HttpContext context, Exception ex, string message)
         {
-            _logger.LogError(ex, "{Message} Path: {Path}, Method: {Method}, User: {User}, Query: {Query}",
+            var innerExceptionMessages = GetInnerExceptions(ex);
+
+            _logger.LogError(ex, 
+                "{Message} Path: {Path}, Method: {Method}, User: {User}, Query: {Query}, InnerExceptions: {InnerExceptions}",
                 message,
                 context.Request.Path,
                 context.Request.Method,
                 context.User.Identity?.Name ?? "Anonymous",
-                context.Request.QueryString.ToString());
+                context.Request.QueryString.ToString(),
+                innerExceptionMessages);
+        }
+
+        private string GetInnerExceptions(Exception ex)
+        {
+            var innerExceptions = new List<string>();
+            while (ex.InnerException != null)
+            {
+                ex = ex.InnerException;
+                innerExceptions.Add(ex.Message);
+            }
+            return string.Join(" -> ", innerExceptions);
         }
     }
 }

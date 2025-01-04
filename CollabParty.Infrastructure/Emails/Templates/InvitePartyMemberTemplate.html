@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f6f6f6;
+            margin: 0;
+            padding: 0;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        .email-header {
+            background-color: #f0f4f8;
+            padding: 20px;
+            text-align: center;
+        }
+        .email-header img {
+            max-height: 50px;
+        }
+        .email-body {
+            padding: 30px;
+        }
+        .email-body h1 {
+            font-size: 20px;
+            margin: 0 0 15px;
+            color: #333333;
+        }
+        .email-body p {
+            font-size: 16px;
+            color: #555555;
+            line-height: 1.5;
+            margin: 0 0 20px;
+        }
+        .email-body a.button {
+            display: inline-block;
+            background-color: #6741D9;
+            color: #ffffff;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .email-footer {
+            background-color: #f9f9f9;
+            padding: 15px;
+            text-align: center;
+            font-size: 12px;
+            color: #888888;
+            border-top: 1px solid #ddd;
+        }
+        .email-footer a {
+            color: #0073e6;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+<div class="email-container">
+    <!-- Header -->
+    <div class="email-header">
+        <h3>Questbound</h3>
+    </div>
+
+    <!-- Body -->
+    <div class="email-body">
+        <h1>Hello, [Recipient's Email],</h1>
+        <p>
+            You have been invited to join a party.
+        </p>
+        <p style="text-align: center;">
+            <a href="[Invite Link]" class="button">Accept Invite</a>
+        </p>
+        <p>Thank you,<br>The Questbound Team</p>
+    </div>
+
+    <!-- Footer -->
+    <div class="email-footer">
+        <p>
+            © 2024 Questbound. All rights reserved.<br>
+        </p>
+    </div>
+</div>
+</body>
+</html>

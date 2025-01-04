@@ -256,11 +256,21 @@ public class PartyMemberService : IPartyMemberService
 
     public async Task<InvitePartyMemberResponseDto> InvitePartyMember(string userId, int partyId, string inviteeEmail)
     {
-        var party = await _unitOfWork.Party.GetAsync(p => p.Id == partyId && p.CreatedById == userId);
-
+        var party = await _unitOfWork.Party.GetAsync(p => p.Id == partyId);
         if (EntityUtility.EntityIsNull(party))
             throw new NotFoundException("Party not found.");
 
+        var inviter = await _unitOfWork.PartyMember.GetAsync(pm => pm.PartyId == partyId && pm.UserId == userId);
+
+        if (inviter == null)
+        {
+            throw new UnauthorizedAccessException("User is not a member of the party.");
+        }
+
+        if (!RoleUtility.IsLeaderOrCaptain(inviter))
+        {
+            throw new UnauthorizedAccessException("Only Leaders or Captains can invite members to the party.");
+        }
 
         var token = Guid.NewGuid().ToString();
         var tokenExpiration = DateTime.UtcNow.AddMinutes(15);
@@ -274,9 +284,15 @@ public class PartyMemberService : IPartyMemberService
             ExpirationDate = tokenExpiration
         };
 
-        await _unitOfWork.PartyInvite.CreateAsync(invite);
 
-        var inviteLink = $"https://yourapp.com/party/invite/{token}";
+        var partyInvite = await _unitOfWork.PartyInvite.CreateAsync(invite);
+
+
+        if (partyInvite == null)
+            throw new NotFoundException("Party invite not found.");
+
+        var encodedToken = Uri.EscapeDataString(token);
+        var inviteLink = $"https://localhost:5173/invite?token={encodedToken}";
 
         var placeholders = new Dictionary<string, string>
         {
@@ -284,37 +300,37 @@ public class PartyMemberService : IPartyMemberService
             { "Invite Link", inviteLink }
         };
 
-        // TODO: Create accept invite email template.
-        var emailBody = _emailTemplateService.GetEmailTemplate("AcceptInviteTemplate", placeholders);
+        var emailBody = _emailTemplateService.GetEmailTemplate("InvitePartyMemberTemplate", placeholders);
 
-        await _emailService.SendEmailAsync("Party Invite", inviteeEmail, inviteLink, emailBody);
+        await _emailService.SendEmailAsync("Party Invite", inviteeEmail, "You have been invited to join a party", emailBody);
 
-        return new InvitePartyMemberResponseDto() { Message = "Invite to party has been sent." };
+        return new InvitePartyMemberResponseDto { Message = "Invite to party has been sent." };
     }
 
-    public async Task<AcceptInviteResponseDto> AcceptInvite(string token)
-    {
-        var invite = await _unitOfWork.PartyInvite.GetAsync(i => i.Token == token);
 
-        if (EntityUtility.EntityIsNull(invite) || invite.ExpirationDate < DateTime.UtcNow)
-            throw new InvalidTokenException("Invalid token.");
-
-        var isMember = await _unitOfWork.PartyMember.ExistsAsync(pm =>
-            pm.PartyId == invite.PartyId && pm.UserId == invite.InviteeUserId);
-        if (isMember)
-            throw new ConflictException("This party member is already accepted.");
-
-        var partyMember = new PartyMember
-        {
-            PartyId = invite.PartyId,
-            UserId = invite.InviteeUserId,
-            Role = UserRole.Member,
-            JoinedAt = DateTime.UtcNow
-        };
-        await _unitOfWork.PartyMember.CreateAsync(partyMember);
-
-        await _unitOfWork.PartyInvite.RemoveAsync(invite);
-
-        return new AcceptInviteResponseDto() { Message = "Party invite accepted.", PartyId = invite.PartyId };
-    }
+    // public async Task<AcceptInviteResponseDto> AcceptInvite(string token)
+    // {
+    //     var invite = await _unitOfWork.PartyInvite.GetAsync(i => i.Token == token);
+    //
+    //     if (EntityUtility.EntityIsNull(invite) || invite.ExpirationDate < DateTime.UtcNow)
+    //         throw new InvalidTokenException("Invalid token.");
+    //
+    //     var isMember = await _unitOfWork.PartyMember.ExistsAsync(pm =>
+    //         pm.PartyId == invite.PartyId && pm.UserId == invite.InviteeUserId);
+    //     if (isMember)
+    //         throw new ConflictException("This party member is already accepted.");
+    //
+    //     var partyMember = new PartyMember
+    //     {
+    //         PartyId = invite.PartyId,
+    //         UserId = invite.InviteeUserId,
+    //         Role = UserRole.Member,
+    //         JoinedAt = DateTime.UtcNow
+    //     };
+    //     await _unitOfWork.PartyMember.CreateAsync(partyMember);
+    //
+    //     await _unitOfWork.PartyInvite.RemoveAsync(invite);
+    //
+    //     return new AcceptInviteResponseDto() { Message = "Party invite accepted.", PartyId = invite.PartyId };
+    // }
 }

@@ -42,6 +42,7 @@ public class UnitOfWork : IUnitOfWork
         UnlockedAvatar = new UnlockedAvatarRepository(db);
         // UserParty = new UserPartyRepository(db);
         User = new UserRepository(db);
+        PartyInvite = new PartyInviteRepository(db);
     }
 
 
