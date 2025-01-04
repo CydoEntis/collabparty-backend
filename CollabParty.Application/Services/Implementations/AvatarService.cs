@@ -23,8 +23,7 @@ public class AvatarService : IAvatarService
 
     public async Task<List<LockedAvatarDto>> GetLockedAvatars(string userId)
     {
-        try
-        {
+  
             if (string.IsNullOrWhiteSpace(userId))
                 throw new IsRequiredException("User id is required.");
 
@@ -35,11 +34,6 @@ public class AvatarService : IAvatarService
                 throw new NotFoundException("All avatars are unlocked.");
 
             return _mapper.Map<List<LockedAvatarDto>>(lockedAvatars);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to get locked avatars for user {UserId}", userId);
-            throw new FetchException("An error occured while getting all locked avatars.");
-        }
+
     }
 }
