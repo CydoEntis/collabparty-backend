@@ -102,6 +102,6 @@ public class PartyMemberController : ControllerBase
         var result = await _partyMemberService.AcceptInvite(userId, dto.Token);
 
 
-        return Ok(ApiResponse<string>.SuccessResponse(result.Message));
+        return Ok(ApiResponse<object>.SuccessResponse(result));
     }
 }

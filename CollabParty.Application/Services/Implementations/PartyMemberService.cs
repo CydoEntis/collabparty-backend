@@ -341,10 +341,11 @@ public class PartyMemberService : IPartyMemberService
         {
             Message = "Party invite accepted.",
             PartyId = invite.PartyId,
-            PartyName = party.Name,
-            PartyDescription = party.Description,
+            PartyName = party.Name, 
+            PartyDescription = party.Description, 
         };
 
         return response;
     }
+
 }
