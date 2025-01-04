@@ -31,8 +31,6 @@ public class PartyService : IPartyService
 
     public async Task<PartyResponseDto> CreateParty(string userId, CreatePartyRequestDto requestDto)
     {
-        try
-        {
             var newParty = _mapper.Map<Party>(requestDto);
             newParty.CreatedById = userId;
             newParty.CreatedAt = DateTime.UtcNow;
@@ -45,19 +43,11 @@ public class PartyService : IPartyService
 
             var partyDto = _mapper.Map<PartyResponseDto>(foundParty);
             return partyDto;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to assign user to party.");
-            throw new ResourceCreationException("An error occured while creating the party.");
-        }
     }
 
 
     public async Task<PaginatedResult<PartyResponseDto>> GetAllPartiesForUser(string userId, QueryParamsDto dto)
     {
-        try
-        {
             var queryParams = new QueryParams<Party>
             {
                 Search = dto.Search,
@@ -96,19 +86,11 @@ public class PartyService : IPartyService
             );
 
             return result;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to fetch user parties.");
-            throw new FetchException("Failed to fetch user parties.");
-        }
     }
 
 
     public async Task<List<PartyResponseDto>> GetRecentParties(string userId)
     {
-        try
-        {
             var recentParties = await _unitOfWork.Party.GetMostRecentPartiesForUserAsync(userId,
                 includeProperties:
                 "PartyMembers,PartyMembers.User,PartyMembers.User.UnlockedAvatars,PartyMembers.User.UnlockedAvatars.Avatar");
@@ -116,18 +98,10 @@ public class PartyService : IPartyService
 
             var partyDtos = _mapper.Map<List<PartyResponseDto>>(recentParties);
             return partyDtos;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to assign user to party.");
-            throw new FetchException("Failed to fetch recent parties.");
-        }
     }
 
     public async Task<PartyResponseDto> GetParty(string userId, int partyId)
     {
-        try
-        {
             var foundParty = await _unitOfWork.Party.GetAsync(
                 p => p.Id == partyId && p.PartyMembers.Any(pm => pm.PartyId == partyId),
                 includeProperties: "PartyMembers.User.UnlockedAvatars.Avatar");
@@ -147,19 +121,11 @@ public class PartyService : IPartyService
             partyDto.CurrentUserRole = currentUserPartyMember.Role;
 
             return partyDto;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to get party with id");
-            throw new FetchException("Failed to fetch party");
-        }
     }
 
 
     public async Task<UpdatePartyResponseDto> UpdateParty(string userId, int partyId, UpdatePartyRequestDto requestDto)
     {
-        try
-        {
             var user = await _unitOfWork.PartyMember.GetAsync(p => p.UserId == userId && p.PartyId == partyId);
 
             if (!await IsLeaderAsync(userId, partyId))
@@ -180,19 +146,11 @@ public class PartyService : IPartyService
 
 
             return new UpdatePartyResponseDto() { Message = "Party updated successfully", PartyId = partyId };
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to update party.");
-            throw new ResourceModificationException("An error occured while updating the party.");
-        }
     }
 
 
     public async Task<DeletePartyResponseDto> DeleteParty(string userId, int partyId)
     {
-        try
-        {
             var user = await _unitOfWork.PartyMember.GetAsync(p => p.UserId == userId && p.PartyId == partyId);
 
 
@@ -225,12 +183,6 @@ public class PartyService : IPartyService
             await _unitOfWork.Party.RemoveAsync(existingParty);
 
             return new DeletePartyResponseDto() { Message = "Party deleted successfully", PartyId = partyId };
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to delete party.");
-            throw new ResourceModificationException("An error occured while deleting the party.");
-        }
     }
 
     private async Task DeleteEntitiesAsync<T>(List<T> entities, Func<T, Task> removeMethod)
