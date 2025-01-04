@@ -30,8 +30,6 @@ public class QuestCommentService : IQuestCommentService
     public async Task<PaginatedResult<QuestCommentResponseDto>> GetPaginatedComments(
         int questId, QueryParamsDto dto)
     {
-        try
-        {
             var queryParams = new QueryParams<QuestComment>
             {
                 Search = dto.Search,
@@ -49,37 +47,21 @@ public class QuestCommentService : IQuestCommentService
 
             return new PaginatedResult<QuestCommentResponseDto>(
                 commentDtos, paginatedResult.TotalItems, paginatedResult.CurrentPage, queryParams.PageSize);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to fetch paginated comments.");
-            throw new FetchException("An error occured while fetching comments.");
-        }
     }
 
 
     public async Task<AddQuestCommentResponseDto> AddComment(AddQuestCommentRequestDto dto)
     {
-        try
-        {
             var comment = _mapper.Map<QuestComment>(dto);
 
             await _unitOfWork.QuestComment.CreateAsync(comment);
 
             return new AddQuestCommentResponseDto() { Message = "Comment added successfully.", QuestId = dto.QuestId };
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to add comment.");
-            throw new ResourceCreationException("An error occured while adding comment.");
-        }
     }
 
 
     public async Task<DeleteQuestCommentResponseDto> DeleteComment(int commentId, string userId)
     {
-        try
-        {
             var comment = await _unitOfWork.QuestComment.GetAsync(qc => qc.Id == commentId);
             var party = await _unitOfWork.Party.GetAsync(p => p.Quests.Any(q => q.Id == comment.QuestId));
             var partyMember =
@@ -95,11 +77,5 @@ public class QuestCommentService : IQuestCommentService
 
             return new DeleteQuestCommentResponseDto()
                 { Message = "Comment removed successfully.", QuestId = comment.QuestId };
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to delete comment.");
-            throw new ResourceModificationException("An error occured while deleting comment.");
-        }
     }
 }
