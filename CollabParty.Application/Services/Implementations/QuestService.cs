@@ -36,246 +36,197 @@ public class QuestService : IQuestService
 
     public async Task<CreateQuestResponseDto> CreateQuest(string userId, CreateQuestRequestDto dto)
     {
-        try
-        {
-            var newQuest = _mapper.Map<Quest>(dto);
-            newQuest.CreatedById = userId;
-            newQuest.ExpReward = CalculateQuestExpReward(dto.PriorityLevel);
-            newQuest.GoldReward = CalculateQuestGoldReward(dto.PriorityLevel);
-            var createdQuest = await _unitOfWork.Quest.CreateAsync(newQuest);
-            await _questStepService.CreateQuestSteps(createdQuest.Id, dto.Steps);
-            await _questAssignmentService.AssignPartyMembersToQuest(createdQuest.Id, dto.PartyMembers);
+        var newQuest = _mapper.Map<Quest>(dto);
+        newQuest.CreatedById = userId;
+        newQuest.ExpReward = CalculateQuestExpReward(dto.PriorityLevel);
+        newQuest.GoldReward = CalculateQuestGoldReward(dto.PriorityLevel);
+        var createdQuest = await _unitOfWork.Quest.CreateAsync(newQuest);
+        await _questStepService.CreateQuestSteps(createdQuest.Id, dto.Steps);
+        await _questAssignmentService.AssignPartyMembersToQuest(createdQuest.Id, dto.PartyMembers);
 
-            return new CreateQuestResponseDto()
-                { Message = "Quest created successfully.", QuestId = createdQuest.Id, PartyId = createdQuest.PartyId };
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to create quest.");
-            throw new ResourceCreationException("An error occured while creating quest.");
-        }
+        return new CreateQuestResponseDto()
+            { Message = "Quest created successfully.", QuestId = createdQuest.Id, PartyId = createdQuest.PartyId };
     }
 
     public async Task<PaginatedResult<QuestResponseDto>> GetQuests(string userId, int partyId,
         QueryParamsDto dto)
     {
-        try
+        var partyMember = await _unitOfWork.PartyMember
+            .GetAsync(pm => pm.UserId == userId && pm.PartyId == partyId);
+
+        if (EntityUtility.EntityIsNull(partyMember))
+            throw new NotFoundException("Party Member does not exist.");
+
+        var isLeaderOrCaptain = partyMember.Role == UserRole.Leader || partyMember.Role == UserRole.Captain;
+
+        var queryParams = new QueryParams<Quest>
         {
-            var partyMember = await _unitOfWork.PartyMember
-                .GetAsync(pm => pm.UserId == userId && pm.PartyId == partyId);
+            Search = dto.Search,
+            OrderBy = dto.OrderBy,
+            SortBy = dto.SortBy,
+            DateFilter = dto.DateFilter,
+            StartDate = dto.StartDate,
+            EndDate = dto.EndDate,
+            PageNumber = dto.PageNumber,
+            PageSize = dto.PageSize,
+            IncludeProperties =
+                "QuestAssignments.User.UnlockedAvatars.Avatar,QuestSteps,QuestComments",
+            Filter = q =>
+                q.PartyId == partyId && !q.IsCompleted &&
+                (isLeaderOrCaptain || q.QuestAssignments.Any(qa => qa.UserId == userId)),
+        };
 
-            if (EntityUtility.EntityIsNull(partyMember))
-                throw new NotFoundException("Party Member does not exist.");
+        var paginatedResult = await _unitOfWork.Quest.GetPaginatedAsync(queryParams);
 
-            var isLeaderOrCaptain = partyMember.Role == UserRole.Leader || partyMember.Role == UserRole.Captain;
+        var questDtos = _mapper.Map<List<QuestResponseDto>>(paginatedResult.Items);
 
-            var queryParams = new QueryParams<Quest>
-            {
-                Search = dto.Search,
-                OrderBy = dto.OrderBy,
-                SortBy = dto.SortBy,
-                DateFilter = dto.DateFilter,
-                StartDate = dto.StartDate,
-                EndDate = dto.EndDate,
-                PageNumber = dto.PageNumber,
-                PageSize = dto.PageSize,
-                IncludeProperties =
-                    "QuestAssignments.User.UnlockedAvatars.Avatar,QuestSteps,QuestComments",
-                Filter = q =>
-                    q.PartyId == partyId && !q.IsCompleted &&
-                    (isLeaderOrCaptain || q.QuestAssignments.Any(qa => qa.UserId == userId)),
-            };
-
-            var paginatedResult = await _unitOfWork.Quest.GetPaginatedAsync(queryParams);
-
-            var questDtos = _mapper.Map<List<QuestResponseDto>>(paginatedResult.Items);
-
-            return new PaginatedResult<QuestResponseDto>(questDtos, paginatedResult.TotalItems,
-                paginatedResult.CurrentPage, queryParams.PageSize);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to fetch user quests.");
-            throw new FetchException("An error occured while fetching quests.");
-        }
+        return new PaginatedResult<QuestResponseDto>(questDtos, paginatedResult.TotalItems,
+            paginatedResult.CurrentPage, queryParams.PageSize);
     }
 
 
     public async Task<QuestDetailResponseDto> GetQuest(int questId)
     {
-        try
-        {
-            var foundQuest = await _unitOfWork.Quest.GetAsync(
-                q => q.Id == questId,
-                includeProperties:
-                "QuestAssignments.User.UnlockedAvatars.Avatar,QuestSteps,QuestComments,QuestFiles");
+        var foundQuest = await _unitOfWork.Quest.GetAsync(
+            q => q.Id == questId,
+            includeProperties:
+            "QuestAssignments.User.UnlockedAvatars.Avatar,QuestSteps,QuestComments,QuestFiles");
 
 
-            if (EntityUtility.EntityIsNull(foundQuest))
-                throw new NotFoundException("Quest does not exist.");
+        if (EntityUtility.EntityIsNull(foundQuest))
+            throw new NotFoundException("Quest does not exist.");
 
-            var partyMembers = await _unitOfWork.PartyMember.GetAllAsync(p => p.PartyId == foundQuest.PartyId,
-                includeProperties: "User.UnlockedAvatars.Avatar");
-            var partyMembersDto = _mapper.Map<List<PartyMemberResponseDto>>(partyMembers);
+        var partyMembers = await _unitOfWork.PartyMember.GetAllAsync(p => p.PartyId == foundQuest.PartyId,
+            includeProperties: "User.UnlockedAvatars.Avatar");
+        var partyMembersDto = _mapper.Map<List<PartyMemberResponseDto>>(partyMembers);
 
-            var questDetailDto = _mapper.Map<QuestDetailResponseDto>(foundQuest);
-            questDetailDto.PartyMembers = partyMembersDto;
-            return questDetailDto;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to get party with id");
-            throw new FetchException("An error occured while fetching quest.");
-        }
+        var questDetailDto = _mapper.Map<QuestDetailResponseDto>(foundQuest);
+        questDetailDto.PartyMembers = partyMembersDto;
+        return questDetailDto;
     }
 
     public async Task<CompleteQuestResponseDto> CompleteQuest(string userId, int questId)
     {
-        try
+        var foundQuest = await _unitOfWork.Quest.GetAsync(
+            q => q.Id == questId,
+            includeProperties: "Party.PartyMembers.User.UnlockedAvatars.Avatar,QuestSteps,QuestComments,QuestFiles");
+
+        if (EntityUtility.EntityIsNull(foundQuest))
+            throw new NotFoundException("Quest does not exist.");
+
+        foundQuest.IsCompleted = true;
+        foundQuest.CompletedById = userId;
+
+        foreach (var questStep in foundQuest.QuestSteps)
         {
-            var foundQuest = await _unitOfWork.Quest.GetAsync(
-                q => q.Id == questId,
-                includeProperties: "Party.PartyMembers.User.UnlockedAvatars.Avatar,QuestSteps,QuestComments,QuestFiles");
-
-            if (EntityUtility.EntityIsNull(foundQuest))
-                throw new NotFoundException("Quest does not exist.");
-
-            foundQuest.IsCompleted = true;
-            foundQuest.CompletedById = userId;
-
-            foreach (var questStep in foundQuest.QuestSteps)
-            {
-                questStep.IsCompleted = true;
-                questStep.CompletedAt = DateTime.UtcNow;
-            }
-
-            await _userService.AddExperience(userId, foundQuest.ExpReward);
-
-            await _userService.AddGold(userId, foundQuest.GoldReward);
-
-            await _unitOfWork.Quest.UpdateAsync(foundQuest);
-
-            return new CompleteQuestResponseDto()
-            { 
-                Message = "Quest completed successfully.", 
-                QuestId = foundQuest.Id, 
-                PartyId = foundQuest.PartyId 
-            };
+            questStep.IsCompleted = true;
+            questStep.CompletedAt = DateTime.UtcNow;
         }
-        catch (Exception ex)
+
+        await _userService.AddExperience(userId, foundQuest.ExpReward);
+
+        await _userService.AddGold(userId, foundQuest.GoldReward);
+
+        await _unitOfWork.Quest.UpdateAsync(foundQuest);
+
+        return new CompleteQuestResponseDto()
         {
-            _logger.LogError(ex, "Failed to complete quest.");
-            throw new OperationException("Quest Completion Exception", "An error occurred while completing the quest.");
-        }
+            Message = "Quest completed successfully.",
+            QuestId = foundQuest.Id,
+            PartyId = foundQuest.PartyId
+        };
     }
 
     public async Task<UpdateQuestResponseDto> UpdateQuest(string userId, int questId, UpdateQuestRequestDto dto)
     {
-        try
+        var user = await _unitOfWork.PartyMember.GetAsync(p => p.UserId == userId);
+
+
+        if (RoleUtility.IsLeaderOrCaptain(user))
+            throw new PermissionException("You do not have permission to update quests.");
+
+
+        var existingQuest = await _unitOfWork.Quest.GetAsync(
+            q => q.Id == questId,
+            includeProperties: "QuestSteps,QuestAssignments"
+        );
+
+        if (EntityUtility.EntityIsNull(existingQuest))
+            throw new NotFoundException("Quest does not exist.");
+
+
+        existingQuest.Name = dto.Name;
+        existingQuest.Description = dto.Description;
+        existingQuest.PriorityLevel = dto.PriorityLevel;
+        existingQuest.DueDate = dto.DueDate;
+
+        existingQuest.ExpReward = CalculateQuestExpReward(dto.PriorityLevel);
+        existingQuest.GoldReward = CalculateQuestGoldReward(dto.PriorityLevel);
+
+        existingQuest.UpdatedAt = DateTime.UtcNow;
+
+        if (dto.Steps != null && dto.Steps.Any())
         {
-            var user = await _unitOfWork.PartyMember.GetAsync(p => p.UserId == userId);
-
-
-            if (RoleUtility.IsLeaderOrCaptain(user))
-                throw new PermissionException("You do not have permission to update quests.");
-
-
-            var existingQuest = await _unitOfWork.Quest.GetAsync(
-                q => q.Id == questId,
-                includeProperties: "QuestSteps,QuestAssignments"
-            );
-
-            if (EntityUtility.EntityIsNull(existingQuest))
-                throw new NotFoundException("Quest does not exist.");
-
-
-            existingQuest.Name = dto.Name;
-            existingQuest.Description = dto.Description;
-            existingQuest.PriorityLevel = dto.PriorityLevel;
-            existingQuest.DueDate = dto.DueDate;
-
-            existingQuest.ExpReward = CalculateQuestExpReward(dto.PriorityLevel);
-            existingQuest.GoldReward = CalculateQuestGoldReward(dto.PriorityLevel);
-
-            existingQuest.UpdatedAt = DateTime.UtcNow;
-
-            if (dto.Steps != null && dto.Steps.Any())
-            {
-                var stepUpdateResult = await _questStepService.UpdateQuestSteps(existingQuest.Id, dto.Steps);
-                if (!stepUpdateResult.IsSuccess)
-                    throw new ResourceModificationException("Updating quest steps failed.");
-            }
-
-            if (!EntityUtility.EntityIsNull(dto.AssignedPartyMembers))
-            {
-                var assignmentUpdateResult =
-                    await _questAssignmentService.UpdateQuestAssignments(existingQuest.Id, dto.AssignedPartyMembers);
-                if (!assignmentUpdateResult.IsSuccess)
-                    throw new ResourceModificationException("Updating quest assignment failed.");
-            }
-
-            await _unitOfWork.Quest.UpdateAsync(existingQuest);
-
-            return new UpdateQuestResponseDto()
-                { Message = "Quest updated successfully", QuestId = existingQuest.Id, PartyId = existingQuest.PartyId };
+            var stepUpdateResult = await _questStepService.UpdateQuestSteps(existingQuest.Id, dto.Steps);
+            if (!stepUpdateResult.IsSuccess)
+                throw new ResourceModificationException("Updating quest steps failed.");
         }
-        catch (Exception ex)
+
+        if (!EntityUtility.EntityIsNull(dto.AssignedPartyMembers))
         {
-            _logger.LogError(ex, "Failed to update quest.");
-            throw new ResourceModificationException("An error occured while updating quest.");
+            var assignmentUpdateResult =
+                await _questAssignmentService.UpdateQuestAssignments(existingQuest.Id, dto.AssignedPartyMembers);
+            if (!assignmentUpdateResult.IsSuccess)
+                throw new ResourceModificationException("Updating quest assignment failed.");
         }
+
+        await _unitOfWork.Quest.UpdateAsync(existingQuest);
+
+        return new UpdateQuestResponseDto()
+            { Message = "Quest updated successfully", QuestId = existingQuest.Id, PartyId = existingQuest.PartyId };
     }
 
 
     public async Task<DeleteQuestResponseDto> DeleteQuest(string userId, int questId)
     {
-        try
+        var user = await _unitOfWork.PartyMember.GetAsync(p => p.UserId == userId);
+
+        if (RoleUtility.IsLeaderOrCaptain(user))
+            throw new PermissionException("You do not have permission to delete this quest.");
+
+        var existingQuest = await _unitOfWork.Quest.GetAsync(
+            q => q.Id == questId,
+            includeProperties: "QuestSteps,QuestAssignments,QuestComments"
+        );
+
+        if (EntityUtility.EntityIsNull(existingQuest))
+            throw new NotFoundException("Quest does not exist.");
+
+        var commentsToDelete = await _unitOfWork.QuestComment.GetAllAsync(qc => qc.QuestId == questId);
+        foreach (var comment in commentsToDelete)
         {
-            var user = await _unitOfWork.PartyMember.GetAsync(p => p.UserId == userId);
-
-            if (RoleUtility.IsLeaderOrCaptain(user))
-                throw new PermissionException("You do not have permission to delete this quest.");
-
-            var existingQuest = await _unitOfWork.Quest.GetAsync(
-                q => q.Id == questId,
-                includeProperties: "QuestSteps,QuestAssignments,QuestComments"
-            );
-
-            if (EntityUtility.EntityIsNull(existingQuest))
-                throw new NotFoundException("Quest does not exist.");
-
-            var commentsToDelete = await _unitOfWork.QuestComment.GetAllAsync(qc => qc.QuestId == questId);
-            foreach (var comment in commentsToDelete)
-            {
-                await _unitOfWork.QuestComment.RemoveAsync(comment);
-            }
-
-            foreach (var step in existingQuest.QuestSteps.ToList())
-            {
-                await _unitOfWork.QuestStep.RemoveAsync(step);
-            }
-
-            foreach (var assignment in existingQuest.QuestAssignments.ToList())
-            {
-                await _unitOfWork.QuestAssignment.RemoveAsync(assignment);
-            }
-
-            await _unitOfWork.Quest.RemoveAsync(existingQuest);
-
-            return new DeleteQuestResponseDto()
-            {
-                Message = "Quest deleted successfully",
-                QuestId = existingQuest.Id,
-                PartyId = existingQuest.PartyId
-            };
+            await _unitOfWork.QuestComment.RemoveAsync(comment);
         }
-        catch (Exception ex)
+
+        foreach (var step in existingQuest.QuestSteps.ToList())
         {
-            _logger.LogError(ex, "Failed to delete quest.");
-            throw new ResourceModificationException("An error occurred while deleting the quest.");
+            await _unitOfWork.QuestStep.RemoveAsync(step);
         }
+
+        foreach (var assignment in existingQuest.QuestAssignments.ToList())
+        {
+            await _unitOfWork.QuestAssignment.RemoveAsync(assignment);
+        }
+
+        await _unitOfWork.Quest.RemoveAsync(existingQuest);
+
+        return new DeleteQuestResponseDto()
+        {
+            Message = "Quest deleted successfully",
+            QuestId = existingQuest.Id,
+            PartyId = existingQuest.PartyId
+        };
     }
-
 
     private int CalculateQuestExpReward(PriorityLevelOption priorityLevel)
     {
