@@ -40,24 +40,17 @@ public class PartyMemberService : IPartyMemberService
         if (partyId <= 0)
             throw new NotFoundException("PartyId cannot be null or empty.");
 
-        try
-        {
-            PartyMember newUserParty = new PartyMember
-            {
-                PartyId = partyId,
-                UserId = userId,
-                Role = UserRole.Member,
-                JoinedAt = DateTime.Now,
-            };
 
-            var newPartyMember = await _unitOfWork.PartyMember.CreateAsync(newUserParty);
-            return _mapper.Map<AddPartyMemberResponseDto>(newPartyMember);
-        }
-        catch (Exception ex)
+        PartyMember newUserParty = new PartyMember
         {
-            _logger.LogError(ex, "Failed to add member to party");
-            throw new ResourceCreationException("An error occurred while adding member to party.");
-        }
+            PartyId = partyId,
+            UserId = userId,
+            Role = UserRole.Member,
+            JoinedAt = DateTime.Now,
+        };
+
+        var newPartyMember = await _unitOfWork.PartyMember.CreateAsync(newUserParty);
+        return _mapper.Map<AddPartyMemberResponseDto>(newPartyMember);
     }
 
     public async Task<AddPartyMemberResponseDto> AddPartyLeader(string userId, int partyId)
@@ -68,54 +61,38 @@ public class PartyMemberService : IPartyMemberService
         if (partyId <= 0)
             throw new NotFoundException("PartyId cannot be null or empty.");
 
-        try
+        PartyMember newUserParty = new PartyMember
         {
-            PartyMember newUserParty = new PartyMember
-            {
-                PartyId = partyId,
-                UserId = userId,
-                Role = UserRole.Leader,
-                JoinedAt = DateTime.Now,
-            };
+            PartyId = partyId,
+            UserId = userId,
+            Role = UserRole.Leader,
+            JoinedAt = DateTime.Now,
+        };
 
-            var newPartyMember = await _unitOfWork.PartyMember.CreateAsync(newUserParty);
-            return _mapper.Map<AddPartyMemberResponseDto>(newPartyMember);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to add member to party");
-            throw new ResourceCreationException("An error occurred while adding member to party.");
-        }
+        var newPartyMember = await _unitOfWork.PartyMember.CreateAsync(newUserParty);
+        return _mapper.Map<AddPartyMemberResponseDto>(newPartyMember);
     }
 
     public async Task<List<PartyMemberResponseDto>> GetPartyMembers(string userId, int partyId)
     {
-        try
-        {
-            var userPartyMember = await _unitOfWork.PartyMember.GetAsync(
-                pm => pm.PartyId == partyId && pm.UserId == userId,
-                includeProperties: "User,User.UnlockedAvatars,User.UnlockedAvatars.Avatar");
+        var userPartyMember = await _unitOfWork.PartyMember.GetAsync(
+            pm => pm.PartyId == partyId && pm.UserId == userId,
+            includeProperties: "User,User.UnlockedAvatars,User.UnlockedAvatars.Avatar");
 
 
-            if (EntityUtility.EntityIsNull(userPartyMember))
-                throw new NotFoundException("Party member not found.");
+        if (EntityUtility.EntityIsNull(userPartyMember))
+            throw new NotFoundException("Party member not found.");
 
 
-            var partyMembers = await _unitOfWork.PartyMember.GetAllAsync(
-                pm => pm.PartyId == partyId,
-                includeProperties: "User,User.UnlockedAvatars,User.UnlockedAvatars.Avatar");
+        var partyMembers = await _unitOfWork.PartyMember.GetAllAsync(
+            pm => pm.PartyId == partyId,
+            includeProperties: "User,User.UnlockedAvatars,User.UnlockedAvatars.Avatar");
 
 
-            if (!partyMembers.Any())
-                throw new NotFoundException($"No members found for party with ID {partyId}.");
+        if (!partyMembers.Any())
+            throw new NotFoundException($"No members found for party with ID {partyId}.");
 
-            return _mapper.Map<List<PartyMemberResponseDto>>(partyMembers);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to get party members for party {PartyId}.", partyId);
-            throw new OperationException("Fetch Exception", "An error occured while fetching party members.");
-        }
+        return _mapper.Map<List<PartyMemberResponseDto>>(partyMembers);
     }
 
 
@@ -131,126 +108,100 @@ public class PartyMemberService : IPartyMemberService
         if (string.IsNullOrEmpty(dto.NewLeaderId))
             throw new NotFoundException("NewLeaderId cannot be null or empty.");
 
-        try
-        {
-            var party = await _unitOfWork.Party.GetAsync(p => p.Id == partyId);
-            if (EntityUtility.EntityIsNull(party))
-                throw new NotFoundException("Party not found.");
 
-            var currentLeader = await _unitOfWork.PartyMember.GetAsync(
-                pm => pm.PartyId == partyId && pm.UserId == dto.CurrentLeaderId);
+        var party = await _unitOfWork.Party.GetAsync(p => p.Id == partyId);
+        if (EntityUtility.EntityIsNull(party))
+            throw new NotFoundException("Party not found.");
 
-            if (currentLeader == null) throw new NotFoundException("Party leader not found.");
+        var currentLeader = await _unitOfWork.PartyMember.GetAsync(
+            pm => pm.PartyId == partyId && pm.UserId == dto.CurrentLeaderId);
 
-            if (!RoleUtility.IsLeader(currentLeader))
-                throw new PermissionException("You do not have permission to change the leader.");
+        if (currentLeader == null) throw new NotFoundException("Party leader not found.");
 
-            var newLeader = await _unitOfWork.PartyMember.GetAsync(
-                pm => pm.PartyId == partyId && pm.UserId == dto.NewLeaderId);
+        if (!RoleUtility.IsLeader(currentLeader))
+            throw new PermissionException("You do not have permission to change the leader.");
 
-            if (EntityUtility.EntityIsNull(newLeader))
-                throw new NotFoundException("New party leader not found.");
+        var newLeader = await _unitOfWork.PartyMember.GetAsync(
+            pm => pm.PartyId == partyId && pm.UserId == dto.NewLeaderId);
 
-            currentLeader.Role = dto.NewRoleForPreviousLeader;
-            newLeader.Role = UserRole.Leader;
+        if (EntityUtility.EntityIsNull(newLeader))
+            throw new NotFoundException("New party leader not found.");
 
-            party.CreatedById = newLeader.UserId;
+        currentLeader.Role = dto.NewRoleForPreviousLeader;
+        newLeader.Role = UserRole.Leader;
 
-            await _unitOfWork.PartyMember.UpdateAsync(currentLeader);
-            await _unitOfWork.PartyMember.UpdateAsync(newLeader);
-            await _unitOfWork.Party.UpdateAsync(party);
+        party.CreatedById = newLeader.UserId;
 
-            return new UpdatePartyMemberResponseDto() { Message = "Successfully changed leader.", PartyId = party.Id };
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to change party leader.");
-            throw new OperationException("Change Party Leader Exception",
-                "An error occurred while changing the party leader.");
-        }
+        await _unitOfWork.PartyMember.UpdateAsync(currentLeader);
+        await _unitOfWork.PartyMember.UpdateAsync(newLeader);
+        await _unitOfWork.Party.UpdateAsync(party);
+
+        return new UpdatePartyMemberResponseDto() { Message = "Successfully changed leader.", PartyId = party.Id };
     }
 
 
     public async Task<UpdatePartyMemberResponseDto> UpdatePartyMembers(int partyId,
         List<MemberUpdateDto> membersToUpdate)
     {
-        try
-        {
-            var party = await _unitOfWork.Party.GetAsync(p => p.Id == partyId);
-            if (EntityUtility.EntityIsNull(party))
-                throw new NotFoundException("Party not found.");
+        var party = await _unitOfWork.Party.GetAsync(p => p.Id == partyId);
+        if (EntityUtility.EntityIsNull(party))
+            throw new NotFoundException("Party not found.");
 
-            foreach (var member in membersToUpdate)
+        foreach (var member in membersToUpdate)
+        {
+            var partyMember = await _unitOfWork.PartyMember.GetAsync(
+                pm => pm.PartyId == partyId && pm.UserId == member.Id);
+
+
+            if (EntityUtility.EntityIsNull(partyMember))
+                throw new NotFoundException($"Member with ID {member.Id} not found in the party.");
+
+
+            if (member.Delete)
             {
-                var partyMember = await _unitOfWork.PartyMember.GetAsync(
-                    pm => pm.PartyId == partyId && pm.UserId == member.Id);
-
-
-                if (EntityUtility.EntityIsNull(partyMember))
-                    throw new NotFoundException($"Member with ID {member.Id} not found in the party.");
-
-
-                if (member.Delete)
-                {
-                    await _unitOfWork.PartyMember.RemoveAsync(partyMember);
-                }
-                else
-                {
-                    partyMember.Role = (UserRole)member.Role;
-                    await _unitOfWork.PartyMember.UpdateAsync(partyMember);
-                }
+                await _unitOfWork.PartyMember.RemoveAsync(partyMember);
             }
-
-            await _unitOfWork.SaveAsync();
-
-            return new UpdatePartyMemberResponseDto() { Message = "Party members updated", PartyId = party.Id };
+            else
+            {
+                partyMember.Role = (UserRole)member.Role;
+                await _unitOfWork.PartyMember.UpdateAsync(partyMember);
+            }
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to update party members.");
-            throw new OperationException("Update Party Members Exception",
-                "An error occurred while updating party members.");
-        }
+
+        await _unitOfWork.SaveAsync();
+
+        return new UpdatePartyMemberResponseDto() { Message = "Party members updated", PartyId = party.Id };
     }
 
 
     public async Task<UpdatePartyMemberResponseDto> LeaveParty(string userId, int partyId)
     {
-        try
+        var foundPartyMember =
+            await _unitOfWork.PartyMember.GetAsync(pm => pm.PartyId == partyId && pm.UserId == userId);
+        if (EntityUtility.EntityIsNull(foundPartyMember))
+            throw new NotFoundException("Party member not found.");
+
+        var questAssignments =
+            await _unitOfWork.QuestAssignment.GetAllAsync(qa => qa.UserId == userId && qa.Quest.PartyId == partyId);
+        foreach (var assignment in questAssignments)
         {
-            var foundPartyMember =
-                await _unitOfWork.PartyMember.GetAsync(pm => pm.PartyId == partyId && pm.UserId == userId);
-            if (EntityUtility.EntityIsNull(foundPartyMember))
-                throw new NotFoundException("Party member not found.");
-
-            var questAssignments =
-                await _unitOfWork.QuestAssignment.GetAllAsync(qa => qa.UserId == userId && qa.Quest.PartyId == partyId);
-            foreach (var assignment in questAssignments)
-            {
-                await _unitOfWork.QuestAssignment.RemoveAsync(assignment);
-            }
-
-            await _unitOfWork.PartyMember.RemoveAsync(foundPartyMember);
-
-            var remainingMembers =
-                await _unitOfWork.PartyMember.GetAllAsync(pm => pm.PartyId == partyId);
-            if (!remainingMembers.Any())
-            {
-                var party = await _unitOfWork.Party.GetAsync(p => p.Id == partyId);
-                if (EntityUtility.EntityIsNull(party))
-                    throw new NotFoundException("Party not found.");
-
-                await _unitOfWork.Party.RemoveAsync(party);
-            }
-
-            return new UpdatePartyMemberResponseDto() { Message = "Party left successfully.", PartyId = partyId };
+            await _unitOfWork.QuestAssignment.RemoveAsync(assignment);
         }
-        catch (Exception ex)
+
+        await _unitOfWork.PartyMember.RemoveAsync(foundPartyMember);
+
+        var remainingMembers =
+            await _unitOfWork.PartyMember.GetAllAsync(pm => pm.PartyId == partyId);
+        if (!remainingMembers.Any())
         {
-            _logger.LogError(ex, "Failed to leave the party.");
-            throw new OperationException("Leave Party Exception",
-                "An error occurred while attempting to leave party.");
+            var party = await _unitOfWork.Party.GetAsync(p => p.Id == partyId);
+            if (EntityUtility.EntityIsNull(party))
+                throw new NotFoundException("Party not found.");
+
+            await _unitOfWork.Party.RemoveAsync(party);
         }
+
+        return new UpdatePartyMemberResponseDto() { Message = "Party left successfully.", PartyId = partyId };
     }
 
 
@@ -341,11 +292,10 @@ public class PartyMemberService : IPartyMemberService
         {
             Message = "Party invite accepted.",
             PartyId = invite.PartyId,
-            PartyName = party.Name, 
-            PartyDescription = party.Description, 
+            PartyName = party.Name,
+            PartyDescription = party.Description,
         };
 
         return response;
     }
-
 }
