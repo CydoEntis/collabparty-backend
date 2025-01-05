@@ -138,6 +138,7 @@ public class UserService : IUserService
         if (string.IsNullOrWhiteSpace(userId))
             throw new IsRequiredException("User ID is required.");
 
+        // Fetch user details
         var user = await _unitOfWork.User.GetAsync(
             u => u.Id == userId,
             includeProperties: "UnlockedAvatars");
@@ -148,20 +149,21 @@ public class UserService : IUserService
         var currentMonth = DateTime.UtcNow.Month;
         var currentYear = DateTime.UtcNow.Year;
 
+        // Fetch quests assigned to the user
         var userQuests = await _unitOfWork.QuestAssignment.GetAllAsync(
             qa => qa.UserId == userId,
             includeProperties: "Quest");
 
+        // Fetch parties the user is a member of
         var userParties = await _unitOfWork.Party.GetAllAsync(
             p => p.PartyMembers.Any(pm => pm.UserId == userId),
             includeProperties: "PartyMembers");
 
+        // Fetch total avatar count
         var totalAvatars = await _unitOfWork.Avatar.CountAsync();
-        var unlockedAvatarCount = user.UnlockedAvatars.Count(a => a.IsUnlocked);
 
-        var nextLevelUnlockableAvatars = await _unitOfWork.Avatar.GetAllAsync(
-            a => a.UnlockLevel == user.CurrentLevel + 1,
-            orderBy: q => q.OrderBy(a => a.UnlockLevel));
+        // Count unlocked avatars for the user (assuming 'IsUnlocked' marks the avatar as unlocked)
+        var unlockedAvatarCount = user.UnlockedAvatars?.Count(a => a.IsUnlocked) ?? 0;
 
         var assignedQuests = userQuests.Select(qa => qa.Quest).ToList();
         var completedQuests = assignedQuests.Where(q => q.IsCompleted).ToList();
@@ -170,12 +172,9 @@ public class UserService : IUserService
             .Where(q => q.CompletedAt.Month == currentMonth && q.CompletedAt.Year == currentYear)
             .ToList();
 
+        // Calculate experience threshold
         var experienceThreshold = GetExperienceThreshold(user.CurrentLevel);
         var experienceToLevelUp = experienceThreshold - user.CurrentExp;
-
-        var nextLevelUnlockableAvatarsMapped = nextLevelUnlockableAvatars
-            .Select(a => _mapper.Map<AvatarResponseDto>(a))
-            .ToList();
 
         return new UserStatsResponseDto
         {
@@ -188,9 +187,7 @@ public class UserService : IUserService
             TotalQuests = assignedQuests.Count,
             CompletedQuests = completedQuests.Count,
             PastDueQuests = pastDueQuests.Count,
-            MonthlyCompletedQuests = monthlyCompletedQuests.Count,
             PartiesJoined = userParties?.Count() ?? 0,
-            NextUnlockableAvatars = nextLevelUnlockableAvatarsMapped,
             UnlockedAvatarCount = unlockedAvatarCount,
             TotalAvatarCount = totalAvatars
         };

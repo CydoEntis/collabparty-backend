@@ -15,7 +15,6 @@ public class UserStatsResponseDto
     public int PastDueQuests { get; set; }
     public int MonthlyCompletedQuests { get; set; }
     public int PartiesJoined { get; set; }
-    public List<AvatarResponseDto> NextUnlockableAvatars { get; set; }
     public int UnlockedAvatarCount { get; set; }
     public int TotalAvatarCount { get; set; }
 }
