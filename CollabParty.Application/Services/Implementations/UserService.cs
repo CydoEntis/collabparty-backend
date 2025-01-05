@@ -133,70 +133,85 @@ public class UserService : IUserService
         return new AddExpResponseDto { Message = message, NewCurrentExp = user.CurrentExp, UserId = user.Id };
     }
 
- public async Task<UserStatsResponseDto> GetUserStats(string userId)
-{
-    if (string.IsNullOrWhiteSpace(userId))
-        throw new IsRequiredException("User ID is required.");
-
-    // Fetch user details
-    var user = await _unitOfWork.User.GetAsync(
-        u => u.Id == userId,
-        includeProperties: "UnlockedAvatars");
-
-    if (EntityUtility.EntityIsNull(user))
-        throw new NotFoundException("User not found.");
-
-    var currentMonth = DateTime.UtcNow.Month;
-    var currentYear = DateTime.UtcNow.Year;
-
-    // Fetch quests assigned to the user
-    var userQuests = await _unitOfWork.QuestAssignment.GetAllAsync(
-        qa => qa.UserId == userId,
-        includeProperties: "Quest");
-
-    // Fetch parties the user is a member of
-    var userParties = await _unitOfWork.Party.GetAllAsync(
-        p => p.PartyMembers.Any(pm => pm.UserId == userId),
-        includeProperties: "PartyMembers");
-
-    // Fetch total avatar count
-    var totalAvatars = await _unitOfWork.Avatar.CountAsync();
-
-    // Count unlocked avatars for the user (assuming 'IsUnlocked' marks the avatar as unlocked)
-    var unlockedAvatarCount = user.UnlockedAvatars?.Count(a => a.IsUnlocked) ?? 0;
-
-    var assignedQuests = userQuests.Select(qa => qa.Quest).ToList();
-    var completedQuests = assignedQuests.Where(q => q.IsCompleted && q.CompletedAt.Month == currentMonth && q.CompletedAt.Year == currentYear).ToList();
-
-    // Group the completed quests by the day they were completed
-    var completedQuestsByDay = completedQuests
-        .GroupBy(q => q.CompletedAt.Date) // Group by date (removes the time part)
-        .ToDictionary(
-            group => group.Key,  // Key = Date of completion
-            group => group.Count()  // Value = Number of quests completed on that date
-        );
-
-    // Calculate experience threshold
-    var experienceThreshold = GetExperienceThreshold(user.CurrentLevel);
-    var experienceToLevelUp = experienceThreshold - user.CurrentExp;
-
-    return new UserStatsResponseDto
+    public async Task<UserStatsResponseDto> GetUserStats(string userId)
     {
-        UserId = user.Id,
-        CurrentLevel = user.CurrentLevel,
-        CurrentExperience = user.CurrentExp,
-        ExperienceThreshold = experienceThreshold,
-        ExperienceToLevelUp = experienceToLevelUp,
-        Gold = user.Gold,
-        TotalQuests = assignedQuests.Count,
-        CompletedQuests = completedQuests.Count,
-        PartiesJoined = userParties?.Count() ?? 0,
-        UnlockedAvatarCount = unlockedAvatarCount,
-        TotalAvatarCount = totalAvatars,
-        MonthlyCompletedQuestsByDay = completedQuestsByDay // Add the dictionary here
-    };
-}
+        if (string.IsNullOrWhiteSpace(userId))
+            throw new IsRequiredException("User ID is required.");
 
+        // Fetch user details
+        var user = await _unitOfWork.User.GetAsync(
+            u => u.Id == userId,
+            includeProperties: "UnlockedAvatars");
+
+        if (EntityUtility.EntityIsNull(user))
+            throw new NotFoundException("User not found.");
+
+        var currentMonth = DateTime.UtcNow.Month;
+        var currentYear = DateTime.UtcNow.Year;
+
+        // Fetch quests assigned to the user
+        var userQuests = await _unitOfWork.QuestAssignment.GetAllAsync(
+            qa => qa.UserId == userId,
+            includeProperties: "Quest");
+
+        // Fetch parties the user is a member of
+        var userParties = await _unitOfWork.Party.GetAllAsync(
+            p => p.PartyMembers.Any(pm => pm.UserId == userId),
+            includeProperties: "PartyMembers");
+
+        // Fetch total avatar count
+        var totalAvatars = await _unitOfWork.Avatar.CountAsync();
+
+        // Count unlocked avatars for the user (assuming 'IsUnlocked' marks the avatar as unlocked)
+        var unlockedAvatarCount = user.UnlockedAvatars?.Count(a => a.IsUnlocked) ?? 0;
+
+        var assignedQuests = userQuests.Select(qa => qa.Quest).ToList();
+        var completedQuests = assignedQuests.Where(q =>
+            q.IsCompleted && q.CompletedAt.Month == currentMonth && q.CompletedAt.Year == currentYear).ToList();
+
+
+        // Calculate experience threshold
+        var experienceThreshold = GetExperienceThreshold(user.CurrentLevel);
+        var experienceToLevelUp = experienceThreshold - user.CurrentExp;
+
+        return new UserStatsResponseDto
+        {
+            UserId = user.Id,
+            CurrentLevel = user.CurrentLevel,
+            CurrentExperience = user.CurrentExp,
+            ExperienceThreshold = experienceThreshold,
+            ExperienceToLevelUp = experienceToLevelUp,
+            Gold = user.Gold,
+            TotalQuests = assignedQuests.Count,
+            CompletedQuests = completedQuests.Count,
+            PartiesJoined = userParties?.Count() ?? 0,
+            UnlockedAvatarCount = unlockedAvatarCount,
+            TotalAvatarCount = totalAvatars,
+        };
+    }
+
+    public async Task<Dictionary<DateTime, int>> GetMonthlyCompletedQuestsByDay(string userId, int currentMonth,
+        int currentYear)
+    {
+        var userQuests = await _unitOfWork.QuestAssignment.GetAllAsync(
+            qa => qa.UserId == userId,
+            includeProperties: "Quest");
+
+        var assignedQuests = userQuests.Select(qa => qa.Quest).ToList();
+
+        var completedQuests = assignedQuests
+            .Where(q => q.IsCompleted && q.CompletedAt.Month == currentMonth && q.CompletedAt.Year == currentYear)
+            .ToList();
+
+        var completedQuestsByDay = completedQuests
+            .GroupBy(q => q.CompletedAt.Date)
+            .ToDictionary(
+                group => group.Key,
+                group => group.Count()
+            );
+
+        return completedQuestsByDay;
+    }
 
 
     private int GetExperienceThreshold(int level)

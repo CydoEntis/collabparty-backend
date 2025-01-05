@@ -36,7 +36,6 @@ namespace CollabParty.Infrastructure.Persistence.Seeders
                         QuestId = quest.Id,
                         UserId = partyMember.UserId,
                         AssignedAt = DateTime.UtcNow,
-                        IsCompleted = false
                     });
                 }
             }

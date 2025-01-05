@@ -116,6 +116,7 @@ public class QuestService : IQuestService
 
         foundQuest.IsCompleted = true;
         foundQuest.CompletedById = userId;
+        foundQuest.CompletedAt = DateTime.UtcNow;
 
         foreach (var questStep in foundQuest.QuestSteps)
         {

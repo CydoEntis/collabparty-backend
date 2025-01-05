@@ -12,4 +12,5 @@ public interface IUserService
     Task<AddGoldResponseDto> AddGold(string userId, int amount);
     Task<AddExpResponseDto> AddExperience(string userId, int amount);
     Task<UserStatsResponseDto> GetUserStats(string userId);
+    Task<Dictionary<DateTime, int>> GetMonthlyCompletedQuestsByDay(string userId, int currentMonth, int currentYear);
 }

@@ -36,7 +36,6 @@ public class QuestAssignmentService : IQuestAssignmentService
             QuestId = questId,
             UserId = partyMemberId,
             AssignedAt = DateTime.UtcNow,
-            IsCompleted = false,
         }).ToList();
 
         foreach (var partyMember in partyMembers)
@@ -71,7 +70,6 @@ public class QuestAssignmentService : IQuestAssignmentService
                 QuestId = questId,
                 UserId = userId,
                 AssignedAt = DateTime.UtcNow,
-                IsCompleted = false
             })
             .ToList();
 

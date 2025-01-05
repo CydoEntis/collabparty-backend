@@ -12,5 +12,4 @@ public class QuestAssignment
     public ApplicationUser User { get; set; }
 
     public DateTime AssignedAt { get; set; }
-    public bool IsCompleted { get; set; }
 }

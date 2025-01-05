@@ -23,7 +23,7 @@ public class Quest
     public int ExpReward { get; set; }
 
     public bool IsCompleted { get; set; }
-    public DateTime CompletedAt { get; set; }
+    public DateTime? CompletedAt { get; set; }
 
     public string? CompletedById { get; set; }  
     public ApplicationUser CompletedBy { get; set; }  

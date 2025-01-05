@@ -57,6 +57,30 @@ public static class QuestSeeder
                 var randomDay = random.Next(0, 31); 
                 var randomDueDate = twoMonthsFromNow.AddDays(randomDay);
 
+                // Random completed date between the current month and the end of the next month
+                var startOfCurrentMonth = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1);
+                var endOfNextMonth = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month + 2, 1).AddMonths(1).AddDays(-1);
+                var randomCompletedDate = GetRandomDateBetween(startOfCurrentMonth, endOfNextMonth);
+
+                // Randomly determine whether the quest is completed
+                bool isCompleted = random.NextDouble() < 0.5; // 50% chance of being completed
+
+                // If the quest is completed, assign a random completed date within the range.
+                // If not, leave it as uncompleted.
+                string? completedById = null;
+                if (isCompleted)
+                {
+                    // Ensure the completed date is before the due date
+                    if (randomCompletedDate > randomDueDate)
+                    {
+                        randomCompletedDate = randomDueDate.AddDays(-random.Next(1, 10)); // Ensure it's before due date
+                    }
+
+                    // Assign a random party member to "CompletedById"
+                    var randomCompletedByMember = party.PartyMembers.OrderBy(_ => random.Next()).FirstOrDefault();
+                    completedById = randomCompletedByMember?.UserId;
+                }
+
                 quests.Add(new Quest
                 {
                     Name = questName,
@@ -68,7 +92,10 @@ public static class QuestSeeder
                     ExpReward = CalculateQuestExpReward(questPriority),
                     GoldReward = CalculateQuestGoldReward(questPriority),
                     CreatedById = randomMember?.UserId,
-                    DueDate = randomDueDate 
+                    DueDate = randomDueDate,
+                    IsCompleted = isCompleted,
+                    CompletedAt = isCompleted ? randomCompletedDate : (DateTime?)null,
+                    CompletedById = completedById // Assign the completed by user if the quest is completed
                 });
             }
 
@@ -76,6 +103,13 @@ public static class QuestSeeder
         }
 
         dbContext.SaveChanges();
+    }
+
+    private static DateTime GetRandomDateBetween(DateTime startDate, DateTime endDate)
+    {
+        var range = (endDate - startDate).Days;
+        var randomDays = new Random().Next(0, range);
+        return startDate.AddDays(randomDays);
     }
 
     private static int CalculateQuestExpReward(PriorityLevelOption priorityLevel)
