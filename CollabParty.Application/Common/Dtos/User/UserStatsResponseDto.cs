@@ -17,4 +17,5 @@ public class UserStatsResponseDto
     public int PartiesJoined { get; set; }
     public int UnlockedAvatarCount { get; set; }
     public int TotalAvatarCount { get; set; }
+    public Dictionary<DateTime, int> MonthlyCompletedQuestsByDay { get; set; }
 }
