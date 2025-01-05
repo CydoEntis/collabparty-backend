@@ -54,4 +54,15 @@ public class UserController : ControllerBase
         var result = await _userService.GetUserDetails(userId);
         return Ok(ApiResponse<object>.SuccessResponse(result));
     }
+
+    [HttpGet("stats")]
+    public async Task<ActionResult> GetUserStats()
+    {
+        var (isValid, userId) = ClaimsHelper.TryGetUserId(User);
+        if (!isValid)
+            return Unauthorized("You do not have permission to access this resource.");
+
+        var result = await _userService.GetUserStats(userId);
+        return Ok(ApiResponse<object>.SuccessResponse(result));
+    }
 }

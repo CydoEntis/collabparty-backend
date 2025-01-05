@@ -11,4 +11,5 @@ public interface IUserService
     Task<UpdateUserDetailsResponseDto> UpdateUserDetails(string userId, UpdateUserRequestDto dto);
     Task<AddGoldResponseDto> AddGold(string userId, int amount);
     Task<AddExpResponseDto> AddExperience(string userId, int amount);
+    Task<UserStatsResponseDto> GetUserStats(string userId);
 }

@@ -133,6 +133,70 @@ public class UserService : IUserService
         return new AddExpResponseDto { Message = message, NewCurrentExp = user.CurrentExp, UserId = user.Id };
     }
 
+    public async Task<UserStatsResponseDto> GetUserStats(string userId)
+    {
+        if (string.IsNullOrWhiteSpace(userId))
+            throw new IsRequiredException("User ID is required.");
+
+        var user = await _unitOfWork.User.GetAsync(
+            u => u.Id == userId,
+            includeProperties: "UnlockedAvatars");
+
+        if (EntityUtility.EntityIsNull(user))
+            throw new NotFoundException("User not found.");
+
+        var currentMonth = DateTime.UtcNow.Month;
+        var currentYear = DateTime.UtcNow.Year;
+
+        var userQuests = await _unitOfWork.QuestAssignment.GetAllAsync(
+            qa => qa.UserId == userId,
+            includeProperties: "Quest");
+
+        var userParties = await _unitOfWork.Party.GetAllAsync(
+            p => p.PartyMembers.Any(pm => pm.UserId == userId),
+            includeProperties: "PartyMembers");
+
+        var totalAvatars = await _unitOfWork.Avatar.CountAsync();
+        var unlockedAvatarCount = user.UnlockedAvatars.Count(a => a.IsUnlocked);
+
+        var nextLevelUnlockableAvatars = await _unitOfWork.Avatar.GetAllAsync(
+            a => a.UnlockLevel == user.CurrentLevel + 1,
+            orderBy: q => q.OrderBy(a => a.UnlockLevel));
+
+        var assignedQuests = userQuests.Select(qa => qa.Quest).ToList();
+        var completedQuests = assignedQuests.Where(q => q.IsCompleted).ToList();
+        var pastDueQuests = assignedQuests.Where(q => !q.IsCompleted && q.DueDate < DateTime.UtcNow).ToList();
+        var monthlyCompletedQuests = completedQuests
+            .Where(q => q.CompletedAt.Month == currentMonth && q.CompletedAt.Year == currentYear)
+            .ToList();
+
+        var experienceThreshold = GetExperienceThreshold(user.CurrentLevel);
+        var experienceToLevelUp = experienceThreshold - user.CurrentExp;
+
+        var nextLevelUnlockableAvatarsMapped = nextLevelUnlockableAvatars
+            .Select(a => _mapper.Map<AvatarResponseDto>(a))
+            .ToList();
+
+        return new UserStatsResponseDto
+        {
+            UserId = user.Id,
+            CurrentLevel = user.CurrentLevel,
+            CurrentExperience = user.CurrentExp,
+            ExperienceThreshold = experienceThreshold,
+            ExperienceToLevelUp = experienceToLevelUp,
+            Gold = user.Gold,
+            TotalQuests = assignedQuests.Count,
+            CompletedQuests = completedQuests.Count,
+            PastDueQuests = pastDueQuests.Count,
+            MonthlyCompletedQuests = monthlyCompletedQuests.Count,
+            PartiesJoined = userParties?.Count() ?? 0,
+            NextUnlockableAvatars = nextLevelUnlockableAvatarsMapped,
+            UnlockedAvatarCount = unlockedAvatarCount,
+            TotalAvatarCount = totalAvatars
+        };
+    }
+
+
     private int GetExperienceThreshold(int level)
     {
         return 100 + (level * 50);

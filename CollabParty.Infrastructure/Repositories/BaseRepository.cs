@@ -26,7 +26,8 @@ public class BaseRepository<T> : IBaseRepository<T> where T : class
         return entity;
     }
 
-    public async Task<IEnumerable<T>> GetAllAsync(Expression<Func<T, bool>>? filter = null,
+    public async Task<IEnumerable<T>> GetAllAsync(Expression<Func<T, bool>>? filter = null, 
+        Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null, 
         string? includeProperties = null)
     {
         if (_dbSet == null)
@@ -36,11 +37,13 @@ public class BaseRepository<T> : IBaseRepository<T> where T : class
 
         IQueryable<T> query = _dbSet;
 
+        // Apply filter if provided
         if (filter != null)
         {
             query = query.Where(filter);
         }
 
+        // Apply Include if any properties are provided
         if (!string.IsNullOrEmpty(includeProperties))
         {
             foreach (var includeProp in includeProperties.Split(new char[] { ',' },
@@ -50,8 +53,15 @@ public class BaseRepository<T> : IBaseRepository<T> where T : class
             }
         }
 
+        // Apply orderBy if provided
+        if (orderBy != null)
+        {
+            query = orderBy(query);
+        }
+
         return await query.ToListAsync();
     }
+
 
 
     public async Task<T> GetAsync(Expression<Func<T, bool>>? filter = null, bool tracked = true,
