@@ -133,93 +133,89 @@ public class UserService : IUserService
         return new AddExpResponseDto { Message = message, NewCurrentExp = user.CurrentExp, UserId = user.Id };
     }
 
-public async Task<UserStatsResponseDto> GetUserStats(string userId)
-{
-    if (string.IsNullOrWhiteSpace(userId))
-        throw new IsRequiredException("User ID is required.");
-
-    var user = await _unitOfWork.User.GetAsync(
-        u => u.Id == userId,
-        includeProperties: "UnlockedAvatars");
-
-    if (EntityUtility.EntityIsNull(user))
-        throw new NotFoundException("User not found.");
-
-    var currentMonth = DateTime.UtcNow.Month;
-    var currentYear = DateTime.UtcNow.Year;
-
-    var userQuests = await _unitOfWork.QuestAssignment.GetAllAsync(
-        qa => qa.UserId == userId,
-        includeProperties: "Quest");
-
-    var userParties = await _unitOfWork.Party.GetAllAsync(
-        p => p.PartyMembers.Any(pm => pm.UserId == userId),
-        includeProperties: "PartyMembers");
-
-    var totalAvatars = await _unitOfWork.Avatar.CountAsync();
-
-    var unlockedAvatarCount = user.UnlockedAvatars?.Count(a => a.IsUnlocked) ?? 0;
-
-    var assignedQuests = userQuests.Select(qa => qa.Quest).ToList();
-
-    var completedQuests = assignedQuests.Where(q =>
-        q.IsCompleted && q.CompletedAt.HasValue &&
-        q.CompletedAt.Value.Month == currentMonth && q.CompletedAt.Value.Year == currentYear)
-        .ToList();
-
-    var completedQuestsByDay = completedQuests
-        .Where(q => q.CompletedAt.HasValue)
-        .GroupBy(q => q.CompletedAt.Value.Date)  
-        .ToDictionary(
-            group => group.Key, 
-            group => group.Count()  
-        );
-
-    var experienceThreshold = GetExperienceThreshold(user.CurrentLevel);
-    var experienceToLevelUp = experienceThreshold - user.CurrentExp;
-
-    return new UserStatsResponseDto
+    public async Task<UserStatsResponseDto> GetUserStats(string userId)
     {
-        UserId = user.Id,
-        CurrentLevel = user.CurrentLevel,
-        CurrentExperience = user.CurrentExp,
-        ExperienceThreshold = experienceThreshold,
-        ExperienceToLevelUp = experienceToLevelUp,
-        Gold = user.Gold,
-        TotalQuests = assignedQuests.Count,
-        CompletedQuests = completedQuests.Count,
-        PartiesJoined = userParties?.Count() ?? 0,
-        UnlockedAvatarCount = unlockedAvatarCount,
-        TotalAvatarCount = totalAvatars,
-        MonthlyCompletedQuestsByDay = completedQuestsByDay 
-    };
-}
+        if (string.IsNullOrWhiteSpace(userId))
+            throw new IsRequiredException("User ID is required.");
+
+        var user = await _unitOfWork.User.GetAsync(
+            u => u.Id == userId,
+            includeProperties: "UnlockedAvatars");
+
+        if (EntityUtility.EntityIsNull(user))
+            throw new NotFoundException("User not found.");
+
+        var currentMonth = DateTime.UtcNow.Month;
+        var currentYear = DateTime.UtcNow.Year;
+        var currentDate = DateTime.UtcNow;
+
+        var allAssignedQuests = await _unitOfWork.QuestAssignment.GetAllAsync(
+            qa => qa.UserId == userId,
+            includeProperties: "Quest");
+
+        var assignedQuestList = allAssignedQuests.Select(qa => qa.Quest).ToList();
+
+        var completedQuests = assignedQuestList
+            .Where(q => q.IsCompleted &&
+                        q.CompletedAt.HasValue &&
+                        q.CompletedAt.Value.Month == currentMonth &&
+                        q.CompletedAt.Value.Year == currentYear)
+            .ToList();
+
+        var overdueQuests = assignedQuestList
+            .Where(q => !q.IsCompleted &&
+                        q.DueDate < currentDate)
+            .ToList();
+
+        var userParties = await _unitOfWork.Party.GetAllAsync(
+            p => p.PartyMembers.Any(pm => pm.UserId == userId),
+            includeProperties: "PartyMembers");
+
+        var totalAvatars = await _unitOfWork.Avatar.CountAsync();
+        var unlockedAvatarCount = user.UnlockedAvatars?.Count(a => a.IsUnlocked) ?? 0;
+
+        return new UserStatsResponseDto
+        {
+            UserId = user.Id,
+            CurrentLevel = user.CurrentLevel,
+            CurrentExperience = user.CurrentExp,
+            ExperienceToLevelUp = user.ExpToNextLevel,
+            Gold = user.Gold,
+            TotalQuests = assignedQuestList.Count, 
+            CompletedQuests = completedQuests.Count, 
+            PastDueQuests = overdueQuests.Count, 
+            PartiesJoined = userParties?.Count() ?? 0,
+            UnlockedAvatarCount = unlockedAvatarCount,
+            TotalAvatarCount = totalAvatars,
+        };
+    }
 
 
-public async Task<Dictionary<DateTime, int>> GetMonthlyCompletedQuestsByDay(string userId, int currentMonth, int currentYear)
-{
-    var userQuests = await _unitOfWork.QuestAssignment.GetAllAsync(
-        qa => qa.UserId == userId,
-        includeProperties: "Quest");
+    public async Task<Dictionary<int, int>> GetMonthlyCompletedQuestsByDay(string userId, int currentMonth, int currentYear)
+    {
+        var userQuests = await _unitOfWork.QuestAssignment.GetAllAsync(
+            qa => qa.UserId == userId,
+            includeProperties: "Quest");
 
-    var assignedQuests = userQuests.Select(qa => qa.Quest).ToList();
+        var assignedQuests = userQuests.Select(qa => qa.Quest).ToList();
 
-    var completedQuests = assignedQuests
-        .Where(q => q.IsCompleted && q.CompletedAt.HasValue &&
-                    q.CompletedAt.Value.Month == currentMonth && 
-                    q.CompletedAt.Value.Year == currentYear)
-        .ToList();
+        var completedQuests = assignedQuests
+            .Where(q => q.IsCompleted && q.CompletedAt.HasValue &&
+                        q.CompletedAt.Value.Month == currentMonth &&
+                        q.CompletedAt.Value.Year == currentYear)
+            .ToList();
 
-    var completedQuestsByDay = completedQuests
-        .Where(q => q.CompletedAt.HasValue)
-        .GroupBy(q => q.CompletedAt.Value.Date) 
-        .ToDictionary(
-            group => group.Key, 
-            group => group.Count() 
-        );
+        var completedQuestsByDay = completedQuests
+            .Where(q => q.CompletedAt.HasValue)
+            .GroupBy(q => q.CompletedAt.Value.Day)
+            .OrderBy(group => group.Key)  
+            .ToDictionary(
+                group => group.Key,
+                group => group.Count()
+            );
 
-    return completedQuestsByDay;
-}
+        return completedQuestsByDay;
+    }
 
 
 

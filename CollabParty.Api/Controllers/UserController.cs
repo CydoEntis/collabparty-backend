@@ -83,6 +83,6 @@ public class UserController : ControllerBase
         if (completedQuestsByDay == null || !completedQuestsByDay.Any())
             return NotFound("No quests completed for the specified month.");
 
-        return Ok(ApiResponse<Dictionary<DateTime, int>>.SuccessResponse(completedQuestsByDay));
+        return Ok(ApiResponse<Dictionary<int, int>>.SuccessResponse(completedQuestsByDay));
     }
 }
