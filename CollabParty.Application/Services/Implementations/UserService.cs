@@ -9,6 +9,7 @@ using CollabParty.Application.Common.Utility;
 using CollabParty.Application.Interfaces;
 using CollabParty.Application.Services.Interfaces;
 using CollabParty.Domain.Entities;
+using CollabParty.Domain.Enums;
 using CollabParty.Domain.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
@@ -140,7 +141,7 @@ public class UserService : IUserService
 
         var user = await _unitOfWork.User.GetAsync(
             u => u.Id == userId,
-            includeProperties: "UnlockedAvatars");
+            includeProperties: "UnlockedAvatars.Avatar");
 
         if (EntityUtility.EntityIsNull(user))
             throw new NotFoundException("User not found.");
@@ -174,24 +175,47 @@ public class UserService : IUserService
         var totalAvatars = await _unitOfWork.Avatar.CountAsync();
         var unlockedAvatarCount = user.UnlockedAvatars?.Count(a => a.IsUnlocked) ?? 0;
 
+        var lowQuests = assignedQuestList.Count(q => q.PriorityLevel == PriorityLevelOption.Low);
+        var mediumQuests = assignedQuestList.Count(q => q.PriorityLevel == PriorityLevelOption.Medium);
+        var highQuests = assignedQuestList.Count(q => q.PriorityLevel == PriorityLevelOption.High);
+        var criticalQuests = assignedQuestList.Count(q => q.PriorityLevel == PriorityLevelOption.Critical);
+
+        var currentAvatar = user.UnlockedAvatars
+            .FirstOrDefault(ua => ua.IsActive)?.Avatar; 
+
+        var currentAvatarDto = currentAvatar != null ? new AvatarResponseDto
+        {
+            Id = currentAvatar.Id,
+            Name = currentAvatar.Name,
+            ImageUrl = currentAvatar.ImageUrl,
+            DisplayName = currentAvatar.DisplayName,
+        } : null;
+        
         return new UserStatsResponseDto
         {
             UserId = user.Id,
+            Username = user.UserName, 
+            CurrentAvatar = currentAvatarDto,
             CurrentLevel = user.CurrentLevel,
             CurrentExperience = user.CurrentExp,
             ExperienceToLevelUp = user.ExpToNextLevel,
             Gold = user.Gold,
-            TotalQuests = assignedQuestList.Count, 
-            CompletedQuests = completedQuests.Count, 
-            PastDueQuests = overdueQuests.Count, 
+            TotalQuests = assignedQuestList.Count,
+            CompletedQuests = completedQuests.Count,
+            PastDueQuests = overdueQuests.Count,
             PartiesJoined = userParties?.Count() ?? 0,
             UnlockedAvatarCount = unlockedAvatarCount,
             TotalAvatarCount = totalAvatars,
+            LowQuests = lowQuests, 
+            MediumQuests = mediumQuests, 
+            HighQuests = highQuests, 
+            CriticalQuests = criticalQuests 
         };
     }
 
 
-    public async Task<Dictionary<int, int>> GetMonthlyCompletedQuestsByDay(string userId, int currentMonth, int currentYear)
+    public async Task<Dictionary<int, int>> GetMonthlyCompletedQuestsByDay(string userId, int currentMonth,
+        int currentYear)
     {
         var userQuests = await _unitOfWork.QuestAssignment.GetAllAsync(
             qa => qa.UserId == userId,
@@ -208,7 +232,7 @@ public class UserService : IUserService
         var completedQuestsByDay = completedQuests
             .Where(q => q.CompletedAt.HasValue)
             .GroupBy(q => q.CompletedAt.Value.Day)
-            .OrderBy(group => group.Key)  
+            .OrderBy(group => group.Key)
             .ToDictionary(
                 group => group.Key,
                 group => group.Count()
@@ -216,7 +240,6 @@ public class UserService : IUserService
 
         return completedQuestsByDay;
     }
-
 
 
     private int GetExperienceThreshold(int level)
