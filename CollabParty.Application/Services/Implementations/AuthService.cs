@@ -176,7 +176,7 @@ public class AuthService : IAuthService
 
         var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
         var encodedToken = Uri.EscapeDataString(resetToken);
-        var resetUrl = $"https://localhost:5173/reset-password?token={encodedToken}";
+        var resetUrl = $"https://www.questbound.xyz/reset-password?token={encodedToken}";
         var placeholders = new Dictionary<string, string>
         {
             { "Recipient's Email", requestDto.Email },

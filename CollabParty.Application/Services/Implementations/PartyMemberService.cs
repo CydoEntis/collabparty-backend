@@ -243,7 +243,7 @@ public class PartyMemberService : IPartyMemberService
             throw new NotFoundException("Party invite not found.");
 
         var encodedToken = Uri.EscapeDataString(token);
-        var inviteLink = $"https://localhost:5173/parties/invite?token={encodedToken}";
+        var inviteLink = $"https://www.questbound.xyz/parties/invite?token={encodedToken}";
 
         var placeholders = new Dictionary<string, string>
         {

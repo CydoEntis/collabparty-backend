@@ -28,16 +28,30 @@ using Questlog.Api.Mappings;
 var builder = WebApplication.CreateBuilder(args);
 
 // CORS Policy
+// builder.Services.AddCors(options =>
+// {
+//     options.AddPolicy("AllowSpecificOrigin", policy =>
+//     {
+//         policy.WithOrigins("https://localhost:5173", "https://questbound.xyz")
+//             .AllowCredentials()
+//             .AllowAnyHeader()
+//             .AllowAnyMethod();
+//     });
+// });
+
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowSpecificOrigin", policy =>
     {
-        policy.WithOrigins("https://localhost:5173", "https://questbound.xyz")
+        policy.WithOrigins("https://questbound.xyz", "https://www.questbound.xyz", "https://localhost:5173")  
             .AllowCredentials()
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
 });
+
+
 
 
 builder.Services.Configure<DataProtectionTokenProviderOptions>(options =>
