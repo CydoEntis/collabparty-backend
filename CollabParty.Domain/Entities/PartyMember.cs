@@ -10,5 +10,5 @@ public class PartyMember
     public ApplicationUser User { get; set; }
     public UserRole Role { get; set; }
 
-    public DateTime JoinedAt { get; set; }
+    public DateTime JoinedAt { get; set; } = DateTime.UtcNow;
 }

@@ -33,7 +33,7 @@ public class SessionRepository : BaseRepository<Session>, ISessionRepository
 
     public async Task<Session> UpdateAsync(Session entity)
     {
-        entity.UpdatedAt = DateTime.Now;
+        entity.UpdatedAt = DateTime.UtcNow;
         _db.Sessions.Update(entity);
         await _db.SaveChangesAsync();
         return entity;

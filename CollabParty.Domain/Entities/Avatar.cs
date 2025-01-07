@@ -11,8 +11,8 @@ namespace CollabParty.Domain.Entities
         public int UnlockLevel { get; set; }
         public int UnlockCost { get; set; }
         public int Tier { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime UpdatedAt { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime UpdatedAt { get; set; }= DateTime.UtcNow;
         
         public List<UnlockedAvatar> UnlockedAvatars { get; set; } 
     }

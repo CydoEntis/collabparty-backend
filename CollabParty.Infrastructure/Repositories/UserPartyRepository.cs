@@ -75,7 +75,7 @@
      //
      // public async Task<UserParty> UpdateAsync(UserParty entity)
      // {
-     //     entity.UpdatedAt = DateTime.Now;
+     //     entity.UpdatedAt = DateTime.UtcNow;
      //     _db.UserParties.Update(entity);
      //     await _db.SaveChangesAsync();
      //     return entity;

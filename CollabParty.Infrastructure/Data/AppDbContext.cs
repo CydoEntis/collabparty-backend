@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using CollabParty.Domain.Entities;
 using CollabParty.Infrastructure.Persistence.Seeders;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace CollabParty.Infrastructure.Data
 {
@@ -10,7 +11,6 @@ namespace CollabParty.Infrastructure.Data
         public DbSet<ApplicationUser> ApplicationUsers { get; set; }
         public DbSet<Avatar> Avatars { get; set; }
         public DbSet<Party> Parties { get; set; }
-
         public DbSet<PartyMember> PartyMembers { get; set; }
         public DbSet<Quest> Quests { get; set; }
         public DbSet<QuestAssignment> QuestAssignments { get; set; }
@@ -55,41 +55,39 @@ namespace CollabParty.Infrastructure.Data
             builder.Entity<PartyMember>()
                 .HasKey(up => new { up.UserId, up.PartyId });
 
- 
-
             builder.Entity<QuestAssignment>()
                 .HasKey(qa => new { qa.QuestId, qa.UserId });
-            
+
             builder.Entity<PartyMember>()
                 .HasOne(pm => pm.Party)
                 .WithMany(p => p.PartyMembers)
                 .HasForeignKey(pm => pm.PartyId)
-                .OnDelete(DeleteBehavior.Cascade);  // Cascade delete when Party is deleted
-            
+                .OnDelete(DeleteBehavior.Cascade); // Cascade delete when Party is deleted
+
             builder.Entity<PartyMember>()
                 .HasOne(pm => pm.User)
-                .WithMany() 
+                .WithMany()
                 .HasForeignKey(pm => pm.UserId)
-                .OnDelete(DeleteBehavior.Restrict);  // No delete cascade for PartyMember -> Party
-            
-            builder.Entity<Quest>()
-                .HasOne(q => q.Party)
-                .WithMany(p => p.Quests)
-                .HasForeignKey(q => q.PartyId)
-                .OnDelete(DeleteBehavior.Cascade);  // Delete Quests when Party is deleted
+                .OnDelete(DeleteBehavior.Restrict); // No delete cascade for PartyMember -> Party
 
             builder.Entity<Quest>()
                 .HasOne(q => q.Party)
                 .WithMany(p => p.Quests)
                 .HasForeignKey(q => q.PartyId)
-                .OnDelete(DeleteBehavior.Restrict);  // Don't delete Party when Quest is deleted
+                .OnDelete(DeleteBehavior.Cascade); // Delete Quests when Party is deleted
+
+            builder.Entity<Quest>()
+                .HasOne(q => q.Party)
+                .WithMany(p => p.Quests)
+                .HasForeignKey(q => q.PartyId)
+                .OnDelete(DeleteBehavior.Restrict); // Don't delete Party when Quest is deleted
 
             builder.Entity<PartyMember>()
                 .HasOne(pm => pm.Party)
                 .WithMany(p => p.PartyMembers)
                 .HasForeignKey(pm => pm.PartyId)
-                .OnDelete(DeleteBehavior.Restrict);  // Don't delete PartyMembers when a Quest is deleted
-            
+                .OnDelete(DeleteBehavior.Restrict); // Don't delete PartyMembers when a Quest is deleted
+
             builder.Entity<Quest>()
                 .HasMany(q => q.QuestAssignments)
                 .WithOne(qa => qa.Quest)
@@ -107,19 +105,53 @@ namespace CollabParty.Infrastructure.Data
                 .HasOne(qa => qa.User)
                 .WithMany()
                 .HasForeignKey(qa => qa.UserId)
-                .OnDelete(DeleteBehavior.Restrict); // Prevents a User from being deleted when a Quest Assignment is deleted.
-            
+                .OnDelete(DeleteBehavior
+                    .Restrict); // Prevents a User from being deleted when a Quest Assignment is deleted.
+
             builder.Entity<QuestComment>()
                 .HasOne(qc => qc.Quest)
                 .WithMany(q => q.QuestComments)
                 .HasForeignKey(qc => qc.QuestId)
-                .OnDelete(DeleteBehavior.Restrict); // Prevents a Quest From being deleted when Quest Comment is deleted.
-            
+                .OnDelete(DeleteBehavior
+                    .Restrict); // Prevents a Quest From being deleted when Quest Comment is deleted.
+
             builder.Entity<QuestFile>()
                 .HasOne(qc => qc.Quest)
                 .WithMany(q => q.QuestFiles)
                 .HasForeignKey(qc => qc.QuestId)
-                .OnDelete(DeleteBehavior.Restrict);  // Prevents a Quest from being deleted when a Quest File is Deleted.
+                .OnDelete(DeleteBehavior.Restrict); // Prevents a Quest from being deleted when a Quest File is Deleted.
+
+            var dateTimeProperties = builder.Model.GetEntityTypes()
+                .SelectMany(t => t.GetProperties())
+                .Where(p => p.ClrType == typeof(DateTime) || p.ClrType == typeof(DateTime?));
+
+            foreach (var property in dateTimeProperties)
+            {
+                if (property.ClrType == typeof(DateTime))
+                {
+                    var converter = new ValueConverter<DateTime, DateTime>(
+                        d => DateTime.SpecifyKind(d, DateTimeKind.Utc),
+                        d => DateTime.SpecifyKind(d, DateTimeKind.Utc)
+                    );
+
+                    builder
+                        .Entity(property.DeclaringEntityType.ClrType)
+                        .Property(property.Name)
+                        .HasConversion(converter);
+                }
+                else if (property.ClrType == typeof(DateTime?))
+                {
+                    var converter = new ValueConverter<DateTime?, DateTime?>(
+                        d => d.HasValue ? DateTime.SpecifyKind(d.Value, DateTimeKind.Utc) : d,
+                        d => d.HasValue ? DateTime.SpecifyKind(d.Value, DateTimeKind.Utc) : d
+                    );
+
+                    builder
+                        .Entity(property.DeclaringEntityType.ClrType)
+                        .Property(property.Name)
+                        .HasConversion(converter);
+                }
+            }
         }
     }
 }

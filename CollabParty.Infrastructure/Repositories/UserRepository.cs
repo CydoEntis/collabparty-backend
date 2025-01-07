@@ -14,7 +14,7 @@ public class UserRepository : BaseRepository<ApplicationUser>, IUserRepository
     
     public async Task<ApplicationUser> UpdateAsync(ApplicationUser entity)
     {
-        entity.UpdatedAt = DateTime.Now;
+        entity.UpdatedAt = DateTime.UtcNow;
         _db.ApplicationUsers.Update(entity);
         await _db.SaveChangesAsync();
         return entity;

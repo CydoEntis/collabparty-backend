@@ -44,8 +44,7 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Database Context Configuration
-var connectionString = builder.Configuration["DefaultConnectionString"];
+
 
 
 builder.Services.Configure<DataProtectionTokenProviderOptions>(options =>
@@ -53,9 +52,12 @@ builder.Services.Configure<DataProtectionTokenProviderOptions>(options =>
     options.TokenLifespan = TimeSpan.FromMinutes(30);
 });
 
-
+// Database Context Configuration
+var connectionString = builder.Configuration["DefaultConnectionString"];
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(connectionString, options => options.CommandTimeout(360)));
+    options.UseNpgsql(connectionString, options => options.CommandTimeout(360)));
+
+
 
 // Identity Configuration
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>()

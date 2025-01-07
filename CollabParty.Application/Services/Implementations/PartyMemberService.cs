@@ -46,7 +46,7 @@ public class PartyMemberService : IPartyMemberService
             PartyId = partyId,
             UserId = userId,
             Role = UserRole.Member,
-            JoinedAt = DateTime.Now,
+            JoinedAt = DateTime.UtcNow,
         };
 
         var newPartyMember = await _unitOfWork.PartyMember.CreateAsync(newUserParty);
@@ -66,7 +66,7 @@ public class PartyMemberService : IPartyMemberService
             PartyId = partyId,
             UserId = userId,
             Role = UserRole.Leader,
-            JoinedAt = DateTime.Now,
+            JoinedAt = DateTime.UtcNow,
         };
 
         var newPartyMember = await _unitOfWork.PartyMember.CreateAsync(newUserParty);

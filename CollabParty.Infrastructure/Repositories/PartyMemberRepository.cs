@@ -74,7 +74,7 @@ public class PartyMemberRepository : BaseRepository<PartyMember>, IPartyMemberRe
 
     public async Task<PartyMember> UpdateAsync(PartyMember entity)
     {
-        entity.JoinedAt = DateTime.Now;
+        entity.JoinedAt = DateTime.UtcNow;
         _db.PartyMembers.Update(entity);
         await _db.SaveChangesAsync();
         return entity;

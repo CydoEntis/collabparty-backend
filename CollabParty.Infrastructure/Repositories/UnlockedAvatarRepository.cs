@@ -21,7 +21,7 @@ public class UnlockedAvatarRepository : BaseRepository<Domain.Entities.UnlockedA
 
     public async Task<Domain.Entities.UnlockedAvatar> UpdateAsync(Domain.Entities.UnlockedAvatar entity)
     {
-        entity.UpdatedAt = DateTime.Now;
+        entity.UpdatedAt = DateTime.UtcNow;
         _db.UnlockedAvatars.Update(entity);
         await _db.SaveChangesAsync();
         return entity;

@@ -18,7 +18,7 @@ namespace CollabParty.Domain.Entities
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-        public DateTime? UpdatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
         public ICollection<UnlockedAvatar> UnlockedAvatars { get; set; } = new List<UnlockedAvatar>();
 

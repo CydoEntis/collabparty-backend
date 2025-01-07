@@ -18,7 +18,7 @@ public class QuestRepository : BaseRepository<Quest>, IQuestRepository
     
     public async Task<Quest> UpdateAsync(Quest entity)
     {
-        entity.UpdatedAt = DateTime.Now;
+        entity.UpdatedAt = DateTime.UtcNow;
         _db.Quests.Update(entity);
         await _db.SaveChangesAsync();
         return entity;
