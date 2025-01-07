@@ -1,29 +1,24 @@
-using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
-// using CollabParty.Api.Middleware;
 using CollabParty.Application.Common.Constants;
 using CollabParty.Application.Common.Interfaces;
-using CollabParty.Application.Common.Models;
-using CollabParty.Application.Common.Validators;
 using CollabParty.Application.Common.Validators.Auth;
 using CollabParty.Application.Common.Validators.Helpers;
-// using CollabParty.Application.Common.Validators.Helpers;
 using CollabParty.Application.Common.Validators.Party;
 using CollabParty.Application.Services.Implementations;
 using CollabParty.Application.Services.Interfaces;
 using CollabParty.Domain.Entities;
 using CollabParty.Domain.Interfaces;
-using CollabParty.Infrastructure;
 using CollabParty.Infrastructure.Data;
 using CollabParty.Infrastructure.DependencyInjection;
 using CollabParty.Infrastructure.Emails;
-using CollabParty.Infrastructure.Middleware; // Add this
+using CollabParty.Infrastructure.Middleware;
 using CollabParty.Infrastructure.Persistence.Seeders;
 using CollabParty.Infrastructure.Repositories;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -37,14 +32,12 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowSpecificOrigin", policy =>
     {
-        policy.WithOrigins("https://localhost:5173")
+        policy.WithOrigins("https://localhost:5173", "https://questbound.xyz")
             .AllowCredentials()
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
 });
-
-
 
 
 builder.Services.Configure<DataProtectionTokenProviderOptions>(options =>
@@ -56,7 +49,6 @@ builder.Services.Configure<DataProtectionTokenProviderOptions>(options =>
 var connectionString = builder.Configuration["DefaultConnectionString"];
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString, options => options.CommandTimeout(360)));
-
 
 
 // Identity Configuration
@@ -205,6 +197,11 @@ using (var scope = app.Services.CreateScope())
 
 
 // app.UseMiddleware<CsrfMiddleware>();
+
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+});
 
 app.UseHttpsRedirection();
 app.UseCors("AllowSpecificOrigin");
